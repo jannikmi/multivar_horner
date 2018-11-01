@@ -1,3 +1,17 @@
+MANIFEST
+scrapyard.py
+.DS_Store
+tmp.py
+.pytest_cache
+.idea/
+
+# GITIGNORE DEFAULTS
+
+
+# PYTHON
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
