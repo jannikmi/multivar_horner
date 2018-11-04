@@ -7,7 +7,7 @@ import pytest
 from multivar_horner import HornerMultivarPolynomial
 
 # TODO
-# from multivar_horner import MultivarPolynomial
+from multivar_horner import MultivarPolynomial
 
 
 def proto_test_case(data, fct):
@@ -28,8 +28,10 @@ class MainTest(unittest.TestCase):
         def cmp_value_fct(inp):
             coeff, exp, x = inp
             x = np.array(x).T
+            # TODO test both
             poly = HornerMultivarPolynomial(coeff, exp)
             # poly = MultivarPolynomial(coeff, exp)
+            print(str(poly))
             return poly.eval(x)
 
         # negative exponents are not allowed
