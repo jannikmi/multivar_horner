@@ -8,12 +8,15 @@ from multivar_horner import MultivarPolynomial
 
 
 def proto_test_case(data, fct):
+    all_good = True
     for input, expected_output in data:
         # print(input, expected_output, fct(input))
         actual_output = fct(input)
         if actual_output != expected_output:
             print('input: {} expected: {} got: {}'.format(input, expected_output, actual_output))
-        assert actual_output == expected_output
+            all_good = False
+
+    assert all_good
 
 
 class MainTest(unittest.TestCase):
@@ -31,6 +34,31 @@ class MainTest(unittest.TestCase):
         #     environment.find_shortest_path(start_coordinates, goal_coordinates)
 
         test_data = [
+
+            # p(x) =  5.0
+            (([5.0],  # coefficients
+              [0],  # exponents
+              [0.0]),  # x
+             5.0),  # p(x)
+
+            # p(1.0) = 1.0
+            (([5.0],
+              [0],
+              [1.0]),
+             5.0),
+
+            # p(-1.0) = -1.0
+            (([5.0],
+              [0],
+              [-1.0]),
+             5.0),
+
+            # p(33.5) =33.5
+            (([5.0],
+              [0],
+              [33.5]),
+             5.0),
+
             # p(x) =  1.0* x_1^1
             # p(0.0) = 0.0
             (([1.0],  # coefficients
