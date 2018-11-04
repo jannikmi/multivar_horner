@@ -29,41 +29,36 @@ def get_prime_array(length):
     return np.array(list(itertools.islice(erat2(), length)), dtype=np.uint)
 
 
-def get_goedel_id_of(prime_id, exponent, prime_array):
+def get_goedel_id_of(prime_idx, exponent, prime_array):
     # return the unique ID of any monomial
-    return prime_array[prime_id] ** exponent
+    return prime_array[prime_idx] ** exponent
 
 
 class AbstractFactor(object):
-    def eval(self, x):
-        pass
+    __slots__ = ['monomial_id', 'value_idx']
 
     def __str__(self):
-        pass
+        raise NotImplementedError()
 
     def __repr__(self):
-        pass
+        raise NotImplementedError()
+
+    def eval(self, factor_values):
+        # the value of all used factors has already been computed
+        return factor_values[self.value_idx]
+
+    def compute(self, x, factor_values):
+        raise NotImplementedError()
 
 
 class ScalarFactor(AbstractFactor):
-    # monomial with just one variable: x_i^n
-    __slots__ = ['dimension', 'exponent', 'monomial_id', 'monomial_id2val']
+    # a monomial with just one variable: x_i^n
+    __slots__ = ['dimension', 'exponent']
 
-    def __init__(self, factor_dimension, factor_exponent, monomial_id, monomial_id2val, ):
+    def __init__(self, factor_dimension, factor_exponent, monomial_id):
         self.dimension = factor_dimension
         self.exponent = factor_exponent
         self.monomial_id = monomial_id
-        self.monomial_id2val = monomial_id2val
-
-    def eval(self, x):
-        # compute the value of any monomial only once
-        try:
-            return self.monomial_id2val[self.monomial_id]
-        except KeyError:
-            # the value of this monomial has not been computed yet
-            val = x[self.dimension] ** self.exponent
-            self.monomial_id2val[self.monomial_id] = val
-        return val
 
     def __str__(self):
         # variable numbering starts with 1: x_1, x_2, ...
@@ -72,13 +67,15 @@ class ScalarFactor(AbstractFactor):
     def __repr__(self):
         return self.__str__()
 
+    def compute(self, x, factor_values):
+        factor_values[self.value_idx] = x[self.dimension] ** self.exponent
+
 
 class MonomialFactor(AbstractFactor):
-    # monomial: x_i^j * x_k^l * ...
-    __slots__ = ['scalar_factors', 'monomial_id', 'monomial_id2val']
+    # a monomial consisting of a product of scalar factors: x_i^j * x_k^l * ...
+    __slots__ = ['scalar_factors', 'factorisation_idxs']
 
-    def __init__(self, scalar_factors, monomial_id2val):
-        self.monomial_id2val = monomial_id2val
+    def __init__(self, scalar_factors):
         self.scalar_factors = scalar_factors
 
         # the id of a monomial is a Goedelian number corresponding to their exponent vector
@@ -94,59 +91,32 @@ class MonomialFactor(AbstractFactor):
         if len(self.scalar_factors) == 0:
             raise ValueError()
 
-    def eval(self, x):
-        try:
-            return self.monomial_id2val[self.monomial_id]
-        except KeyError:
-            pass
-
-        # the value of this monomial has not been computed yet
-        # compute the value of any monomial only once
-        factor_current = self.scalar_factors[0]
-        monomial_id_current = factor_current.monomial_id
-        # try to look up the value of the current monomial
-        value_current = factor_current.eval(x)
-
-        # until one finds a monomial with computed value
-        for factor_current in self.scalar_factors[1:0]:
-            monomial_id_current *= factor_current.monomial_id
-            # try to look up the value of the current monomials
-            try:
-                value_current = self.monomial_id2val[self.monomial_id]
-            except KeyError:
-                # value has to be computed first
-                value_current *= factor_current.eval(x)
-                self.monomial_id2val[monomial_id_current] = value_current
-
-        return value_current
-
     def __str__(self):
         return ' '.join([f.__str__() for f in self.scalar_factors])
 
     def __repr__(self):
         return self.__str__()
 
+    def compute(self, x, factor_values):
+
+        # IMPORTANT: compute() of all the sub factors has had to be called before!
+        value = factor_values[self.factorisation_idxs[0]]
+        for idx in self.factorisation_idxs[1:]:
+            value *= factor_values[idx]
+
+        factor_values[self.value_idx] = value
+
 
 class HornerTree(object):
-    __slots__ = ['dim', 'order', 'max_degree', 'coefficient', 'factors', 'sub_trees', 'factors_n_subtrees',
-                 'monomial_id2val']
+    __slots__ = ['dim', 'order', 'max_degree', 'coefficient', 'factors', 'sub_trees', 'factors_n_subtrees']
 
-    # coefficient = 0.0
     # # factors are the monomials which have been factored out
     # #   from the polynomial represented by the corresponding sub tree
     # factors: List[int] = []
     # # list of horner trees
     # sub_trees = []
 
-    def __init__(self, coefficients, exponents, prime_array, monomial_id2val, unique_factor_id_list, unique_factors):
-        """
-
-        :param coefficients:
-        :param exponents:
-        :param prime_array:
-        :param monomial_id2val:
-        :param only_scalar_factors:
-        """
+    def __init__(self, coefficients, exponents, prime_array, unique_factor_id_list, unique_factors):
 
         self.dim = exponents.shape[1]
         self.order = np.sum(exponents, axis=0).max()
@@ -156,24 +126,20 @@ class HornerTree(object):
         # self.factor_exps = []
         self.sub_trees = []
 
-        # store link to the value lookup dict of the (parent) polynomial
-        self.monomial_id2val = monomial_id2val
-
         # self.prime_array = get_prime_array(self.dim)
 
         def add_factor(factor_properties):
-            # factor_dimensions, factor_exponents = factor
+            # factor_dimensions, factor_exponents = factor_properties
 
             scalar_factors = []
             monomial_id = 1
             for d, e in zip(factor_properties):
                 scalar_id = get_goedel_id_of(d, e, prime_array)
                 try:
-                    idx = unique_factor_id_list.index(scalar_id)
-                    scalar_factors.append(unique_factors[idx])
+                    scalar_factors.append(unique_factors[unique_factor_id_list.index(scalar_id)])
                 except IndexError:
                     unique_factor_id_list.append(scalar_id)
-                    scalar_factor = ScalarFactor(d, e, scalar_id, monomial_id2val, )
+                    scalar_factor = ScalarFactor(d, e, scalar_id)
                     scalar_factors.append(scalar_factor)
                     unique_factors.append(scalar_factor)
 
@@ -187,17 +153,17 @@ class HornerTree(object):
                 self.factors.append(scalar_factors[0])
             else:
                 try:
-                    idx = unique_factor_id_list.index(monomial_id)
-                    self.factors.append(unique_factors[idx])
+                    self.factors.append(unique_factors[unique_factor_id_list.index(monomial_id)])
                 except IndexError:
                     unique_factor_id_list.append(monomial_id)
-                    factor = MonomialFactor(scalar_factors, monomial_id2val)
+                    factor = MonomialFactor(scalar_factors)
                     self.factors.append(factor)
                     unique_factors.append(factor)
 
-        def add_subtree(remaining_coefficients, remaining_exponents, factorized_rows, factor):
+        def add_subtree(remaining_coefficients, remaining_exponents, factorized_rows, factor_properties):
+            print(factor_properties)
 
-            add_factor(factor)
+            add_factor(factor_properties)
             non_factorized_rows = [r for r in range(remaining_exponents.shape[0]) if r not in factor_rows]
 
             subtree_coefficients = remaining_coefficients[factorized_rows]
@@ -214,10 +180,11 @@ class HornerTree(object):
             assert subtree_exponents.shape[1] == exponents.shape[1] and len(subtree_exponents.shape) == 2
 
             # the factor has to be deducted from the exponents of the sub tree
-            for dim, exp in factor:
+            for dim, exp in factor_properties:
                 subtree_exponents[:, dim] -= exp
 
-            self.sub_trees.append(HornerTree(subtree_coefficients, subtree_exponents, prime_array, monomial_id2val))
+            self.sub_trees.append(
+                HornerTree(subtree_coefficients, subtree_exponents, prime_array, unique_factor_id_list, unique_factors))
 
             return remaining_coefficients, remaining_exponents
 
@@ -298,7 +265,6 @@ class HornerTree(object):
                                                                       factor_rows, maximal_factor)
 
         self.factors_n_subtrees = zip(self.factors, self.sub_trees)
-        return unique_factor_id_list, unique_factors
 
     def __str__(self, indent_lvl=1):
         if self.coefficient == 0.0:
@@ -317,7 +283,7 @@ class HornerTree(object):
     def __repr__(self):
         return self.__str__()
 
-    def eval(self, x):
+    def eval(self, factor_values):
 
         # TODO avoid for loop
         # TODO numba precompilation!?
@@ -330,19 +296,24 @@ class HornerTree(object):
 
         for factor, sub_tree in self.factors_n_subtrees:
             # eval all sub trees
-            out += factor.eval(x) * sub_tree.eval(x)
+            out += factor.eval(factor_values) * sub_tree.eval(factor_values)
         return out
 
 
 class MultivarPolynomial(object):
     # prevent dynamic attribute assignment (-> safe memory)
-    __slots__ = ['coefficients', 'exponents', 'dim', 'order', 'max_degree']
+    __slots__ = ['coefficients', 'exponents', 'dim', 'order', 'max_degree', 'unused_variables']
 
     def __init__(self, coefficients, exponents):
         """
         naive representation of a multivariate polynomial without any horner factorisation
+        dimension: the amount of variable as input
+        NOTE: the polygon actually needs not to depend on all dimensions
+        order: (for a multivariate polynomial) maximum sum of exponents in any of its monomials
+        degree: the largest exponent in any of its monomials
         :param coefficients:
-        :param exponents:
+        :param exponents: ordering does not matter, but have to be unique!
+        dim: the dimensionality of the polynomial.
         """
 
         self.coefficients = np.atleast_1d(np.array(coefficients, dtype=np.float)).reshape(-1, 1)
@@ -368,9 +339,20 @@ class MultivarPolynomial(object):
         self.order = np.sum(self.exponents, axis=0).max()
         self.max_degree = self.exponents.max()
 
-    # def __str__(self):
-    # TODO
-    # return 'p(x) = ' + self.horner_tree.__str__()
+        self.unused_variables = np.where(np.any(self.exponents, axis=1))[0]
+
+    def __str__(self):
+        s = 'p(x) = '
+        monomials = []
+        for i, exp_vect in enumerate(self.exponents):
+            monomial = [str(self.coefficients[i]), ]
+            for dim, exp in enumerate(exp_vect):
+                if dim > 0:
+                    monomial.append('x_{}^{}'.format(dim + 1, exp))
+            monomials.append(' '.join(monomial))
+
+        s += ' + '.join(monomials)
+        return s
 
     def __repr__(self):
         return self.__str__()
@@ -381,7 +363,7 @@ class MultivarPolynomial(object):
         # TODO test
         x = np.array(x)
         assert x.shape[0] == self.dim
-        return np.sum(self.coefficients * np.power(x, self.exponents))
+        return np.sum(self.coefficients.T * np.prod(np.power(x, self.exponents), axis=1), axis=1)
 
     def partial_derivative(self, i):
         """
@@ -422,27 +404,85 @@ class MultivarPolynomial(object):
 class HornerMultivarPolynomial(MultivarPolynomial):
     # __slots__ declared in parents are available in child classes. However, child subclasses will get a __dict__
     # and __weakref__ unless they also define __slots__ (which should only contain names of any additional slots).
-    __slots__ = ['prime_array', 'horner_tree']
+    __slots__ = ['prime_array', 'horner_tree', 'unique_factor_id_list', 'unique_factors', 'factor_values']
+
+    def link_monomials(self):
+        """
+        find the optimal factorisation of the unique factors themselves
+        since the monomial ids are products of the ids of their scalar factors
+        check for the highest possible divisor among all factor ids
+        this leads to a minimal factorisation for quick evaluation of the monomial values
+
+        all scalar factors need not be factorised any more (even with an exponent > 1),
+        because it is cheapest to just compute their value every time
+        (one operation, more efficient than value look up)
+        for performance it is best to not factorize x_i^n, but just compute it in one go:
+        -> find all unique scalar factors, add them to the tree as factors
+        then find factorisation for all non scalar factors based on those scalar factors
+        = link the factors
+
+        :return:
+        """
+
+        # sort after their id
+        self.unique_factor_id_list = list(sorted(self.unique_factor_id_list))
+        self.unique_factors = list(sorted(self.unique_factors, key=lambda f: f.monomial_id))
+        # property of the list: the scalar factors of each monomial are stored in front of it
+
+        # IMPORTANT: properly set the indices of the values for each factor
+        for idx, f in enumerate(self.unique_factors):
+            f.value_idx = idx
+
+        # start at the last factor (highest id)
+        pointer1 = len(self.unique_factors) - 1
+
+        # the smallest factor has no factorisation (stop at pointer=1)
+        while pointer1 > 0:
+            candidate = self.unique_factors[pointer1]
+            if type(candidate) is not MonomialFactor:
+                # scalar factors have no factorisation
+                continue
+
+            remaining_id = candidate.monomial_id
+            # store the indices of the factors that divide the id
+            factorisation_idxs = []
+
+            pointer2 = pointer1 - 1
+            # find the factors with the highest id which are a factor of the current monomial
+            while 1:
+                monomial_id2 = self.unique_factors[pointer2].monomial_id
+
+                if monomial_id2 == remaining_id:
+                    factorisation_idxs.append(pointer2)
+                    break
+
+                quotient, remainder = divmod(remaining_id, monomial_id2)
+                if remainder == 0:
+                    # this factor is a factor of the monomial
+                    factorisation_idxs.append(pointer2)
+                    # reduce the id
+                    remaining_id = quotient
+
+                pointer2 -= 1
+
+            # store the indices of the factors that factorize the monomial
+            #   to quickly access their values when computing the value of the monomial
+            candidate.factorisation_idxs = factorisation_idxs
+            pointer1 -= 1
 
     def __init__(self, coefficients, exponents):
         """
-        dimension:
-        NOTE: the polygon actually needs not to depend on all dimensions
-        order: (for a multivariate polynomial) maximum sum of exponents in any of its monomials
-        degree: the largest exponent in any of its monomials
-        :param coefficients:
-        :param exponents: ordering does not matter, but have to be unique!
-        dim: the dimensionality of the polynomial.
+          a representation of a multivariate polynomial using horner factorisation to save operations during evaluation
+          dimension: the amount of variable as input
+          NOTE: the polygon actually needs not to depend on all dimensions
+          order: (for a multivariate polynomial) maximum sum of exponents in any of its monomials
+          degree: the largest exponent in any of its monomials
+          :param coefficients:
+          :param exponents: ordering does not matter, but have to be unique!
+          dim: the dimensionality of the polynomial.
         """
 
         super(HornerMultivarPolynomial, self).__init__(coefficients, exponents)
-
-        # TODO store all unique factors
-        # TODO do not store values in dict
-        # during evaluation of a polynomial the values of all the unique factors are needed at least once
-        # TODO -> compute the values of all factors (monomials) once and store them
-        # store a pointer to the computed value for every unique factor
-        # TODO in clever way: find factorisation of all factors = again build tree, but with factors as exponent input
 
         # factor id (goedelian number, unique)
         # TODO sorted after ID?!
@@ -451,35 +491,31 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         # factor values computed fully once at every evaluation query
         # factor tree, nodes are labeled with idx
 
-        # the tree for factor computation must itself only have scalar factors
-        # those factors need not be factorised any more (even with an exponent > 1),
-        # because it is cheapest to just compute their value every time (one operation, more efficient than value look up)
-        # for performance it is best to not factorize x_i^n, but just compute it in one go:
-        # -> find all unique scalar factors, add them to the tree as factors
-        # then find factorisation for all non scalar factors based on those scalar factors
-        # = build tree
-
-        # when building this tree keep track of the id of the current root node
-        # and add a label to the node only when one factor has this id (value needs to be stored)
-
-        # starting from the root node
-        # evaluate all stored (scalar) factors
-        # then call evaluate fct of all the sub trees
-        # when the root node is labeled with an idx, store the value passed to the eval fct. at this idx in the value list
-
-        # after evaluating the whole tree,
-        # all the factors existing in the factorised polynomial have been evaluated (and stored!)
-        # so when evaluating the actual horner factorisation tree of the polynomial
-        # the values of all factors can be looked up at the corresponding idx in the value list
-
-        # value lookup for reusing already computed values of monomials
         # pass this dict as argument to all subtrees
-        self.monomial_id2val = {}
+        # self.monomial_id2val = {}
 
         self.prime_array = get_prime_array(self.dim)
 
+        # store all unique factors of the horner factorisation
+        # NOTE: do not create all scalar factors with exponent 1 (they might not be required!)
+
+        self.unique_factor_id_list = []
+        self.unique_factors = []
+
         # factorize the polynomial once and store the factorisation as a tree
-        self.horner_tree = HornerTree(self.coefficients, self.exponents, self.prime_array, self.monomial_id2val)
+        self.horner_tree = HornerTree(self.coefficients, self.exponents, self.prime_array,
+                                      self.unique_factor_id_list, self.unique_factors)
+
+        # factor list is now filled with the unique factors
+
+        # during evaluation of a polynomial the values of all the unique factors are needed at least once
+        # -> compute the values of all factors (monomials) once and store them
+        # store a pointer to the computed value for every unique factor
+        # save operations for the evaluation -> find factorisation of all factors = again a factorisation tree
+        # sort and factorize the monomials to quickly evaluate them once during a query
+        self.link_monomials()
+        self.factor_values = np.empty(shape=len(self.unique_factor_id_list), dtype=np.float)
+
         print(self.__str__())
 
     def __str__(self):
@@ -487,15 +523,22 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
     def eval(self, x):
         # TODO use only numpy for eval. for numba precompilation
-        # IMPORTANT: reset the value lookup for every query
         # the values of the scalar monomials with exponent 1 (x_i^1) can already be stored
-        self.monomial_id2val = dict(zip(self.prime_array, x))
-        print(self.monomial_id2val)
 
         x = np.array(x)
         assert x.shape[0] == self.dim
 
-        return self.horner_tree.eval(x)
+        # IMPORTANT: reset the value lookup for every query
+        # factors later in the list require previously computed values
+        for f in self.unique_factors:
+            f.compute(x, self.factor_values)
+
+        # after evaluating the whole tree,
+        # all the factors existing in the factorised polynomial have been evaluated (and stored!)
+        # so when evaluating the actual horner factorisation tree of the polynomial
+        # the values of all factors can be looked up at the corresponding idx in the value list
+        # the evaluation of the polynomial only requires the computed values of all factors (not x)
+        return self.horner_tree.eval(self.factor_values)
 
 
 # TODO function for checking conditions of polynomial

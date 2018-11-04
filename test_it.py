@@ -4,7 +4,10 @@ import numpy as np
 
 import pytest
 
-from multivar_horner import MultivarPolynomial
+from multivar_horner import HornerMultivarPolynomial
+
+# TODO
+# from multivar_horner import MultivarPolynomial
 
 
 def proto_test_case(data, fct):
@@ -25,7 +28,8 @@ class MainTest(unittest.TestCase):
         def cmp_value_fct(inp):
             coeff, exp, x = inp
             x = np.array(x).T
-            poly = MultivarPolynomial(coeff, exp)
+            poly = HornerMultivarPolynomial(coeff, exp)
+            # poly = MultivarPolynomial(coeff, exp)
             return poly.eval(x)
 
         # negative exponents are not allowed
@@ -84,7 +88,7 @@ class MainTest(unittest.TestCase):
               [33.5]),
              33.5),
 
-            # p(x) =  1.0* x_1^1 + 0.0* * x_1^1
+            # p(x) =  1.0* x_1^1 + 0.0* * x_2^1
             (([1.0, 0.0],
               [[1, 0], [0, 1]],
               [0.0, 0.0]),
@@ -194,6 +198,9 @@ class MainTest(unittest.TestCase):
 
     # TODO test gradient
 
+
+
+    # TODO create two objects and check if evaluation interference
 
 
 
