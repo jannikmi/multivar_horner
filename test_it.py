@@ -29,17 +29,47 @@ class MainTest(unittest.TestCase):
             coeff, exp, x = inp
             x = np.array(x).T
             # TODO test both
-            poly = HornerMultivarPolynomial(coeff, exp)
+            poly = HornerMultivarPolynomial(coeff, exp,validate_input=True)
             # poly = MultivarPolynomial(coeff, exp)
             print(str(poly))
-            return poly.eval(x)
+            return poly.eval(x,validate_input=True)
 
-        # negative exponents are not allowed
-        # TODO
-        # with pytest.raises(AssertionError):
-        #     environment.find_shortest_path(start_coordinates, goal_coordinates)
+        invalid_test_data = [
+            # calling with x of another dimension
+            (([1.0, 2.0, 3.0],
+              [[3, 1, 0], [2, 0, 1], [1, 1, 1]],
+              [-2.0, 3.0, ]),
+             # p(x) = 5.0 + 2.0* (-2)^1 + 1.0* (-2)^2 + 2.0* (-2)^2 *3^1 = 5.0 + 2.0* (-2) + 1.0* 4 + 2.0* 4 *3
+             29.0),
 
-        test_data = [
+            (([1.0, 2.0, 3.0],
+              [[3, 1, 0], [2, 0, 1], [1, 1, 1]],
+              [-2.0, 3.0, 1.0, 4.0]),
+             # p(x) = 5.0 + 2.0* (-2)^1 + 1.0* (-2)^2 + 2.0* (-2)^2 *3^1 = 5.0 + 2.0* (-2) + 1.0* 4 + 2.0* 4 *3
+             29.0),
+
+            # negative exponents are not allowed
+            (([1.0, 2.0, 3.0],
+              [[3, -1, 0], [2, 0, 1], [1, 1, 1]],
+              [-2.0, 3.0, 1.0, 4.0]),
+             # p(x) = 5.0 + 2.0* (-2)^1 + 1.0* (-2)^2 + 2.0* (-2)^2 *3^1 = 5.0 + 2.0* (-2) + 1.0* 4 + 2.0* 4 *3
+             29.0),
+
+            # duplicate exponent entries are not allowed
+            # negative exponents are not allowed
+            (([1.0, 2.0, 3.0],
+              [[3, 1, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]],
+              [-2.0, 3.0, 1.0, 4.0]),
+             # p(x) = 5.0 + 2.0* (-2)^1 + 1.0* (-2)^2 + 2.0* (-2)^2 *3^1 = 5.0 + 2.0* (-2) + 1.0* 4 + 2.0* 4 *3
+             29.0),
+
+        ]
+
+        for inp, expected_output in invalid_test_data:
+            with pytest.raises(AssertionError):
+                cmp_value_fct(inp)
+
+        invalid_test_data = [
 
             # p(x) =  5.0
             (([5.0],  # coefficients
@@ -194,16 +224,19 @@ class MainTest(unittest.TestCase):
               [-2.0, 3.0]),
              # p(x) = 5.0 + 2.0* (-2)^1 + 1.0* (-2)^2 + 2.0* (-2)^2 *3^1 = 5.0 + 2.0* (-2) + 1.0* 4 + 2.0* 4 *3
              29.0),
+
+            (([1.0, 2.0, 3.0],
+              [[3, 1, 0], [2, 0, 1], [1, 1, 1]],
+              [-2.0, 3.0, ]),
+             # p(x) = 5.0 + 2.0* (-2)^1 + 1.0* (-2)^2 + 2.0* (-2)^2 *3^1 = 5.0 + 2.0* (-2) + 1.0* 4 + 2.0* 4 *3
+             29.0),
         ]
 
-        proto_test_case(test_data, cmp_value_fct)
+        proto_test_case(invalid_test_data, cmp_value_fct)
 
     # TODO test gradient
 
-
-
     # TODO create two objects and check if evaluation interference
-
 
 
 if __name__ == '__main__':
