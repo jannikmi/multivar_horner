@@ -3,9 +3,22 @@ import itertools
 import numpy as np
 
 
-# TODO reference literature
+# TODO
+# matlab binding
+# test routine tox...
+# publish
+# changelog
+# readme
 
-# TODO calculate number of operations. Horner factorisation and vanilla
+# TODO test gradient
+
+# TODO create two objects and check if evaluation interference
+
+
+# TODO speed comparison
+# only evaluation
+# pick random polynomial with certain properties
+# TODO plot speed
 
 
 # https://stackoverflow.com/questions/2068372/fastest-way-to-list-all-primes-below-n/3035188#3035188
@@ -30,17 +43,17 @@ def get_prime_array(length):
 
 
 def get_goedel_id_of(prime_idx, exponent, prime_array):
-    # return the unique ID of any monomial
+    # return the unique ID of any scalar monomial x_i^n
     return int(prime_array[prime_idx] ** exponent)
 
 
-def rectify_input(coefficients, exponents):
+def rectify(coefficients, exponents):
     """
     convert the input into numpy arrays valid as input to MultivarPolynomial
     raise an error if the given input is incompatible
-    :param coefficients:
-    :param exponents:
-    :return:
+    :param coefficients: possibly a python list of coefficients to be converted
+    :param exponents: possibly a nested python list of exponents to be converted
+    :return: the input converted into appropriate numpy data types
     """
     rectified_coefficients = np.atleast_1d(np.array(coefficients, dtype=np.float)).reshape(-1, 1)
 
@@ -60,11 +73,11 @@ def rectify_input(coefficients, exponents):
     return rectified_coefficients, rectified_exponents
 
 
-def validate_input(coefficients, exponents):
+def validate(coefficients, exponents):
     """
     raises an error when the given input is not valid
-    :param coefficients:
-    :param exponents:
+    :param coefficients: a numpy array column vector of doubles representing the coefficients of the monomials
+    :param exponents: a numpy array matrix of unsigned integers representing the exponents of the monomials
     :return:
     """
     # coefficients must be given as a column vector (2D)
@@ -75,10 +88,8 @@ def validate_input(coefficients, exponents):
     assert not np.any(exponents < 0)
     # there must not be duplicate exponent vectors
     assert exponents.shape == np.unique(exponents, axis=0).shape
-
     # there must not be any coefficients with 0.0
     assert not np.any(coefficients == 0.0)
-
     # must have the same amount of entries
     assert coefficients.shape[0] == exponents.shape[0]
 
@@ -108,6 +119,7 @@ class ScalarFactor(AbstractFactor):
         self.dimension = factor_dimension
         self.exponent = factor_exponent
         self.monomial_id = monomial_id
+        self.value_idx = None  # initialize the idx with None to catch faulty evaluation tries
 
     def __str__(self):
         # variable numbering starts with 1: x_1, x_2, ...
@@ -116,12 +128,12 @@ class ScalarFactor(AbstractFactor):
     def __repr__(self):
         return self.__str__()
 
-    def compute(self, x, factor_values):
-        factor_values[self.value_idx] = x[self.dimension] ** self.exponent
-
     def num_ops(self):
         # count the number of operations done during compute (during eval() only looks up the computed value)
         return 1
+
+    def compute(self, x, factor_values):
+        factor_values[self.value_idx] = x[self.dimension] ** self.exponent
 
 
 class MonomialFactor(AbstractFactor):
@@ -150,24 +162,25 @@ class MonomialFactor(AbstractFactor):
         if len(self.scalar_factors) == 0:
             raise ValueError()
 
+        self.value_idx = None  # initialize the idx with None to catch faulty evaluation tries
+
     def __str__(self):
         return ' '.join([f.__str__() for f in self.scalar_factors])
 
     def __repr__(self):
         return self.__str__()
 
-    def compute(self, x, factor_values):
+    def num_ops(self):
+        # count the number of operations done during compute (during eval() only looks up the computed value)
+        return len(self.factorisation_idxs) - 1
 
+    def compute(self, x, factor_values):
         # IMPORTANT: compute() of all the sub factors has had to be called before!
         value = factor_values[self.factorisation_idxs[0]]
         for idx in self.factorisation_idxs[1:]:
             value *= factor_values[idx]
 
         factor_values[self.value_idx] = value
-
-    def num_ops(self):
-        # count the number of operations done during compute (during eval() only looks up the computed value)
-        return len(self.factorisation_idxs)
 
 
 class HornerTree(object):
@@ -192,7 +205,23 @@ class HornerTree(object):
         # self.prime_array = get_prime_array(self.dim)
 
         def add_factor(factor_properties):
-            # factor_dimensions, factor_exponents = factor_properties
+            """
+            all scalar factors need not be factorised any more (even with an exponent > 1),
+
+            because it is cheapest to just compute their value every time
+            one operation is more efficient than value look up:
+
+            cf. https://stackoverflow.com/questions/12377632/how-is-exponentiation-implemented-in-python
+            The float.__pow__() method uses C's libm which takes full advantage of hardware support for binary floating point arithmetic.
+            The latter represents numbers using logarithms. The logarithmic representation makes it possible to implement exponentation will just a single multiplication.
+
+            for performance it is best to not factorize x_i^n, but just compute it in one go:
+            -> find all unique scalar factors, add them to the tree as factors
+            then find the minimal factorisation for all non scalar factors based on all other factors
+            = link the factors
+            :param factor_properties: factor_dimensions, factor_exponents
+            :return:
+            """
 
             scalar_factors = []
 
@@ -281,13 +310,6 @@ class HornerTree(object):
             remaining_coefficients = coefficients[remaining_monomial_idxs]
             remaining_exponents = exponents[remaining_monomial_idxs, :]
 
-        # print('node:', self.coefficient, '\n\n')
-
-        # print(coefficients)
-        # print(remaining_coefficients)
-        # print(remaining_coefficients.shape)
-        # print(len(remaining_coefficients))
-
         # find a horner factorisation for the given polynomial
         # the tree must be sub divided until no monomials remain
         while len(remaining_coefficients) > 0:
@@ -302,12 +324,12 @@ class HornerTree(object):
 
             active_exponents = remaining_exponents >= 1
 
-            # count how many times each scalar factor is being used
+            # count how many times each scalar factor x_i^n is being used
             active_rows, active_dimensions = np.where(active_exponents)
             usage_statistic = np.zeros((self.dim, int(self.max_degree + 1)), dtype=np.int)
             scalar_factors2rows = {}
+            # do not count when exponent is 0 (= x_i^0)
             for row, dim in zip(active_rows, active_dimensions):
-                # do not count when exponent is 0 (= x_d^0)
                 exp = remaining_exponents[row, dim]
                 usage_statistic[dim, exp] += 1
                 scalar_factors2rows.setdefault((dim, exp), []).append(row)
@@ -354,6 +376,13 @@ class HornerTree(object):
     def __repr__(self):
         return self.__str__()
 
+    def num_ops(self):
+        # count the number of operations done during eval()
+        num_ops = 0
+        for factor, subtree in zip(self.factors, self.sub_trees):
+            num_ops += 2 + subtree.num_ops()
+        return num_ops
+
     def eval(self, factor_values):
 
         # TODO avoid for loop
@@ -362,7 +391,6 @@ class HornerTree(object):
         # TODO is recursion problematic for huge polynomials?! (stack size limitations...)
 
         # p(x) = c_0 + c_1 p_1(x) + c_2 p_2(x) + ...
-        # TODO avoid addition with 0.0 when evaluating
         out = self.coefficient
 
         for factor, sub_tree in zip(self.factors, self.sub_trees):
@@ -370,42 +398,38 @@ class HornerTree(object):
             out += factor.eval(factor_values) * sub_tree.eval(factor_values)
         return out
 
-    def num_ops(self):
-        # count the number of operations done during eval()
-        num_ops = 0
-        for factor, subtree in zip(self.factors, self.sub_trees):
-            num_ops += 2 + subtree.num_ops()
-        return num_ops
-
 
 class MultivarPolynomial(object):
-    # prevent dynamic attribute assignment (-> safe memory)
-    __slots__ = ['coefficients', 'exponents', 'dim', 'order', 'max_degree', 'unused_variables']
-    '''
+    """
+    naive representation of a multivariate polynomial without any horner factorisation
+
     dim: the dimensionality of the polynomial.
     order: (for a multivariate polynomial) maximum sum of exponents in any of its monomials
     max_degree: the largest exponent in any of its monomials
         NOTE: the polynomial actually needs not to depend on all dimensions
     unused_variables: the dimensions the polynomial does not depend on
-    '''
+    """
+
+    # prevent dynamic attribute assignment (-> safe memory)
+    __slots__ = ['coefficients', 'exponents', 'dim', 'order', 'max_degree', 'unused_variables']
 
     def __init__(self, coefficients, exponents, rectify_input=False, validate_input=False):
         """
-        naive representation of a multivariate polynomial without any horner factorisation
-
-        :param coefficients:
-        :param exponents: ordering does not matter, but have to be unique!
+        :param coefficients: a numpy array column vector of doubles representing the coefficients of the monomials
+        :param exponents: a numpy array matrix of unsigned integers representing the exponents of the monomials
+            the ordering does not matter, but every exponent row has to be unique!
+        :param rectify_input: whether to convert the input parameters into compatible numpy arrays
+        :param validate_input: whether to check if the input parameters fulfill the requirements
         """
 
         if rectify_input:
-            coefficients, exponents = rectify_input(coefficients, exponents)
+            coefficients, exponents = rectify(coefficients, exponents)
 
         if validate_input:
+            validate(coefficients, exponents)
 
-
-        else:
-            self.coefficients = coefficients
-            self.exponents = exponents
+        self.coefficients = coefficients
+        self.exponents = exponents
 
         self.dim = self.exponents.shape[1]
         self.order = np.sum(self.exponents, axis=0).max()
@@ -439,20 +463,18 @@ class MultivarPolynomial(object):
 
     def eval(self, x, validate_input=True):
         """
+        TODO numba precompilation
         :param x:
         :param validate_input:
         :return:
         """
-        # TODO performance comparison, plot
-        # TODO numba precompilation
-        # TODO test
 
         if validate_input:
             x = np.array(x)
             assert len(x.shape) == 1
             assert x.shape[0] == self.dim
 
-        return np.sum(self.coefficients.T * np.prod(np.power(x, self.exponents), axis=1), axis=1)
+        return np.sum(self.coefficients.T * np.prod(np.power(x, self.exponents), axis=1), axis=1)[0]
 
     def partial_derivative(self, i):
         """
@@ -491,39 +513,35 @@ class MultivarPolynomial(object):
 
 
 class HornerMultivarPolynomial(MultivarPolynomial):
+    """
+    a representation of a multivariate polynomial using horner factorisation to save operations during evaluation
+
+    dimension: the amount of variable as input
+    NOTE: the polygon actually needs not to depend on all dimensions
+    order: (for a multivariate polynomial) maximum sum of exponents in any of its monomials
+    degree: the largest exponent in any of its monomials
+    dim: the dimensionality of the polynomial.
+    """
     # __slots__ declared in parents are available in child classes. However, child subclasses will get a __dict__
     # and __weakref__ unless they also define __slots__ (which should only contain names of any additional slots).
     __slots__ = ['prime_array', 'horner_tree', 'unique_factor_id_list', 'unique_factors', 'factor_values']
 
-    def __init__(self, coefficients, exponents, validate_input=True):
+    def __init__(self, coefficients, exponents, rectify_input=False, validate_input=False):
         """
-          a representation of a multivariate polynomial using horner factorisation to save operations during evaluation
-          dimension: the amount of variable as input
-          NOTE: the polygon actually needs not to depend on all dimensions
-          order: (for a multivariate polynomial) maximum sum of exponents in any of its monomials
-          degree: the largest exponent in any of its monomials
-          :param coefficients:
-          :param exponents: ordering does not matter, but have to be unique!
-          dim: the dimensionality of the polynomial.
+        :param coefficients: a numpy array column vector of doubles representing the coefficients of the monomials
+        :param exponents: a numpy array matrix of unsigned integers representing the exponents of the monomials
+            the ordering does not matter, but every exponent row has to be unique!
+        :param rectify_input: whether to convert the input parameters into compatible numpy arrays
+        :param validate_input: whether to check if the input parameters fulfill the requirements
         """
 
-        super(HornerMultivarPolynomial, self).__init__(coefficients, exponents, validate_input)
+        super(HornerMultivarPolynomial, self).__init__(coefficients, exponents, rectify_input, validate_input)
 
-        # factor id (goedelian number, unique)
-        # TODO sorted after ID?!
-        # factor idx
-        # factor exponents?! (=input for building tree)
-        # factor values computed fully once at every evaluation query
-        # factor tree, nodes are labeled with idx
-
-        # pass this dict as argument to all subtrees
-        # self.monomial_id2val = {}
-
+        # the needed prime numbers for computing all goedelian numbers of all used factors
         self.prime_array = get_prime_array(self.dim)
 
         # store all unique factors of the horner factorisation
-        # NOTE: do not create all scalar factors with exponent 1 (they might not be required!)
-
+        # NOTE: do not already create all scalar factors with exponent 1 (they might unused!)
         self.unique_factor_id_list = []
         self.unique_factors = []
 
@@ -544,22 +562,22 @@ class HornerMultivarPolynomial(MultivarPolynomial):
     def __str__(self):
         return '[{}] p(x) = '.format(self.num_ops()) + self.horner_tree.__str__()
 
+    def num_ops(self):
+        # count the number of operations done when computing all factors
+        num_ops = 0
+        for f in self.unique_factors:
+            num_ops += f.num_ops()
+
+        # ... and when evaluating the horner factorisation
+        num_ops += self.horner_tree.num_ops()
+        return num_ops
+
     def link_monomials(self):
         """
         find the optimal factorisation of the unique factors themselves
         since the monomial ids are products of the ids of their scalar factors
         check for the highest possible divisor among all factor ids
         this leads to a minimal factorisation for quick evaluation of the monomial values
-
-        all scalar factors need not be factorised any more (even with an exponent > 1),
-        # TODO beleg
-        because it is cheapest to just compute their value every time
-        (one operation, more efficient than value look up)
-        for performance it is best to not factorize x_i^n, but just compute it in one go:
-        -> find all unique scalar factors, add them to the tree as factors
-        then find factorisation for all non scalar factors based on those scalar factors
-        = link the factors
-
         :return:
         """
 
@@ -567,6 +585,9 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         self.unique_factor_id_list = list(sorted(self.unique_factor_id_list))
         self.unique_factors = list(sorted(self.unique_factors, key=lambda f: f.monomial_id))
         # property of the list: the scalar factors of each monomial are stored in front of it
+
+        # print(self.unique_factor_id_list)
+        # print(self.unique_factors)
 
         # IMPORTANT: properly set the indices of the values for each factor
         for idx, f in enumerate(self.unique_factors):
@@ -578,52 +599,63 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         # the smallest factor has no factorisation (stop at pointer=1)
         while pointer1 > 0:
             candidate = self.unique_factors[pointer1]
-            pointer1 -= 1
 
             if type(candidate) is not MonomialFactor:
                 # scalar factors have no factorisation
+                pointer1 -= 1
                 continue
 
-            remaining_id = candidate.monomial_id
+            # print(1, self.unique_factors[pointer1])
+            remaining_factor_id = candidate.monomial_id
             # store the indices of the factors that divide the id
             factorisation_idxs = []
 
-            pointer2 = pointer1 - 1
+            pointer2 = pointer1 - 1  # ATTENTION: pointer 1 has already been decremented!
+
             # find the factors with the highest id which are a factor of the current monomial
             while 1:
+                # print(2, self.unique_factors[pointer2])
                 monomial_id2 = self.unique_factors[pointer2].monomial_id
 
-                if monomial_id2 == remaining_id:
+                if remaining_factor_id < monomial_id2:
+                    # this monomial has a higher id than the remaining factor. it cannot be a factorisation
+                    pointer2 -= 1
+                    continue
+
+                if monomial_id2 == remaining_factor_id:
+                    # the last factor has been found
                     factorisation_idxs.append(pointer2)
                     break
 
-                quotient, remainder = divmod(remaining_id, monomial_id2)
+                quotient, remainder = divmod(remaining_factor_id, monomial_id2)
                 if remainder == 0:
                     # this factor is a factor of the monomial
                     factorisation_idxs.append(pointer2)
                     # reduce the id
-                    remaining_id = quotient
+                    remaining_factor_id = quotient
 
                 pointer2 -= 1
 
                 if pointer2 < 0:
-                    raise ValueError
+                    raise ValueError('no factorisation of this monomial has been found:', self.unique_factors[pointer1],
+                                     self.unique_factors)
 
-            print('found factorisation: {} ='.format(self.unique_factors[pointer1 + 1]),
-                  ' * '.join([str(self.unique_factors[idx]) for idx in reversed(factorisation_idxs)]))
+            # print('found factorisation: {} ='.format(self.unique_factors[pointer1]),
+            #       ' * '.join([str(self.unique_factors[idx]) for idx in reversed(factorisation_idxs)]))
             # store the indices of the factors that factorize the monomial
             #   to quickly access their values when computing the value of the monomial
             candidate.factorisation_idxs = factorisation_idxs
 
-    def eval(self, x, validate_input=True):
+            pointer1 -= 1
+
+    def eval(self, x, validate_input=False):
         """
+        TODO numba precompilation possible?
+        TODO other speedup possible?
         :param x:
-        :param validate_input:
+        :param validate_input: whether to check if the input parameters fulfill the requirements
         :return:
         """
-
-        # TODO use only numpy for eval. for numba precompilation
-        # the values of the scalar monomials with exponent 1 (x_i^1) can already be stored
 
         if validate_input:
             x = np.array(x)
@@ -631,31 +663,17 @@ class HornerMultivarPolynomial(MultivarPolynomial):
             assert x.shape[0] == self.dim
 
         # IMPORTANT: reset the value lookup for every query
-        # NOTE: factors require the computed values of previous factors
+        # the factors are sorted in ascending order after their id
+        # NOTE: monomials require the computed values of previous factors (w/ smaller ids)
         for f in self.unique_factors:
             f.compute(x, self.factor_values)
 
-        # after evaluating the whole tree,
-        # all the factors existing in the factorised polynomial have been evaluated (and stored!)
-        # so when evaluating the actual horner factorisation tree of the polynomial
+        # the values of all factors existing in the factorised polynomial have been computed and stored
+        # when evaluating the actual horner factorisation tree of the polynomial
         # the values of all factors can be looked up at the corresponding idx in the value list
-        # the evaluation of the polynomial only requires the computed values of all factors (not x)
+        # the evaluation of the polynomial hence only requires the computed values of all factors (not x)
         return self.horner_tree.eval(self.factor_values)
 
-    def num_ops(self):
-        # count the number of operations done when computing all factors
-        num_ops = 0
-        for f in self.unique_factors:
-            num_ops += f.num_ops()
-
-        # ... and when evaluating the horner factorisation
-        num_ops += self.horner_tree.num_ops()
-        return num_ops
-
-
-# TODO function for checking conditions of polynomial
-# no duplicate exponent vectors!
-# warning if polynomial is independent of certain dimensions
 
 # TODO multivariate newton raphson method
 # TODO mention in readme

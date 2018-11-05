@@ -1,13 +1,9 @@
 import unittest
-from math import sqrt
 import numpy as np
 
 import pytest
 
-from multivar_horner import HornerMultivarPolynomial
-
-# TODO
-from multivar_horner import MultivarPolynomial
+from multivar_horner import HornerMultivarPolynomial,MultivarPolynomial
 
 
 def proto_test_case(data, fct):
@@ -26,13 +22,20 @@ class MainTest(unittest.TestCase):
 
     def test_eval(self):
         def cmp_value_fct(inp):
+            print()
             coeff, exp, x = inp
             x = np.array(x).T
-            # TODO test both
-            poly = HornerMultivarPolynomial(coeff, exp,validate_input=True)
-            # poly = MultivarPolynomial(coeff, exp)
+            poly = MultivarPolynomial(coeff, exp, rectify_input=True, validate_input=True)
+            res1 = poly.eval(x, validate_input=True)
             print(str(poly))
-            return poly.eval(x,validate_input=True)
+
+            horner_poly = HornerMultivarPolynomial(coeff, exp, rectify_input=True, validate_input=True)
+            res2 = horner_poly.eval(x, validate_input=True)
+            print(str(horner_poly))
+            if res1 != res2:
+                print('resutls differ:', res1, res2)
+
+            return poly.eval(x, validate_input=True)
 
         invalid_test_data = [
             # calling with x of another dimension
@@ -70,7 +73,7 @@ class MainTest(unittest.TestCase):
                 cmp_value_fct(inp)
 
         invalid_test_data = [
-
+            #
             # p(x) =  5.0
             (([5.0],  # coefficients
               [0],  # exponents
@@ -225,19 +228,21 @@ class MainTest(unittest.TestCase):
              # p(x) = 5.0 + 2.0* (-2)^1 + 1.0* (-2)^2 + 2.0* (-2)^2 *3^1 = 5.0 + 2.0* (-2) + 1.0* 4 + 2.0* 4 *3
              29.0),
 
+            # [20] p(x) = 1.0 x_1^3 x_2^1 + 2.0 x_1^2 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
+            # [17] p(x) = x_2^1 [ x_1^3 [ 1.0 ] + x_1^1 x_3^1 [ 3.0 ] ] + x_1^2 x_3^1 [ 2.0 ]
             (([1.0, 2.0, 3.0],
               [[3, 1, 0], [2, 0, 1], [1, 1, 1]],
-              [-2.0, 3.0, ]),
-             # p(x) = 5.0 + 2.0* (-2)^1 + 1.0* (-2)^2 + 2.0* (-2)^2 *3^1 = 5.0 + 2.0* (-2) + 1.0* 4 + 2.0* 4 *3
-             29.0),
+              [-2.0, 3.0, 1.0]),
+             -34.0),
+
+            # [27] p(x) = 1.0 x_3^1 + 2.0 x_1^3 x_2^3 + 3.0 x_1^2 x_2^3 x_3^1 + 4.0 x_1^1 x_2^5 x_3^1
+            (([1.0, 2.0, 3.0, 4.0],
+              [[0, 0, 1], [3, 3, 0], [2, 3, 1], [1, 5, 1], ],
+              [-2.0, 3.0, 1.0]),
+             -2051.0),
         ]
 
         proto_test_case(invalid_test_data, cmp_value_fct)
-
-    # TODO test gradient
-
-    # TODO create two objects and check if evaluation interference
-
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(MainTest)
