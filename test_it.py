@@ -167,7 +167,7 @@ class MainTest(unittest.TestCase):
             horner_poly = HornerMultivarPolynomial(coeff, exp, rectify_input=True, validate_input=True)
             res2 = horner_poly.eval(x, validate_input=True)
             print(str(horner_poly))
-            print('x=',x.tolist())
+            # print('x=',x.tolist())
             if res1 != res2:
                 print('resutls differ:', res1, res2)
                 assert False

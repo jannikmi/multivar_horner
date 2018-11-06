@@ -201,9 +201,10 @@ class MonomialFactor(AbstractFactor):
         target, source1, source2 = self.value_idx, self.factorisation_idxs[0], self.factorisation_idxs[1]
         recipe = [(target, source1, source2)]
 
-        source1 = self.value_idx  # always take the previously computed value
+        source1 = target  # always take the previously computed value
         for source2 in self.factorisation_idxs[2:]:
             # and multiply it with the remaining factor values
+            print(target, source1, source2)
             recipe += [(target, source1, source2)]
 
         return recipe
@@ -218,9 +219,9 @@ class HornerTree(object):
     """
     __slots__ = ['tree_id', 'dim', 'order', 'max_degree', 'coefficient', 'factors', 'sub_trees']
 
-    def __init__(self, coefficients, exponents, prime_array, unique_factor_id_list, unique_factors, tree_id):
+    def __init__(self, coefficients, exponents, prime_array, unique_factor_id_list, unique_factors, id_counter):
 
-        self.tree_id = tree_id  # equaling to the idx of its computed value
+        self.tree_id = id_counter.__next__()  # equaling to the idx of its computed value
         self.dim = exponents.shape[1]
         self.order = np.sum(exponents, axis=0).max()
         self.max_degree = exponents.max()
@@ -229,7 +230,7 @@ class HornerTree(object):
         # self.factor_exps = []
         self.sub_trees = []
 
-        id_counter = tree_id
+        id_counter = id_counter
 
         # self.prime_array = get_prime_array(self.dim)
 
@@ -287,7 +288,7 @@ class HornerTree(object):
 
             self.factors.append(factor)
 
-        def add_subtree(remaining_coefficients, remaining_exponents, factorized_rows, factor_properties, id_counter):
+        def add_subtree(remaining_coefficients, remaining_exponents, factorized_rows, factor_properties):
             # print(factor_properties)
 
             add_factor(factor_properties)
@@ -387,13 +388,8 @@ class HornerTree(object):
                 # maximal_factor_properties
 
             # TODO give every subtree its unique id
-            id_counter += 1
             remaining_coefficients, remaining_exponents = add_subtree(remaining_coefficients, remaining_exponents,
-                                                                      factor_rows, maximal_factor_properties,
-                                                                      id_counter)
-
-
-
+                                                                      factor_rows, maximal_factor_properties, )
 
     def __str__(self, indent_lvl=1):
         if self.coefficient == 0.0:
@@ -428,7 +424,7 @@ class HornerTree(object):
 
     def fill_value_array(self, value_array):
         # traverse tree and write the coefficients at the correct place
-        print('filling', self.tree_id,self.coefficient)
+        # print('filling', self.tree_id, self.coefficient)
         value_array[self.tree_id] = self.coefficient
         for t in self.sub_trees:
             t.fill_value_array(value_array)
@@ -612,7 +608,7 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
         # factorize the polynomial once and store the factorisation as a tree
         self.horner_tree = HornerTree(self.coefficients, self.exponents, self.prime_array,
-                                      self.unique_factor_id_list, self.unique_factors, tree_id=0)
+                                      self.unique_factor_id_list, self.unique_factors, id_counter=itertools.count(0))
 
         num_trees = self.subtree_amount()
         # factor list is now filled with the unique factors
@@ -704,7 +700,9 @@ class HornerMultivarPolynomial(MultivarPolynomial):
                     # no factorisation of this monomial has been found, because the remainder after
                     # picking a factorizing monomial cannot be factorised itself
                     # just pick the scalar factors of the monomial
-                    factorisation_idxs = [self.unique_factor_id_list.index(scalar_factor.monomial_id) for scalar_factor
+                    # ATTENTION: offset needed!
+                    factorisation_idxs = [self.unique_factor_id_list.index(scalar_factor.monomial_id) + value_idx_offset
+                                          for scalar_factor
                                           in candidate.scalar_factors]
                     break
 
@@ -717,13 +715,15 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
                 if monomial_id2 == remaining_factor_id:
                     # the last factor has been found
-                    factorisation_idxs.append(pointer2)
+                    # ATTENTION: offset needed!
+                    factorisation_idxs.append(pointer2 + value_idx_offset)
                     break
 
                 quotient, remainder = divmod(remaining_factor_id, monomial_id2)
                 if remainder == 0:
                     # this factor is a factor of the monomial
-                    factorisation_idxs.append(pointer2)
+                    # ATTENTION: offset needed!
+                    factorisation_idxs.append(pointer2 + value_idx_offset)
                     # reduce the id
                     remaining_factor_id = quotient
 

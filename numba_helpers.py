@@ -1,5 +1,4 @@
-# from numba import b1, f8, i2, i4, jit, typeof, u2, u8
-
+from numba import b1, f8, i2, i4, jit, typeof, u2, u8
 
 # # for Ahead-Of-Time Compilation:
 # from numba.pycc import CC
@@ -16,27 +15,31 @@ ID_MULT = 0
 
 # @cc.export('inside_polygon', 'b1(i4, i4, i4[:, :])')
 # @jit(b1(i4, i4, i4[:, :]), nopython=True, cache=True)
+# @jit(nopython=True, cache=True)
 def eval_compiled(x, value_array, scalar_recipe, monomial_recipe, tree_recipe):
-    print(value_array)
+    # print(value_array)
 
-    print('computing factors: ...')
+    # print('computing scalar factors: ...')
     # scalar recipe instruction encoding: target, source, exponent
     for target, source1, exponent in scalar_recipe:
-        print('value[{}] = {} ^ {}'.format(target, x[source1], exponent))
+        # print('value[{}] = {} ^ {}'.format(target, x[source1], exponent))
         value_array[target] = x[source1] ** exponent
 
+    # print('computing monomial factors: ...')
     # monomial recipe instruction encoding: target, source1, source2
     for target, source1, source2 in monomial_recipe:
+        # print('value[{}] = {} * {} (idx: {}, {})'.format(target, value_array[source1], value_array[source2], source1,
+        #                                                 source2))
         value_array[target] = value_array[source1] * value_array[source2]
 
-    print('evaluating tree: ...')
+    # print('evaluating factorisation tree: ...')
     # tree recipe instruction encoding: target, op, source
     for target, operation, source1 in tree_recipe:
         if operation == ID_MULT:
-            print('value[{}] = {} * {}'.format(target,value_array[target],value_array[source1]))
+            # print('value[{}] = {} * {}'.format(target, value_array[target], value_array[source1]))
             value_array[target] = value_array[target] * value_array[source1]
         else:
-            print('value[{}] = {} + {}'.format(target,value_array[target],value_array[source1]))
+            # print('value[{}] = {} + {}'.format(target, value_array[target], value_array[source1]))
             value_array[target] = value_array[target] + value_array[source1]
 
     # the value at the first position is the value of the polynomial
