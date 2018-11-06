@@ -2,6 +2,10 @@ import itertools
 
 import numpy as np
 
+from numba_helpers import eval_compiled
+
+# TODO separate files
+
 # TODO
 # matlab binding
 # test routine tox...
@@ -14,14 +18,10 @@ import numpy as np
 # TODO create two objects and check if evaluation interference
 
 
-# TODO speed comparison
-# only evaluation
-# pick random polynomial with certain properties
-# TODO plot speed
-
-
 # TODO multivariate newton raphson method
 # TODO mention in readme
+
+# TODO globals?!
 
 ID_MULT = 0
 ID_ADD = 1
@@ -137,15 +137,16 @@ class ScalarFactor(AbstractFactor):
         return self.__str__()
 
     def num_ops(self):
-        # count the number of operations done during compute (during eval() only looks up the computed value)
+        # count the number of instructions done during compute (during eval() only looks up the computed value)
         return 1
 
     def compute(self, x, factor_values):
         factor_values[self.value_idx] = x[self.dimension] ** self.exponent
 
     def get_recipe(self):
-        # target, source, exponent
-        return self.value_idx, self.dimension, self.exponent
+        # instruction encoding: target, source, exponent
+        # values[target] = x[source] ** exponent
+        return [(self.value_idx, self.dimension, self.exponent)]
 
 
 class MonomialFactor(AbstractFactor):
@@ -183,7 +184,7 @@ class MonomialFactor(AbstractFactor):
         return self.__str__()
 
     def num_ops(self):
-        # count the number of operations done during compute (during eval() only looks up the computed value)
+        # count the number of instructions done during compute (during eval() only looks up the computed value)
         return len(self.factorisation_idxs) - 1
 
     def compute(self, x, factor_values):
@@ -195,9 +196,17 @@ class MonomialFactor(AbstractFactor):
         factor_values[self.value_idx] = value
 
     def get_recipe(self):
-        # target, source, exponent
-        recipe = []
-        return self.value_idx, self.dimension, self.exponent
+        # target = source1 * source2
+        # instruction encoding: target, source1, source2
+        target, source1, source2 = self.value_idx, self.factorisation_idxs[0], self.factorisation_idxs[1]
+        recipe = [(target, source1, source2)]
+
+        source1 = self.value_idx  # always take the previously computed value
+        for source2 in self.factorisation_idxs[2:]:
+            # and multiply it with the remaining factor values
+            recipe += [(target, source1, source2)]
+
+        return recipe
 
 
 class HornerTree(object):
@@ -229,7 +238,7 @@ class HornerTree(object):
             all scalar factors need not be factorised any more (even with an exponent > 1),
 
             because it is cheapest to just compute their value every time
-            one operation is more efficient than value look up:
+            one instruction is more efficient than value look up:
 
             cf. https://stackoverflow.com/questions/12377632/how-is-exponentiation-implemented-in-python
             The float.__pow__() method uses C's libm which takes full advantage of hardware support for binary floating point arithmetic.
@@ -301,8 +310,6 @@ class HornerTree(object):
             for dim, exp in zip(*factor_properties):
                 subtree_exponents[:, dim] -= exp
 
-            # give every subtree its unique id
-            id_counter += 1
             self.sub_trees.append(
                 HornerTree(subtree_coefficients, subtree_exponents, prime_array, unique_factor_id_list, unique_factors,
                            id_counter))
@@ -341,7 +348,7 @@ class HornerTree(object):
             # factor out the monomials which appears in the most terms
             # factor out the biggest factor possible (as many variables with highest degree possible)
             # NOTE: optimality is not guaranteed with this approach
-            # <-> there may be a horner tree (factorisation) which can be evaluated with less operations
+            # <-> there may be a horner tree (factorisation) which can be evaluated with less instructions
             # There is no known method for selecting an optimal factorisation order
             # TODO find algorithm to parse optimal tree (no procedure known for this!)
 
@@ -379,9 +386,14 @@ class HornerTree(object):
                 maximal_factor_properties = list(zip(*maximal_factor_tuples))
                 # maximal_factor_properties
 
+            # TODO give every subtree its unique id
+            id_counter += 1
             remaining_coefficients, remaining_exponents = add_subtree(remaining_coefficients, remaining_exponents,
                                                                       factor_rows, maximal_factor_properties,
                                                                       id_counter)
+
+
+
 
     def __str__(self, indent_lvl=1):
         if self.coefficient == 0.0:
@@ -401,7 +413,7 @@ class HornerTree(object):
         return self.__str__()
 
     def num_ops(self):
-        # count the number of operations done during eval()
+        # count the number of instructions done during eval()
         num_ops = 0
         for factor, subtree in zip(self.factors, self.sub_trees):
             num_ops += 2 + subtree.num_ops()
@@ -416,24 +428,39 @@ class HornerTree(object):
 
     def fill_value_array(self, value_array):
         # traverse tree and write the coefficients at the correct place
+        print('filling', self.tree_id,self.coefficient)
         value_array[self.tree_id] = self.coefficient
         for t in self.sub_trees:
             t.fill_value_array(value_array)
 
     def eval(self, factor_values):
-
-        # TODO avoid for loop
-        # TODO numba precompilation!?
-        # TODO clever binary format or optimized data structure representing tree
-        # TODO is recursion problematic for huge polynomials?! (stack size limitations...)
-
-        # p(x) = c_0 + c_1 p_1(x) + c_2 p_2(x) + ...
+        # p(x) = c_0 + f_1 p_1(x) + f_2 p_2(x) + ...
         out = self.coefficient
 
         for factor, sub_tree in zip(self.factors, self.sub_trees):
             # eval all sub trees
             out += factor.eval(factor_values) * sub_tree.eval(factor_values)
         return out
+
+    def get_recipe(self):
+        # p(x) = c_0 + c_1 p_1(x) + c_2 p_2(x) + ...
+        # target = source1 * source2
+        # target == source 1
+        # values[self.id] = values[self.id] *op* values[source]
+        # instruction encoding: target, op, source
+        recipe = []
+        for factor, sub_tree in zip(self.factors, self.sub_trees):
+            # IMPORTANT: sub tree has to be evaluated BEFORE its value can be used!
+            # -> add its recipe first
+            recipe += sub_tree.get_recipe()
+            # now the value at values[subtree.id] is the evaluated subtree value
+            recipe += [
+                # multiply the value of the subtree with the value of the factor
+                (sub_tree.tree_id, ID_MULT, factor.value_idx),
+                # add this value to the previously computed value
+                (self.tree_id, ID_ADD, sub_tree.tree_id)
+            ]
+        return recipe
 
 
 class MultivarPolynomial(object):
@@ -491,7 +518,7 @@ class MultivarPolynomial(object):
         return self.__str__()
 
     def num_ops(self):
-        # count the number of operations done when evaluating polynomial:
+        # count the number of instructions done when evaluating polynomial:
         y, x = self.exponents.shape
         # exponentiation: x*y
         # multiplication coefficient and scalar factors (monomials): x*y
@@ -551,7 +578,7 @@ class MultivarPolynomial(object):
 
 class HornerMultivarPolynomial(MultivarPolynomial):
     """
-    a representation of a multivariate polynomial using horner factorisation to save operations during evaluation
+    a representation of a multivariate polynomial using horner factorisation to save instructions during evaluation
 
     dimension: the amount of variable as input
     NOTE: the polygon actually needs not to depend on all dimensions
@@ -561,7 +588,8 @@ class HornerMultivarPolynomial(MultivarPolynomial):
     """
     # __slots__ declared in parents are available in child classes. However, child subclasses will get a __dict__
     # and __weakref__ unless they also define __slots__ (which should only contain names of any additional slots).
-    __slots__ = ['prime_array', 'horner_tree', 'unique_factor_id_list', 'unique_factors', 'factor_values']
+    __slots__ = ['prime_array', 'horner_tree', 'unique_factor_id_list', 'unique_factors', 'factor_values',
+                 'num_ops', 'representation', 'value_array', 'scalar_recipe', 'monomial_recipe', 'tree_recipe']
 
     def __init__(self, coefficients, exponents, rectify_input=False, validate_input=False):
         """
@@ -591,17 +619,21 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         # during evaluation of a polynomial the values of all the unique factors are needed at least once
         # -> compute the values of all factors (monomials) once and store them
         # store a pointer to the computed value for every unique factor
-        # save operations for the evaluation -> find factorisation of all factors = again a factorisation tree
+        # save instructions for the evaluation -> find factorisation of all factors = again a factorisation tree
         # sort and factorize the monomials to quickly evaluate them once during a query
         self.link_monomials(value_idx_offset=num_trees)
 
+        # depend on horner tree and linked factors:
+        self.num_ops = self.get_num_ops()
+        self.representation = self.get_string_representation()
+
         # TODO factor_values are not needed
-        self.factor_values = np.empty(shape=len(self.unique_factor_id_list), dtype=np.float)
+        # self.factor_values = np.empty(shape=len(self.unique_factor_id_list), dtype=np.float)
 
-        # TODO write "recipe" for evaluating the polynomial with just numpy arrays
-        self.write_recice(num_trees)
+        # compile and store a "recipe" for evaluating the polynomial with just numpy arrays
+        self.value_array, self.scalar_recipe, self.monomial_recipe, self.tree_recipe = self.compile_recipes(num_trees)
 
-        # the trees and factors are not needed any more
+        # the trees and factors are not being needed any more
         # a value lookup can be done with just the recipe
         # free up the memory
         del self.horner_tree
@@ -610,10 +642,13 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         del self.prime_array
 
     def __str__(self):
-        return '[{}] p(x) = '.format(self.num_ops()) + self.horner_tree.__str__()
+        return self.representation
 
-    def num_ops(self):
-        # count the number of operations done when computing all factors
+    def get_string_representation(self):
+        return '[{}] p(x) = '.format(self.num_ops) + self.horner_tree.__str__()
+
+    def get_num_ops(self):
+        # count the number of instructions done when computing all factors
         num_ops = 0
         for f in self.unique_factors:
             num_ops += f.num_ops()
@@ -630,9 +665,6 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         this leads to a minimal factorisation for quick evaluation of the monomial values
         :return:
         """
-
-        if len(self.unique_factors) <= 1:
-            return
 
         # sort after their id
         self.unique_factor_id_list = list(sorted(self.unique_factor_id_list))
@@ -708,7 +740,12 @@ class HornerMultivarPolynomial(MultivarPolynomial):
     def subtree_amount(self):
         return 1 + self.horner_tree.subtree_amount()
 
-    def write_recice(self, num_trees):
+    def compile_recipes(self, num_trees):
+        # compile a recipe encoding all needed instructions in order to evaluate the polynomial
+        # TODO avoid for loop
+        # TODO numba precompilation!?
+        # TODO clever binary format or optimized data structure representing tree
+        # TODO is recursion problematic for huge polynomials?! (stack size limitations...)
 
         # the value array has one entry for every subtree and one for every factor
         value_array_length = num_trees + len(self.unique_factors)
@@ -718,12 +755,33 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         # the initial value array has the coefficients of all subtrees stored at the index of their id
         self.horner_tree.fill_value_array(value_array)
 
+        # compile the recipes for computing the factors
+        # scalar factors (depending on x) are being evaluated differently
+        #   from the monomial factors (depending on scalar factors)
+        scalar_recipe = []
+        monomial_recipe = []
+        for f in self.unique_factors:
+            factor_recipe = f.get_recipe()
+            if type(f) is ScalarFactor:
+                scalar_recipe += factor_recipe
+            else:
+                monomial_recipe += factor_recipe
+
+        # compile the recipe for evaluating the horner factorisation tree
+        tree_recipe = self.horner_tree.get_recipe()
+
+        # convert and store the recipes
+        return value_array, \
+               np.array(scalar_recipe, dtype=np.uint), \
+               np.array(monomial_recipe, dtype=np.uint), \
+               np.array(tree_recipe, dtype=np.uint)
+
     def eval(self, x, validate_input=False):
         """
         TODO numba precompilation possible?
         IDEA: encode factorisation in numpy array. "recipe" which values to add or multiply when
         TODO other speedup possible?
-        TODO parallel computing
+        TODO parallel computing, split up the recipe in independent parts (evaluation of sub trees)
         :param x:
         :param validate_input: whether to check if the input parameters fulfill the requirements
         :return:
@@ -734,17 +792,21 @@ class HornerMultivarPolynomial(MultivarPolynomial):
             assert len(x.shape) == 1
             assert x.shape[0] == self.dim
 
-        # IMPORTANT: reset the value lookup for every query
-        # the factors are sorted in ascending order after their id
-        # NOTE: monomials require the computed values of previous factors (w/ smaller ids)
-        for f in self.unique_factors:
-            f.compute(x, self.factor_values)
+        # TODO IMPORTANT: copy the initial value array
+        # the array is being used as temporal storage and values would get the overwritten
+        return eval_compiled(x, self.value_array.copy(), self.scalar_recipe, self.monomial_recipe, self.tree_recipe)
 
-        # the values of all factors existing in the factorised polynomial have been computed and stored
-        # when evaluating the actual horner factorisation tree of the polynomial
-        # the values of all factors can be looked up at the corresponding idx in the value list
-        # the evaluation of the polynomial hence only requires the computed values of all factors (not x)
-        return self.horner_tree.eval(self.factor_values)
+        # # IMPORTANT: reset the value lookup for every query
+        # # the factors are sorted in ascending order after their id
+        # # NOTE: monomials require the computed values of previous factors (w/ smaller ids)
+        # for f in self.unique_factors:
+        #     f.compute(x, self.factor_values)
+        #
+        # # the values of all factors existing in the factorised polynomial have been computed and stored
+        # # when evaluating the actual horner factorisation tree of the polynomial
+        # # the values of all factors can be looked up at the corresponding idx in the value list
+        # # the evaluation of the polynomial hence only requires the computed values of all factors (not x)
+        # return self.horner_tree.eval(self.factor_values)
 
 
 if __name__ == '__main__':
@@ -757,6 +819,7 @@ if __name__ == '__main__':
 
     coeff, exp, x = inp
     x = np.array(x).T
-    poly = MultivarPolynomial(coeff, exp)
+    # poly = MultivarPolynomial(coeff, exp, rectify_input=True, validate_input=True)
+    poly = HornerMultivarPolynomial(coeff, exp, rectify_input=True, validate_input=True)
     p_x = poly.eval(x)
     print(p_x)
