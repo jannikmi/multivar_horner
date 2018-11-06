@@ -2,7 +2,6 @@ import itertools
 
 import numpy as np
 
-
 # TODO
 # matlab binding
 # test routine tox...
@@ -19,6 +18,13 @@ import numpy as np
 # only evaluation
 # pick random polynomial with certain properties
 # TODO plot speed
+
+
+# TODO multivariate newton raphson method
+# TODO mention in readme
+
+ID_MULT = 0
+ID_ADD = 1
 
 
 # https://stackoverflow.com/questions/2068372/fastest-way-to-list-all-primes-below-n/3035188#3035188
@@ -84,6 +90,8 @@ def validate(coefficients, exponents):
     assert coefficients.shape[1] == 1 and len(coefficients.shape) == 2
     # exponents must be 2D (matrix) = a list of exponent vectors
     assert len(exponents.shape) == 2
+    # there must be at least one entry
+    assert coefficients.shape[0] > 0
     # exponents must not be negative
     assert not np.any(exponents < 0)
     # there must not be duplicate exponent vectors
@@ -135,6 +143,10 @@ class ScalarFactor(AbstractFactor):
     def compute(self, x, factor_values):
         factor_values[self.value_idx] = x[self.dimension] ** self.exponent
 
+    def get_recipe(self):
+        # target, source, exponent
+        return self.value_idx, self.dimension, self.exponent
+
 
 class MonomialFactor(AbstractFactor):
     """
@@ -182,6 +194,11 @@ class MonomialFactor(AbstractFactor):
 
         factor_values[self.value_idx] = value
 
+    def get_recipe(self):
+        # target, source, exponent
+        recipe = []
+        return self.value_idx, self.dimension, self.exponent
+
 
 class HornerTree(object):
     """
@@ -190,10 +207,11 @@ class HornerTree(object):
         from the polynomial represented by the corresponding sub tree
     sub_trees: list of factorised polynomials themselves represented by horner trees (recursion)
     """
-    __slots__ = ['dim', 'order', 'max_degree', 'coefficient', 'factors', 'sub_trees']
+    __slots__ = ['tree_id', 'dim', 'order', 'max_degree', 'coefficient', 'factors', 'sub_trees']
 
-    def __init__(self, coefficients, exponents, prime_array, unique_factor_id_list, unique_factors):
+    def __init__(self, coefficients, exponents, prime_array, unique_factor_id_list, unique_factors, tree_id):
 
+        self.tree_id = tree_id  # equaling to the idx of its computed value
         self.dim = exponents.shape[1]
         self.order = np.sum(exponents, axis=0).max()
         self.max_degree = exponents.max()
@@ -201,6 +219,8 @@ class HornerTree(object):
         self.factors = []
         # self.factor_exps = []
         self.sub_trees = []
+
+        id_counter = tree_id
 
         # self.prime_array = get_prime_array(self.dim)
 
@@ -258,7 +278,7 @@ class HornerTree(object):
 
             self.factors.append(factor)
 
-        def add_subtree(remaining_coefficients, remaining_exponents, factorized_rows, factor_properties):
+        def add_subtree(remaining_coefficients, remaining_exponents, factorized_rows, factor_properties, id_counter):
             # print(factor_properties)
 
             add_factor(factor_properties)
@@ -281,8 +301,11 @@ class HornerTree(object):
             for dim, exp in zip(*factor_properties):
                 subtree_exponents[:, dim] -= exp
 
+            # give every subtree its unique id
+            id_counter += 1
             self.sub_trees.append(
-                HornerTree(subtree_coefficients, subtree_exponents, prime_array, unique_factor_id_list, unique_factors))
+                HornerTree(subtree_coefficients, subtree_exponents, prime_array, unique_factor_id_list, unique_factors,
+                           id_counter))
 
             return remaining_coefficients, remaining_exponents
 
@@ -357,7 +380,8 @@ class HornerTree(object):
                 # maximal_factor_properties
 
             remaining_coefficients, remaining_exponents = add_subtree(remaining_coefficients, remaining_exponents,
-                                                                      factor_rows, maximal_factor_properties)
+                                                                      factor_rows, maximal_factor_properties,
+                                                                      id_counter)
 
     def __str__(self, indent_lvl=1):
         if self.coefficient == 0.0:
@@ -382,6 +406,19 @@ class HornerTree(object):
         for factor, subtree in zip(self.factors, self.sub_trees):
             num_ops += 2 + subtree.num_ops()
         return num_ops
+
+    def subtree_amount(self):
+        amount = len(self.sub_trees)
+        for t in self.sub_trees:
+            amount += t.subtree_amount()
+
+        return amount
+
+    def fill_value_array(self, value_array):
+        # traverse tree and write the coefficients at the correct place
+        value_array[self.tree_id] = self.coefficient
+        for t in self.sub_trees:
+            t.fill_value_array(value_array)
 
     def eval(self, factor_values):
 
@@ -541,23 +578,36 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         self.prime_array = get_prime_array(self.dim)
 
         # store all unique factors of the horner factorisation
-        # NOTE: do not already create all scalar factors with exponent 1 (they might unused!)
+        # NOTE: do NOT create all scalar factors with exponent 1 (they might unused!)
         self.unique_factor_id_list = []
         self.unique_factors = []
 
         # factorize the polynomial once and store the factorisation as a tree
         self.horner_tree = HornerTree(self.coefficients, self.exponents, self.prime_array,
-                                      self.unique_factor_id_list, self.unique_factors)
+                                      self.unique_factor_id_list, self.unique_factors, tree_id=0)
 
+        num_trees = self.subtree_amount()
         # factor list is now filled with the unique factors
-
         # during evaluation of a polynomial the values of all the unique factors are needed at least once
         # -> compute the values of all factors (monomials) once and store them
         # store a pointer to the computed value for every unique factor
         # save operations for the evaluation -> find factorisation of all factors = again a factorisation tree
         # sort and factorize the monomials to quickly evaluate them once during a query
-        self.link_monomials()
+        self.link_monomials(value_idx_offset=num_trees)
+
+        # TODO factor_values are not needed
         self.factor_values = np.empty(shape=len(self.unique_factor_id_list), dtype=np.float)
+
+        # TODO write "recipe" for evaluating the polynomial with just numpy arrays
+        self.write_recice(num_trees)
+
+        # the trees and factors are not needed any more
+        # a value lookup can be done with just the recipe
+        # free up the memory
+        del self.horner_tree
+        del self.unique_factors
+        del self.unique_factor_id_list
+        del self.prime_array
 
     def __str__(self):
         return '[{}] p(x) = '.format(self.num_ops()) + self.horner_tree.__str__()
@@ -572,7 +622,7 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         num_ops += self.horner_tree.num_ops()
         return num_ops
 
-    def link_monomials(self):
+    def link_monomials(self, value_idx_offset):
         """
         find the optimal factorisation of the unique factors themselves
         since the monomial ids are products of the ids of their scalar factors
@@ -580,6 +630,9 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         this leads to a minimal factorisation for quick evaluation of the monomial values
         :return:
         """
+
+        if len(self.unique_factors) <= 1:
+            return
 
         # sort after their id
         self.unique_factor_id_list = list(sorted(self.unique_factor_id_list))
@@ -590,8 +643,9 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         # print(self.unique_factors)
 
         # IMPORTANT: properly set the indices of the values for each factor
+        # the values of every factor are stored after the coefficients of all subtrees
         for idx, f in enumerate(self.unique_factors):
-            f.value_idx = idx
+            f.value_idx = idx + value_idx_offset
 
         # start at the last factor (highest id)
         pointer1 = len(self.unique_factors) - 1
@@ -610,11 +664,18 @@ class HornerMultivarPolynomial(MultivarPolynomial):
             # store the indices of the factors that divide the id
             factorisation_idxs = []
 
-            pointer2 = pointer1 - 1  # ATTENTION: pointer 1 has already been decremented!
-
+            pointer2 = pointer1 - 1
             # find the factors with the highest id which are a factor of the current monomial
             while 1:
-                # print(2, self.unique_factors[pointer2])
+
+                if pointer2 < 0:
+                    # no factorisation of this monomial has been found, because the remainder after
+                    # picking a factorizing monomial cannot be factorised itself
+                    # just pick the scalar factors of the monomial
+                    factorisation_idxs = [self.unique_factor_id_list.index(scalar_factor.monomial_id) for scalar_factor
+                                          in candidate.scalar_factors]
+                    break
+
                 monomial_id2 = self.unique_factors[pointer2].monomial_id
 
                 if remaining_factor_id < monomial_id2:
@@ -636,10 +697,6 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
                 pointer2 -= 1
 
-                if pointer2 < 0:
-                    raise ValueError('no factorisation of this monomial has been found:', self.unique_factors[pointer1],
-                                     self.unique_factors)
-
             # print('found factorisation: {} ='.format(self.unique_factors[pointer1]),
             #       ' * '.join([str(self.unique_factors[idx]) for idx in reversed(factorisation_idxs)]))
             # store the indices of the factors that factorize the monomial
@@ -648,10 +705,25 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
             pointer1 -= 1
 
+    def subtree_amount(self):
+        return 1 + self.horner_tree.subtree_amount()
+
+    def write_recice(self, num_trees):
+
+        # the value array has one entry for every subtree and one for every factor
+        value_array_length = num_trees + len(self.unique_factors)
+
+        value_array = np.empty(value_array_length, dtype=np.float)
+
+        # the initial value array has the coefficients of all subtrees stored at the index of their id
+        self.horner_tree.fill_value_array(value_array)
+
     def eval(self, x, validate_input=False):
         """
         TODO numba precompilation possible?
+        IDEA: encode factorisation in numpy array. "recipe" which values to add or multiply when
         TODO other speedup possible?
+        TODO parallel computing
         :param x:
         :param validate_input: whether to check if the input parameters fulfill the requirements
         :return:
@@ -673,10 +745,6 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         # the values of all factors can be looked up at the corresponding idx in the value list
         # the evaluation of the polynomial hence only requires the computed values of all factors (not x)
         return self.horner_tree.eval(self.factor_values)
-
-
-# TODO multivariate newton raphson method
-# TODO mention in readme
 
 
 if __name__ == '__main__':

@@ -19,8 +19,8 @@ multivar_horner
 
 A python package implementing a multivariate horner scheme for efficiently evaluating multivariate polynomials.
 
-A polynomial is factorised according to a greedy heuristic adopted from [1].
-This factorisation is being stored stored in a "Horner Tree". When evaluating the polynomial each subtree is being evaluated recursively.
+A polynomial is factorised according to a greedy heuristic similar to the one described in [1], with some additional computational tweaks.
+This factorisation is being stored in a "Horner Tree". When evaluating the polynomial each subtree is being evaluated recursively.
 
 
 
@@ -33,7 +33,7 @@ Dependencies
 ============
 
 (``python3``),
-``numpy``,
+``numpy``
 
 
 Installation
