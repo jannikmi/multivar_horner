@@ -1,6 +1,6 @@
 import numpy as np
 
-from multivar_horner import MultivarPolynomial, HornerMultivarPolynomial
+from multivar_horner.multivar_horner import MultivarPolynomial, HornerMultivarPolynomial
 
 coefficients = np.array([[1.0], [2.0], [3.0]], dtype=np.float)
 exponents = np.array([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=np.uint)
