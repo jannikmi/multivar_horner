@@ -7,6 +7,7 @@ from numba_helpers import eval_recipe
 # TODO separate files
 # TODO export import model
 
+
 # TODO
 # matlab binding
 # test routine tox...
@@ -345,6 +346,7 @@ class HornerTree(object):
         # find a horner factorisation for the given polynomial
         # the tree must be sub divided until no monomials remain
         while len(remaining_coefficients) > 0:
+            # TODO precompile
 
             # greedy heuristic:
             # factor out the monomials which appears in the most terms
@@ -444,20 +446,25 @@ class HornerTree(object):
         # target = source1 * source2
         # target == source 1
         # values[self.id] = values[self.id] *op* values[source]
-        # instruction encoding: target, op, source
-        recipe = []
+        # instruction encoding: target, source
+        tree_recipe = []
+        # separate: op (binary: 0/1)
+        op_recipe = []
         for factor, sub_tree in zip(self.factors, self.sub_trees):
             # IMPORTANT: sub tree has to be evaluated BEFORE its value can be used!
             # -> add its recipe first
-            recipe += sub_tree.get_recipe()
+            tree_recipe_sub, op_recipe_sub = sub_tree.get_recipe()
+            tree_recipe += tree_recipe_sub
+            op_recipe += op_recipe_sub
             # now the value at values[subtree.id] is the evaluated subtree value
-            recipe += [
+            tree_recipe += [
                 # multiply the value of the subtree with the value of the factor
-                (sub_tree.tree_id, ID_MULT, factor.value_idx),
+                (sub_tree.tree_id, factor.value_idx),
                 # add this value to the previously computed value
-                (self.tree_id, ID_ADD, sub_tree.tree_id)
+                (self.tree_id, sub_tree.tree_id)
             ]
-        return recipe
+            op_recipe += [ID_MULT, ID_ADD]
+        return tree_recipe, op_recipe
 
 
 class MultivarPolynomial(object):
@@ -546,6 +553,7 @@ class MultivarPolynomial(object):
         :return: the partial derivative of this polynomial wrt. the i-th coordinate
         """
 
+        # IMPORTANT: do not modify the stored coefficient and exponent arrays!
         # set all the coefficients not depending on the i-th coordinate to 0
         # this simply means not adding them to the list of coefficients
         active_rows = np.where(self.exponents[:, i] >= 1)[0]
@@ -585,8 +593,9 @@ class HornerMultivarPolynomial(MultivarPolynomial):
     """
     # __slots__ declared in parents are available in child classes. However, child subclasses will get a __dict__
     # and __weakref__ unless they also define __slots__ (which should only contain names of any additional slots).
-    __slots__ = ['prime_array', 'horner_tree', 'unique_factor_id_list', 'unique_factors', 'factor_values',
-                 'num_ops', 'representation', 'value_array', 'scalar_recipe', 'monomial_recipe', 'tree_recipe']
+    __slots__ = ['prime_array', 'horner_tree', 'unique_factor_id_list', 'unique_factors',
+                 'num_ops', 'representation', 'value_array', 'scalar_recipe', 'monomial_recipe', 'tree_recipe',
+                 'tree_ops']
 
     def __init__(self, coefficients, exponents, rectify_input=False, validate_input=False):
         """
@@ -624,11 +633,9 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         self.num_ops = self.get_num_ops()
         self.representation = self.get_string_representation()
 
-        # TODO factor_values are not needed
-        # self.factor_values = np.empty(shape=len(self.unique_factor_id_list), dtype=np.float64)
-
         # compile and store a "recipe" for evaluating the polynomial with just numpy arrays
-        self.value_array, self.scalar_recipe, self.monomial_recipe, self.tree_recipe = self.compile_recipes(num_trees)
+        self.value_array, self.scalar_recipe, self.monomial_recipe, self.tree_recipe, self.tree_ops = self.compile_recipes(
+            num_trees)
 
         # the trees and factors are not being needed any more
         # a value lookup can be done with just the recipe
@@ -743,11 +750,8 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
     def compile_recipes(self, num_trees):
         # compile a recipe encoding all needed instructions in order to evaluate the polynomial
-        # TODO avoid for loop
-        # TODO numba precompilation!?
-        # TODO clever binary format or optimized data structure representing tree
-        # TODO is recursion problematic for huge polynomials?! (stack size limitations...)
-        # TODO boolean separate array for operations, uint32 not needed (just 0 or 1)
+        # = clever data structure for representing the factorisation tree
+        # -> avoid recursion and function call overhead while evaluating
 
         # the value array has one entry for every subtree and one for every factor
         value_array_length = num_trees + len(self.unique_factors)
@@ -770,15 +774,16 @@ class HornerMultivarPolynomial(MultivarPolynomial):
                 monomial_recipe += factor_recipe
 
         # compile the recipe for evaluating the horner factorisation tree
-        tree_recipe = self.horner_tree.get_recipe()
-
+        tree_recipe, tree_ops = self.horner_tree.get_recipe()
         # convert and store the recipes
         # for the recipes numba is expecting:
         #   data type: array(uint32, 2d, C), u4 =  4byte unsigned integer
+        # boolean separate array for operations, uint32 not needed (just 0 or 1)
         return value_array, \
                np.array(scalar_recipe, dtype=np.uint32).reshape((-1, 3)), \
                np.array(monomial_recipe, dtype=np.uint32).reshape((-1, 3)), \
-               np.array(tree_recipe, dtype=np.uint32).reshape((-1, 3))
+               np.array(tree_recipe, dtype=np.uint32).reshape((-1, 2)), \
+               np.array(tree_ops, dtype=np.bool),
 
     def eval(self, x, validate_input=False):
         """
@@ -795,9 +800,10 @@ class HornerMultivarPolynomial(MultivarPolynomial):
             assert len(x.shape) == 1
             assert x.shape[0] == self.dim
 
-        # TODO IMPORTANT: copy the initial value array
+        # IMPORTANT: copy the initial value array
         # the array is being used as temporal storage and values would get the overwritten
-        return eval_recipe(x, self.value_array.copy(), self.scalar_recipe, self.monomial_recipe, self.tree_recipe)
+        return eval_recipe(x, self.value_array.copy(), self.scalar_recipe, self.monomial_recipe, self.tree_recipe,
+                           self.tree_ops)
 
         # # IMPORTANT: reset the value lookup for every query
         # # the factors are sorted in ascending order after their id

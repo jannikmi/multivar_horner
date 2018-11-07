@@ -11,9 +11,9 @@ from numba.pycc import CC
 ID_MULT = 0
 
 
-@cc.export('eval_compiled', 'f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :])')
-@jit(f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :]), nopython=True, cache=True)
-def eval_recipe(x, value_array, scalar_recipe, monomial_recipe, tree_recipe):
+# @cc.export('eval_compiled', 'f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :])')
+@jit(f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :], b1[:]), nopython=True, cache=True)
+def eval_recipe(x, value_array, scalar_recipe, monomial_recipe, tree_recipe, tree_ops):
     # print(value_array)
 
     # print('computing scalar factors: ...')
@@ -34,18 +34,20 @@ def eval_recipe(x, value_array, scalar_recipe, monomial_recipe, tree_recipe):
         value_array[monomial_recipe[i, 0]] = value_array[monomial_recipe[i, 1]] * value_array[monomial_recipe[i, 2]]
 
     # print('evaluating factorisation tree: ...')
-    # tree recipe instruction encoding: target, op,
+    # tree recipe instruction encoding: target, source
+    # separate operation array: *op_id*
+    # value_array[target] = value_array[target] *op* value_array[source]
     for i in range(tree_recipe.shape[0]):
         # target, operation, source1 = tree_recipe[i, 0], tree_recipe[i, 1], tree_recipe[i, 2]
         target = tree_recipe[i, 0]
-        if tree_recipe[i, 1] == ID_MULT:
-            # print('value[{}] = {} * {}'.format(target, value_array[target], value_array[source1]))
-            # value_array[target] = value_array[target] * value_array[source1]
-            value_array[target] = value_array[target] * value_array[tree_recipe[i, 2]]
-        else:
+        if tree_ops[i]:  # ADDITION: 1
             # print('value[{}] = {} + {}'.format(target, value_array[target], value_array[source1]))
             # value_array[target] = value_array[target] + value_array[source1]
-            value_array[target] = value_array[target] + value_array[tree_recipe[i, 2]]
+            value_array[target] = value_array[target] + value_array[tree_recipe[i, 1]]
+        else:
+            # print('value[{}] = {} * {}'.format(target, value_array[target], value_array[source1]))
+            # value_array[target] = value_array[target] * value_array[source1]
+            value_array[target] = value_array[target] * value_array[tree_recipe[i, 1]]
 
     # the value at the first position is the value of the polynomial
     return value_array[0]
