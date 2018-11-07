@@ -24,6 +24,16 @@ This factorisation is being stored in a "Horner Tree". When evaluating the polyn
 
 
 
+TODO
+
+finds near to minimal representation (in terms of storage and computation requirements)
+at the cost of an extra initial memory and computation effort in order to find the factorisation
+
+
+
+explain recipe idea
+cost of traversing the tree recursive calls, overhead too big
+
 Also see:
 `GitHub <https://github.com/MrMinimal64/multivar_horner>`__,
 `PyPI <https://pypi.python.org/pypi/multivar_horner/>`__

@@ -9,6 +9,10 @@ from multivar_horner import HornerMultivarPolynomial, MultivarPolynomial, get_pr
 
 import timeit
 
+poly_settings_list = []
+input_list = []
+poly_class_instances = []
+
 
 def proto_test_case(data, fct):
     all_good = True
@@ -144,13 +148,54 @@ def print_avg_num_ops():
 def time_preprocess(time):
     valid_digits = 4
     zero_digits = abs(min(0, int(log10(time))))
-    digits_to_print = zero_digits+valid_digits
+    digits_to_print = zero_digits + valid_digits
     return str(round(time, digits_to_print))
 
 
-poly_settings_list = []
-input_list = []
-poly_class_instances = []
+def speed_up(time1, time2):
+    speedup = round((time2 / time1 - 1), 1)
+    if speedup < 0:
+        speedup = round((time1 / time2 - 1), 1)
+        if speedup>10.0:
+            speedup = round(speedup)
+
+        return str(speedup) + ' x slower'
+    else:
+        if speedup>10.0:
+            speedup = round(speedup)
+        return str(speedup) + ' x faster'
+
+
+def speed_test_run(dim, max_degree, nr_samples,template):
+    global poly_settings_list, input_list, poly_class_instances
+
+    poly_settings_list = rnd_settings_list(nr_samples, dim, max_degree)
+    input_list = rnd_input_list(nr_samples, dim, max_abs_val=1.0)
+
+    setup_time_naive = timeit.timeit("setup_time_fct(MultivarPolynomial)", globals=globals(), number=1)
+    # poly_class_instances is not populated with the naive polynomial class instances
+    # print(poly_class_instances[0])
+    # TODO num ops
+    # print_avg_num_ops()
+
+    eval_time_naive = timeit.timeit("eval_time_fct()", globals=globals(), number=1)
+
+    setup_time_horner = timeit.timeit("setup_time_fct(HornerMultivarPolynomial)", globals=globals(),
+                                      number=1)
+    # poly_class_instances is not populated with the horner polynomial class instances
+    # print(poly_class_instances[0])
+    # print_avg_num_ops()
+
+    eval_time_horner = timeit.timeit("eval_time_fct()", globals=globals(), number=1)
+
+    setup_delta = speed_up(setup_time_horner, setup_time_naive)
+    eval_delta = speed_up(eval_time_horner, eval_time_naive)
+
+    print(template.format(str(dim), str(max_degree), time_preprocess(setup_time_naive),
+                          time_preprocess(setup_time_horner),
+                          str(setup_delta),
+                          time_preprocess(eval_time_naive), time_preprocess(eval_time_horner),
+                          str(eval_delta), ))
 
 
 class MainTest(unittest.TestCase):
@@ -380,66 +425,30 @@ class MainTest(unittest.TestCase):
         ]
 
         proto_test_case(invalid_test_data, cmp_value_fct)
-    #
-    # def test_speed(self):
-    #
-    #     def speed_up(time1, time2):
-    #         speedup = round((time2 / time1 - 1), 2)
-    #         if speedup < 0:
-    #             speedup = round((time1 / time2 - 1), 2)
-    #             return str(speedup) + ' x slower'
-    #         else:
-    #             return str(speedup) + ' x faster'
-    #
-    #     global poly_settings_list, input_list, poly_class_instances
-    #
-    #     MAX_DIM = 2
-    #     MAX_DEGREE = 2
-    #     NR_SAMPLES = 200
-    #
-    #     # TODO plot speed
-    #     # TODO compare difference in computed values (error)
-    #     # todo print to file
-    #     # TODO compare performance wrt. the "density" of the polynomials
-    #     template = '{0:3s} | {1:7s} | {2:16s} | {3:17s} | {4:15s} | {5:16s} | {6:16s} | {7:15s}'
-    #
-    #     print('\nSpeed test:')
-    #     # TODO num ops
-    #     print(template.format('dim', 'max_deg', 'setup time naive', 'setup time horner', 'delta', 'eval time naive',
-    #                           'eval time horner', 'delta'))
-    #     print('=' * 120)
-    #
-    #     for dim in range(1, MAX_DIM + 1):
-    #         for max_degree in range(1, MAX_DEGREE + 1):
-    #             poly_settings_list = rnd_settings_list(NR_SAMPLES, dim, max_degree)
-    #             input_list = rnd_input_list(NR_SAMPLES, dim, max_abs_val=1.0)
-    #
-    #             setup_time_naive = timeit.timeit("setup_time_fct(MultivarPolynomial)", globals=globals(), number=1)
-    #             # poly_class_instances is not populated with the naive polynomial class instances
-    #             # print(poly_class_instances[0])
-    #             # print_avg_num_ops()
-    #             # FIXME too few monomials! often just one empty exponent
-    #
-    #             eval_time_naive = timeit.timeit("eval_time_fct()", globals=globals(), number=1)
-    #
-    #             setup_time_horner = timeit.timeit("setup_time_fct(HornerMultivarPolynomial)", globals=globals(),
-    #                                               number=1)
-    #             # poly_class_instances is not populated with the horner polynomial class instances
-    #             # print(poly_class_instances[0])
-    #             # print_avg_num_ops()
-    #
-    #             eval_time_horner = timeit.timeit("eval_time_fct()", globals=globals(), number=1)
-    #
-    #             setup_delta = speed_up(setup_time_horner, setup_time_naive)
-    #             eval_delta = speed_up(eval_time_horner, eval_time_naive)
-    #
-    #             print(template.format(str(dim), str(max_degree), time_preprocess(setup_time_naive),
-    #                                   time_preprocess(setup_time_horner),
-    #                                   str(setup_delta),
-    #                                   time_preprocess(eval_time_naive), time_preprocess(eval_time_horner),
-    #                                   str(eval_delta), ))
-    #
-    #         print()
+
+    def test_speed(self):
+
+        MAX_DIM = 5
+        MAX_DEGREE = 5
+        NR_SAMPLES = 200
+
+        # TODO test for larger dimensions
+        # TODO plot speed
+        # TODO compare difference in computed values (error)
+        # todo print to file
+        # TODO compare performance wrt. the "density" of the polynomials
+        template = '{0:3s} | {1:7s} | {2:16s} | {3:17s} | {4:15s} | {5:16s} | {6:16s} | {7:15s}'
+
+        print('\nSpeed test:')
+        print('testing {} evenly distributed random polynomials'.format(NR_SAMPLES))
+        print(template.format('dim', 'max_deg', 'setup time naive', 'setup time horner', 'delta', 'eval time naive',
+                              'eval time horner', 'delta'))
+        print('=' * 120)
+
+        for dim in range(1, MAX_DIM + 1):
+            for max_degree in range(1, MAX_DEGREE + 1):
+                speed_test_run(dim, max_degree, NR_SAMPLES,template)
+            print()
 
 
 if __name__ == '__main__':

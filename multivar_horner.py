@@ -2,9 +2,10 @@ import itertools
 
 import numpy as np
 
-from numba_helpers import eval_compiled
+from numba_helpers import eval_recipe
 
 # TODO separate files
+# TODO export import model
 
 # TODO
 # matlab binding
@@ -15,17 +16,18 @@ from numba_helpers import eval_compiled
 
 # TODO test gradient
 
-# TODO create two objects and check if evaluation interference
-
-
 # TODO multivariate newton raphson method
 # TODO mention in readme
 
-# TODO globals?!
+# TODO global settings?!
 
 ID_MULT = 0
 ID_ADD = 1
 
+
+# TODO function to predict the factorisation time based on dim, max_degree and num_entries
+# TODO based on system
+# TODO suggest function to use
 
 # https://stackoverflow.com/questions/2068372/fastest-way-to-list-all-primes-below-n/3035188#3035188
 # a generator yielding all prime numbers in ascending order
@@ -45,7 +47,7 @@ def erat2():
 
 
 def get_prime_array(length):
-    return np.array(list(itertools.islice(erat2(), length)), dtype=np.uint)
+    return np.array(list(itertools.islice(erat2(), length)), dtype=np.uint32)
 
 
 def get_goedel_id_of(prime_idx, exponent, prime_array):
@@ -61,14 +63,14 @@ def rectify(coefficients, exponents):
     :param exponents: possibly a nested python list of exponents to be converted
     :return: the input converted into appropriate numpy data types
     """
-    rectified_coefficients = np.atleast_1d(np.array(coefficients, dtype=np.float)).reshape(-1, 1)
+    rectified_coefficients = np.atleast_1d(np.array(coefficients, dtype=np.float64)).reshape(-1, 1)
 
     rectified_exponents = np.atleast_2d(np.array(exponents, dtype=np.int))
 
     # exponents must not be negative!
     # ATTENTION: when converting to unsigned integer, negative integers become large!
     assert not np.any(rectified_exponents < 0)
-    rectified_exponents = rectified_exponents.astype(np.uint)
+    rectified_exponents = rectified_exponents.astype(np.uint32)
 
     # ignore the entries with 0.0 coefficients
     if np.any(rectified_coefficients == 0.0):
@@ -204,7 +206,6 @@ class MonomialFactor(AbstractFactor):
         source1 = target  # always take the previously computed value
         for source2 in self.factorisation_idxs[2:]:
             # and multiply it with the remaining factor values
-            print(target, source1, source2)
             recipe += [(target, source1, source2)]
 
         return recipe
@@ -624,7 +625,7 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         self.representation = self.get_string_representation()
 
         # TODO factor_values are not needed
-        # self.factor_values = np.empty(shape=len(self.unique_factor_id_list), dtype=np.float)
+        # self.factor_values = np.empty(shape=len(self.unique_factor_id_list), dtype=np.float64)
 
         # compile and store a "recipe" for evaluating the polynomial with just numpy arrays
         self.value_array, self.scalar_recipe, self.monomial_recipe, self.tree_recipe = self.compile_recipes(num_trees)
@@ -746,11 +747,12 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         # TODO numba precompilation!?
         # TODO clever binary format or optimized data structure representing tree
         # TODO is recursion problematic for huge polynomials?! (stack size limitations...)
+        # TODO boolean separate array for operations, uint32 not needed (just 0 or 1)
 
         # the value array has one entry for every subtree and one for every factor
         value_array_length = num_trees + len(self.unique_factors)
 
-        value_array = np.empty(value_array_length, dtype=np.float)
+        value_array = np.empty(value_array_length, dtype=np.float64)  # numba is expecting f8 =  8byte float
 
         # the initial value array has the coefficients of all subtrees stored at the index of their id
         self.horner_tree.fill_value_array(value_array)
@@ -771,16 +773,17 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         tree_recipe = self.horner_tree.get_recipe()
 
         # convert and store the recipes
+        # for the recipes numba is expecting:
+        #   data type: array(uint32, 2d, C), u4 =  4byte unsigned integer
         return value_array, \
-               np.array(scalar_recipe, dtype=np.uint), \
-               np.array(monomial_recipe, dtype=np.uint), \
-               np.array(tree_recipe, dtype=np.uint)
+               np.array(scalar_recipe, dtype=np.uint32).reshape((-1, 3)), \
+               np.array(monomial_recipe, dtype=np.uint32).reshape((-1, 3)), \
+               np.array(tree_recipe, dtype=np.uint32).reshape((-1, 3))
 
     def eval(self, x, validate_input=False):
         """
-        TODO numba precompilation possible?
+        make use of numba precompiled evaluation function:
         IDEA: encode factorisation in numpy array. "recipe" which values to add or multiply when
-        TODO other speedup possible?
         TODO parallel computing, split up the recipe in independent parts (evaluation of sub trees)
         :param x:
         :param validate_input: whether to check if the input parameters fulfill the requirements
@@ -794,7 +797,7 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
         # TODO IMPORTANT: copy the initial value array
         # the array is being used as temporal storage and values would get the overwritten
-        return eval_compiled(x, self.value_array.copy(), self.scalar_recipe, self.monomial_recipe, self.tree_recipe)
+        return eval_recipe(x, self.value_array.copy(), self.scalar_recipe, self.monomial_recipe, self.tree_recipe)
 
         # # IMPORTANT: reset the value lookup for every query
         # # the factors are sorted in ascending order after their id
@@ -810,6 +813,7 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
 
 if __name__ == '__main__':
+    # TODO
     inp, expected_out = (
         ([1.0],
          [1],
