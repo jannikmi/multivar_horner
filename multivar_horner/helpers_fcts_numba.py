@@ -1,6 +1,7 @@
 from numba import b1, f8, i2, i4, jit, typeof, u2, u8, u4, i8
 
 # precompiled time critical helper functions
+import numpy as np
 
 # TODO force all to u4, no i8?!
 
@@ -13,6 +14,12 @@ from numba.pycc import CC
 # cc = CC('compiled_helpers', )
 # # Uncomment the following line to print out the compilation steps
 # cc.verbose = True
+
+# TODO     TypingError: numba doesn't support kwarg for prod
+# @jit(f8(f8[:], f8[:], u4[:, :]), nopython=True, cache=True)
+def eval_naive(x, coefficients, exponents):
+    return np.sum(coefficients.T * np.prod(np.power(x, exponents), axis=1), axis=1)[0]
+
 
 # @cc.export('eval_compiled', 'f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :])')
 @jit(f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :], b1[:]), nopython=True, cache=True)

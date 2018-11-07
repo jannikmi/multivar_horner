@@ -1,22 +1,22 @@
 import itertools
+import pickle
 
 import numpy as np
 
-from multivar_horner.helpers_fcts_numba import eval_recipe
+from multivar_horner.helpers_fcts_numba import eval_recipe, eval_naive
 from .helper_classes import HornerTree, ScalarFactor
 from .helper_fcts import get_prime_array, rectify, validate
-from .global_settings import UINT_DTYPE, FLOAT_DTYPE
+from .global_settings import UINT_DTYPE, FLOAT_DTYPE, DEFAULT_PICKLE_FILE_NAME, DEBUG
 
-
-# TODO export import model
-# TODO alle DEBUG deaktivieren
 
 # TODO
-# matlab binding
 # test routine tox...
 # publish
 # changelog
 # readme
+
+# matlab binding
+
 
 # TODO test gradient
 
@@ -26,9 +26,14 @@ from .global_settings import UINT_DTYPE, FLOAT_DTYPE
 # TODO function to predict the factorisation time based on dim, max_degree and num_entries
 # TODO based on system
 # TODO suggest function to use
-
-
 # TODO MATH: find algorithm to parse optimal tree (no procedure known for this!)
+
+
+# is not a helper function to make it an importable part of the package
+def load_pickle(path=DEFAULT_PICKLE_FILE_NAME):
+    print('importing polygon from file "{}" ...'.format(path))
+    with open(path, 'rb') as f:
+        return pickle.load(f)
 
 
 class MultivarPolynomial(object):
@@ -89,6 +94,12 @@ class MultivarPolynomial(object):
         s += ' + '.join(monomials)
         return s
 
+    def export_pickle(self, path=DEFAULT_PICKLE_FILE_NAME):
+        print('storing polynomial in file "{}" ...'.format(path))
+        with open(path, 'wb') as f:
+            pickle.dump(self, f)
+        print('...done.\n')
+
     def get_num_ops(self):
         # count the number of instructions done when evaluating polynomial:
         y, x = self.exponents.shape
@@ -99,7 +110,6 @@ class MultivarPolynomial(object):
 
     def eval(self, x, validate_input=True):
         """
-        TODO numba precompilation
         :param x:
         :param validate_input:
         :return:
@@ -110,7 +120,7 @@ class MultivarPolynomial(object):
             assert len(x.shape) == 1
             assert x.shape[0] == self.dim
 
-        return np.sum(self.coefficients.T * np.prod(np.power(x, self.exponents), axis=1), axis=1)[0]
+        return eval_naive(x, self.coefficients, self.exponents)
 
     def partial_derivative(self, i):
         """
@@ -129,10 +139,10 @@ class MultivarPolynomial(object):
         new_coefficients = self.coefficients[active_rows]
         new_exponents = self.exponents[active_rows, :]
 
-        # DEBUG:
-        assert new_coefficients.shape[0] == new_exponents.shape[0]
-        assert new_coefficients.shape[1] == 1 and len(new_coefficients.shape) == 2
-        assert new_exponents.shape[1] == self.dim and len(new_exponents.shape) == 2
+        if DEBUG:
+            assert new_coefficients.shape[0] == new_exponents.shape[0]
+            assert new_coefficients.shape[1] == 1 and len(new_coefficients.shape) == 2
+            assert new_exponents.shape[1] == self.dim and len(new_exponents.shape) == 2
 
         # multiply the coefficients with the exponent of the i-th coordinate
         new_coefficients *= new_exponents[:, i]
@@ -165,7 +175,7 @@ class HornerMultivarPolynomial(MultivarPolynomial):
                  'value_array', 'scalar_recipe', 'monomial_recipe', 'tree_recipe',
                  'tree_ops']
 
-    def __init__(self, coefficients, exponents, rectify_input=False, validate_input=False):
+    def __init__(self, coefficients, exponents, rectify_input=False, validate_input=False, keep_tree=False):
         """
         :param coefficients: a numpy array column vector of doubles representing the coefficients of the monomials
         :param exponents: a numpy array matrix of unsigned integers representing the exponents of the monomials
@@ -184,10 +194,8 @@ class HornerMultivarPolynomial(MultivarPolynomial):
             num_ops += self.horner_tree.num_ops()
             return num_ops
 
-
         def get_string_representation():
             return '[{}] p(x) = '.format(self.num_ops) + self.horner_tree.__str__()
-
 
         super(HornerMultivarPolynomial, self).__init__(coefficients, exponents, rectify_input, validate_input)
 
@@ -220,13 +228,14 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         self.value_array, self.scalar_recipe, self.monomial_recipe, self.tree_recipe, self.tree_ops = self.compile_recipes(
             num_trees)
 
-        # the trees and factors are not being needed any more
-        # a value lookup can be done with just the recipe
-        # free up the memory
-        del self.horner_tree
-        del self.unique_factors
-        del self.unique_factor_id_list
-        del self.prime_array
+        if not keep_tree:
+            # the trees and factors are not being needed any more
+            # a value lookup can be done with just the recipe
+            # free up the memory
+            del self.horner_tree
+            del self.unique_factors
+            del self.unique_factor_id_list
+            del self.prime_array
 
     def __str__(self):
         return self.representation
