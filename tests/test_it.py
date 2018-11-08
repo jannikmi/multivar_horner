@@ -1,14 +1,13 @@
-import unittest
-import numpy as np
 import random
-
+import timeit
+import unittest
 from math import log10
+
+import numpy as np
 import pytest
 
 from multivar_horner.global_settings import UINT_DTYPE
 from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
-
-import timeit
 
 poly_settings_list = []
 input_list = []
@@ -195,8 +194,8 @@ def speed_test_run(dim, max_degree, nr_samples, template):
 
     eval_time_horner = timeit.timeit("eval_time_fct()", globals=globals(), number=1)
 
-    setup_delta = difference(setup_time_naive, setup_time_horner, )
-    eval_delta = difference(eval_time_naive, eval_time_horner, )
+    setup_delta = difference(setup_time_naive, setup_time_horner)
+    eval_delta = difference(eval_time_naive, eval_time_horner)
     ops_delta = difference(num_ops_naive, num_ops_horner)
     lucrative_after = compute_lucrativity(setup_time_horner, setup_time_naive, eval_time_horner, eval_time_naive)
 
@@ -231,7 +230,7 @@ class MainTest(unittest.TestCase):
             # calling with x of another dimension
             (([1.0, 2.0, 3.0],
               [[3, 1, 0], [2, 0, 1], [1, 1, 1]],
-              [-2.0, 3.0, ]),
+              [-2.0, 3.0]),
              # p(x) = 5.0 + 2.0* (-2)^1 + 1.0* (-2)^2 + 2.0* (-2)^2 *3^1 = 5.0 + 2.0* (-2) + 1.0* 4 + 2.0* 4 *3
              29.0),
 
@@ -427,7 +426,7 @@ class MainTest(unittest.TestCase):
 
             # [27] p(x) = 1.0 x_3^1 + 2.0 x_1^3 x_2^3 + 3.0 x_1^2 x_2^3 x_3^1 + 4.0 x_1^1 x_2^5 x_3^1
             (([1.0, 2.0, 3.0, 4.0],
-              [[0, 0, 1], [3, 3, 0], [2, 3, 1], [1, 5, 1], ],
+              [[0, 0, 1], [3, 3, 0], [2, 3, 1], [1, 5, 1]],
               [-2.0, 3.0, 1.0]),
              -2051.0),
         ]
@@ -436,8 +435,8 @@ class MainTest(unittest.TestCase):
 
     def test_speed(self):
 
-        MAX_DIM = 5
-        MAX_DEGREE = 5
+        MAX_DIM = 2
+        MAX_DEGREE = 2
         NR_SAMPLES = 200
 
         # TODO test for larger dimensions
@@ -450,12 +449,14 @@ class MainTest(unittest.TestCase):
         print('\nSpeed test:')
         print('testing {} evenly distributed random polynomials\n'.format(NR_SAMPLES))
 
-        print(' {0:11s}  |  {1:38s} |  {2:35s} |  {3:35s} | {4:20s}'.format('parameters', 'setup time', 'eval time',
-                                                                            'num ops', 'lucrative after ', ))
-        template = '{0:3s} | {1:7s} | {2:10s} | {3:10s} | {4:13s} | {5:10s} | {6:10s} | {7:10s} | {8:10s} | {9:10s} | {10:10s} | {11:10s}'
+        print(' {0:11s}  |  {1:38s} |  {2:35s} |  {3:35s} | {4:20s}'.format('parameters', 'setup time (/s)',
+                                                                            'eval time (/s)',
+                                                                            '# operations', 'lucrative after '))
+        template = '{0:3s} | {1:7s} | {2:10s} | {3:10s} | {4:13s} | {5:10s} | {6:10s} | {7:10s} | '
+        '{8:10s} | {9:10s} | {10:10s} | {11:10s}'
 
         print(template.format('dim', 'max_deg', 'naive', 'horner', 'delta', 'naive',
-                              'horner', 'delta', 'naive', 'horner', 'delta', '# evals'))
+                              'horner', 'delta', 'naive', 'horner', 'delta', '   # evals'))
         print('=' * 160)
 
         for dim in range(1, MAX_DIM + 1):

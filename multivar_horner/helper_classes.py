@@ -1,9 +1,10 @@
 import numpy as np
 
-from .global_settings import ID_ADD, ID_MULT, UINT_DTYPE, DEBUG
+from .global_settings import DEBUG, ID_ADD, ID_MULT, UINT_DTYPE
 from .helper_fcts import get_goedel_id_of
-from .helpers_fcts_numba import compile_usage_statistic, compile_usage_rows, build_row_equality_matrix, index_of, \
-    factor_out
+from .helpers_fcts_numba import (
+    build_row_equality_matrix, compile_usage_rows, compile_usage_statistic, factor_out, index_of,
+)
 
 
 class AbstractFactor(object):
@@ -66,7 +67,8 @@ class MonomialFactor(AbstractFactor):
     def __init__(self, scalar_factors):
         self.scalar_factors = scalar_factors
 
-        # the id of a monomial is a Goedelian number corresponding to their exponent vector
+        # the id of a monomial is the Goedel number of their exponent vector
+        # https://en.wikipedia.org/wiki/G%C3%B6del_numbering
         # this is a unique id for every monomial
         # the id of a monomial the product of the ids of its scalar factors
         self.monomial_id = 1
@@ -363,7 +365,7 @@ class HornerTree(object):
                 # multiply the value of the subtree with the value of the factor
                 (sub_tree.tree_id, factor.value_idx),
                 # add this value to the previously computed value
-                (self.tree_id, sub_tree.tree_id)
+                (self.tree_id, sub_tree.tree_id),
             ]
             op_recipe += [ID_MULT, ID_ADD]
         return tree_recipe, op_recipe

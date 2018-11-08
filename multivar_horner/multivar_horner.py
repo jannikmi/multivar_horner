@@ -1,32 +1,27 @@
-import itertools
-import pickle
-
-import numpy as np
-
-from multivar_horner.helpers_fcts_numba import eval_recipe, eval_naive
-from .helper_classes import HornerTree, ScalarFactor
-from .helper_fcts import get_prime_array, rectify, validate
-from .global_settings import UINT_DTYPE, FLOAT_DTYPE, DEFAULT_PICKLE_FILE_NAME, DEBUG
-
-
 # TODO
 # test routine tox...
 # publish
 # changelog
 # readme
-
 # matlab binding
-
-
 # TODO test gradient
-
 # TODO multivariate newton raphson method
 # TODO mention in readme
-
 # TODO function to predict the factorisation time based on dim, max_degree and num_entries
 # TODO based on system
 # TODO suggest function to use
 # TODO MATH: find algorithm to parse optimal tree (no procedure known for this!)
+
+
+import itertools
+import pickle
+
+import numpy as np
+
+from .global_settings import DEBUG, DEFAULT_PICKLE_FILE_NAME, FLOAT_DTYPE, UINT_DTYPE
+from .helper_classes import HornerTree, ScalarFactor
+from .helper_fcts import get_prime_array, rectify, validate
+from .helpers_fcts_numba import eval_naive, eval_recipe
 
 
 # is not a helper function to make it an importable part of the package
@@ -48,7 +43,7 @@ class MultivarPolynomial(object):
     """
 
     # prevent dynamic attribute assignment (-> safe memory)
-    __slots__ = ['coefficients', 'exponents', 'dim', 'order', 'max_degree', 'unused_variables', 'representation', ]
+    __slots__ = ['coefficients', 'exponents', 'dim', 'order', 'max_degree', 'unused_variables', 'representation']
 
     def __init__(self, coefficients, exponents, rectify_input=False, validate_input=False):
         """
@@ -85,7 +80,7 @@ class MultivarPolynomial(object):
         s = '[{}] p(x) = '.format(self.get_num_ops())
         monomials = []
         for i, exp_vect in enumerate(self.exponents):
-            monomial = [str(self.coefficients[i, 0]), ]
+            monomial = [str(self.coefficients[i, 0])]
             for dim, exp in enumerate(exp_vect):
                 if exp > 0:
                     monomial.append('x_{}^{}'.format(dim + 1, exp))
@@ -199,7 +194,7 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
         super(HornerMultivarPolynomial, self).__init__(coefficients, exponents, rectify_input, validate_input)
 
-        # the needed prime numbers for computing all goedelian numbers of all used factors
+        # the needed prime numbers for computing all goedel numbers of all used factors
         self.prime_array = get_prime_array(self.dim)
 
         # store all unique factors of the horner factorisation
@@ -225,8 +220,8 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         self.representation = get_string_representation()
 
         # compile and store a "recipe" for evaluating the polynomial with just numpy arrays
-        self.value_array, self.scalar_recipe, self.monomial_recipe, self.tree_recipe, self.tree_ops = self.compile_recipes(
-            num_trees)
+        self.value_array, self.scalar_recipe, self.monomial_recipe, self.tree_recipe, self.tree_ops = \
+            self.compile_recipes(num_trees)
 
         if not keep_tree:
             # the trees and factors are not being needed any more
@@ -362,11 +357,10 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         # for the recipes numba is expecting the data types:
         #   array(uint, 2d, C),
         #   separate boolean array for operations, uint not needed (just 0 or 1)
-        return value_array, \
-               np.array(scalar_recipe, dtype=UINT_DTYPE).reshape((-1, 3)), \
-               np.array(monomial_recipe, dtype=UINT_DTYPE).reshape((-1, 3)), \
-               np.array(tree_recipe, dtype=UINT_DTYPE).reshape((-1, 2)), \
-               np.array(tree_ops, dtype=np.bool),
+        return value_array, np.array(
+            scalar_recipe, dtype=UINT_DTYPE).reshape((-1, 3)), np.array(
+            monomial_recipe, dtype=UINT_DTYPE).reshape((-1, 3)), np.array(
+            tree_recipe, dtype=UINT_DTYPE).reshape((-1, 2)), np.array(tree_ops, dtype=np.bool)
 
     def eval(self, x, validate_input=False):
         """
