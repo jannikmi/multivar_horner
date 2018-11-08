@@ -1,4 +1,4 @@
-from numpy import uint32, float64
+from numpy import float64, uint32
 
 ID_MULT = False
 ID_ADD = True  # ATTENTION: is being used in helpers_fcts_numba.py/eval_recipe()
