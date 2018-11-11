@@ -1,8 +1,6 @@
 # TODO
-# test routine tox...
-# publish
-# changelog
-# readme
+# faster tree build
+# explain parameters flags
 # matlab binding
 # TODO test gradient
 # TODO multivariate newton raphson method
@@ -26,7 +24,7 @@ from .helpers_fcts_numba import eval_naive, eval_recipe
 
 # is not a helper function to make it an importable part of the package
 def load_pickle(path=DEFAULT_PICKLE_FILE_NAME):
-    print('importing polygon from file "{}" ...'.format(path))
+    print('importing polygon from file "{}"'.format(path))
     with open(path, 'rb') as f:
         return pickle.load(f)
 
@@ -156,7 +154,7 @@ class MultivarPolynomial(object):
 
 class HornerMultivarPolynomial(MultivarPolynomial):
     """
-    a representation of a multivariate polynomial using horner factorisation to save instructions during evaluation
+    a representation of a multivariate polynomial using horner factorisation to save evaluation time
 
     dimension: the amount of variable as input
     NOTE: the polygon actually needs not to depend on all dimensions
@@ -166,11 +164,12 @@ class HornerMultivarPolynomial(MultivarPolynomial):
     """
     # __slots__ declared in parents are available in child classes. However, child subclasses will get a __dict__
     # and __weakref__ unless they also define __slots__ (which should only contain names of any additional slots).
-    __slots__ = ['prime_array', 'horner_tree', 'unique_factor_id_list', 'unique_factors', 'num_ops',
-                 'value_array', 'scalar_recipe', 'monomial_recipe', 'tree_recipe',
+    __slots__ = ['prime_array', 'horner_tree', 'unique_factor_id_list', 'unique_factors', 'num_ops', 'subtree_amount',
+                 'initial_value_array', 'copy_recipe', 'scalar_recipe', 'monomial_recipe', 'tree_recipe',
                  'tree_ops']
 
-    def __init__(self, coefficients, exponents, rectify_input=False, validate_input=False, keep_tree=False):
+    def __init__(self, coefficients, exponents, rectify_input=False, validate_input=False, keep_tree=False,
+                 univariate_factors=False):
         """
         :param coefficients: a numpy array column vector of doubles representing the coefficients of the monomials
         :param exponents: a numpy array matrix of unsigned integers representing the exponents of the monomials
@@ -181,13 +180,17 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
         def compute_num_ops():
             # count the number of instructions done when computing all factors
-            num_ops = 0
-            for f in self.unique_factors:
-                num_ops += f.num_ops()
-
             # ... and when evaluating the horner factorisation
-            num_ops += self.horner_tree.num_ops()
-            return num_ops
+
+            # do NOT recursively compute for every subtree
+            # num_ops = 0
+            # for f in self.unique_factors:
+            #     num_ops += f.num_ops()
+            #
+            # num_ops += self.horner_tree.num_ops()
+            # for every entry in each recipe one operation is being done
+            self.num_ops = self.copy_recipe.shape[0] + self.scalar_recipe.shape[0] + self.monomial_recipe.shape[0] + \
+                           self.tree_ops.shape[0]
 
         def get_string_representation():
             return '[{}] p(x) = '.format(self.num_ops) + self.horner_tree.__str__()
@@ -203,25 +206,28 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         self.unique_factors = []
 
         # factorize the polynomial once and store the factorisation as a tree
+        subtree_id_cntr = itertools.count(0)
+        tree_coefficients = []
         self.horner_tree = HornerTree(self.coefficients, self.exponents, self.prime_array,
-                                      self.unique_factor_id_list, self.unique_factors, id_counter=itertools.count(0))
+                                      self.unique_factor_id_list, self.unique_factors, tree_coefficients,
+                                      id_counter=subtree_id_cntr, univariate_factors=univariate_factors)
+        # the all subtrees now got their id. the next value from the counter is equal to the subtree amount
+        self.subtree_amount = subtree_id_cntr.__next__()
 
-        num_trees = self.subtree_amount()
         # factor list is now filled with the unique factors
         # during evaluation of a polynomial the values of all the unique factors are needed at least once
         # -> compute the values of all factors (monomials) once and store them
         # store a pointer to the computed value for every unique factor
         # save instructions for the evaluation -> find factorisation of all factors = again a factorisation tree
         # sort and factorize the monomials to quickly evaluate them once during a query
-        self.link_monomials(value_idx_offset=num_trees)
-
-        # depend on horner tree and linked factors:
-        self.num_ops = compute_num_ops()
-        self.representation = get_string_representation()
+        self.link_monomials()
 
         # compile and store a "recipe" for evaluating the polynomial with just numpy arrays
-        self.value_array, self.scalar_recipe, self.monomial_recipe, self.tree_recipe, self.tree_ops = \
-            self.compile_recipes(num_trees)
+        self.initial_value_array, self.copy_recipe, self.scalar_recipe, self.monomial_recipe, self.tree_recipe, \
+            self.tree_ops = self.compile_recipes(tree_coefficients)
+
+        compute_num_ops()
+        self.representation = get_string_representation()
 
         if not keep_tree:
             # the trees and factors are not being needed any more
@@ -238,7 +244,7 @@ class HornerMultivarPolynomial(MultivarPolynomial):
     def get_num_ops(self):
         return self.num_ops
 
-    def link_monomials(self, value_idx_offset):
+    def link_monomials(self):
         """
         TODO precompile
         find the optimal factorisation of the unique factors themselves
@@ -247,17 +253,14 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         this leads to a minimal factorisation for quick evaluation of the monomial values
         :return:
         """
-
         # sort after their id
         self.unique_factor_id_list = list(sorted(self.unique_factor_id_list))
         self.unique_factors = list(sorted(self.unique_factors, key=lambda f: f.monomial_id))
         # property of the list: the scalar factors of each monomial are stored in front of it
 
-        # print(self.unique_factor_id_list)
-        # print(self.unique_factors)
-
         # IMPORTANT: properly set the indices of the values for each factor
         # the values of every factor are stored after the coefficients of all subtrees
+        value_idx_offset = self.subtree_amount
         for idx, f in enumerate(self.unique_factors):
             f.value_idx = idx + value_idx_offset
 
@@ -323,31 +326,37 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
             pointer1 -= 1
 
-    def subtree_amount(self):
-        return 1 + self.horner_tree.subtree_amount()
-
-    def compile_recipes(self, num_trees):
+    def compile_recipes(self, tree_coefficients):
         # compile a recipe encoding all needed instructions in order to evaluate the polynomial
         # = clever data structure for representing the factorisation tree
         # -> avoid recursion and function call overhead while evaluating
 
+        # for evaluating the polynomial in tree form intermediary computation results have to be stored in a value array
         # the value array has one entry for every subtree and one for every factor
-        value_array_length = num_trees + len(self.unique_factors)
+        value_array_length = self.subtree_amount + len(self.unique_factors)
 
-        value_array = np.empty(value_array_length, dtype=FLOAT_DTYPE)
+        initial_value_array = np.empty(value_array_length, dtype=FLOAT_DTYPE)
 
+        # initial_value_array = np.array(tree_coefficients, dtype=FLOAT_DTYPE)..reshape(value_array_length)
         # the initial value array has the coefficients of all subtrees stored at the index of their id
-        self.horner_tree.fill_value_array(value_array)
+        # TODO
+        # initial_value_array[0:len(tree_coefficients)-1] = tree_coefficients
+        for i, v in enumerate(tree_coefficients):
+            initial_value_array[i] = v
+
+        # self.horner_tree.fill_value_array(value_array)
 
         # compile the recipes for computing the factors
         # scalar factors (depending on x) are being evaluated differently
         #   from the monomial factors (depending on scalar factors)
+        copy_recipe = []  # skip computing factors with exp 1, just copy x vals
         scalar_recipe = []
         monomial_recipe = []
         for f in self.unique_factors:
             factor_recipe = f.get_recipe()
             if type(f) is ScalarFactor:
-                scalar_recipe += factor_recipe
+                copy_recipe += factor_recipe[0]
+                scalar_recipe += factor_recipe[1]
             else:
                 monomial_recipe += factor_recipe
 
@@ -357,7 +366,8 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         # for the recipes numba is expecting the data types:
         #   array(uint, 2d, C),
         #   separate boolean array for operations, uint not needed (just 0 or 1)
-        return value_array, np.array(
+        return initial_value_array, np.array(
+            copy_recipe, dtype=UINT_DTYPE).reshape((-1, 2)), np.array(
             scalar_recipe, dtype=UINT_DTYPE).reshape((-1, 3)), np.array(
             monomial_recipe, dtype=UINT_DTYPE).reshape((-1, 3)), np.array(
             tree_recipe, dtype=UINT_DTYPE).reshape((-1, 2)), np.array(tree_ops, dtype=np.bool)
@@ -379,5 +389,5 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
         # IMPORTANT: copy the initial value array
         # the array is being used as temporal storage and values would get the overwritten
-        return eval_recipe(x, self.value_array.copy(), self.scalar_recipe, self.monomial_recipe, self.tree_recipe,
-                           self.tree_ops)
+        return eval_recipe(x, self.initial_value_array.copy(), self.copy_recipe, self.scalar_recipe,
+                           self.monomial_recipe, self.tree_recipe, self.tree_ops)
