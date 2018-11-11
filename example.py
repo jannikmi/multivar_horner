@@ -27,17 +27,22 @@ p1_x = polynomial.eval(x)
 print(p1_x)  # -29.0
 
 # represent the polynomial in the factorised (near to minimal) form
+# factors out the monomials! with the highest usage
 horner_polynomial = HornerMultivarPolynomial(coefficients, exponents)
 print(horner_polynomial)  # [15] p(x) = 5.0 + x_2^1 [ x_1^1 x_3^1 [ 3.0 ] + x_1^3 [ 1.0 ] ] + x_1^2 x_3^1 [ 2.0 ]
+
+# in order to always just factor out the variable with the highest usage:
+# [17] p(x) = 5.0 + x_1^1 [ x_1^1 [ x_1^1 [ x_2^1 [ 1.0 ] ] + x_3^1 [ 2.0 ] ] + x_2^1 [ x_3^1 [ 3.0 ] ] ]
+# horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, only_scalar_factors=True)
 
 p2_x = horner_polynomial.eval(x)
 print(p2_x)  # -29.0
 
-# export the factorised polynomial
-path = 'file_name.picke'
-horner_polynomial.export_pickle(path=path)
-
-from multivar_horner.multivar_horner import load_pickle
-
-# import a polynomial
-horner_polynomial = load_pickle(path)
+# # export the factorised polynomial
+# path = 'file_name.pickle'
+# horner_polynomial.export_pickle(path=path)
+#
+# from multivar_horner.multivar_horner import load_pickle
+#
+# # import a polynomial
+# horner_polynomial = load_pickle(path)

@@ -1,9 +1,9 @@
 import numpy as np
 
-from .global_settings import DEBUG, ID_ADD, ID_MULT, UINT_DTYPE
+from .global_settings import DEBUG, ID_ADD, ID_MULT, INT_DTYPE, UINT_DTYPE
 from .helper_fcts import get_goedel_id_of
 from .helpers_fcts_numba import (
-    build_row_equality_matrix, compile_usage_rows, compile_usage_statistic, factor_out, index_of,
+    build_row_equality_matrix, compile_usage_rows, compile_usage_statistic, factor_out, find_first_in,
 )
 
 
@@ -41,6 +41,7 @@ class ScalarFactor(AbstractFactor):
     def __repr__(self):
         return self.__str__()
 
+    @staticmethod
     def num_ops(self):
         # count the number of instructions done during compute (during eval() only looks up the computed value)
         return 1
@@ -49,9 +50,14 @@ class ScalarFactor(AbstractFactor):
         factor_values[self.value_idx] = x[self.dimension] ** self.exponent
 
     def get_recipe(self):
-        # instruction encoding: target, source, exponent
-        # values[target] = x[source] ** exponent
-        return [(self.value_idx, self.dimension, self.exponent)]
+        if self.exponent == 1:
+            # just copy x[dim] value
+            # values[target] = x[source]
+            return [(self.value_idx, self.dimension)], []
+        else:
+            # instruction encoding: target, source, exponent
+            # values[target] = x[source] ** exponent
+            return [], [(self.value_idx, self.dimension, self.exponent)]
 
 
 class MonomialFactor(AbstractFactor):
@@ -59,7 +65,6 @@ class MonomialFactor(AbstractFactor):
     factorisation_idxs: the indices of the values of all factors.
         cannot be set at construction time, because the list of all factors is sorted
         at the end of building the horner factorisation tree (when all factors are known)
-
     """
     # a monomial consisting of a product of scalar factors: x_i^j * x_k^l * ...
     __slots__ = ['scalar_factors', 'factorisation_idxs']
@@ -124,17 +129,9 @@ class HornerTree(object):
     """
     __slots__ = ['tree_id', 'dim', 'order', 'max_degree', 'coefficient', 'factors', 'sub_trees']
 
-    def __init__(self, coefficients, exponents, prime_array, unique_factor_id_list, unique_factors, id_counter):
-
-        # give every subtree its unique id
-        # equal to the idx of its computed value in the value_array
-        self.tree_id = id_counter.__next__()
-        self.dim = exponents.shape[1]
-        self.order = np.sum(exponents, axis=0).max()
-        self.max_degree = exponents.max()
-
-        self.factors = []
-        self.sub_trees = []
+    def __init__(self, coefficients, exponents, prime_array, unique_factor_id_list, unique_factors, tree_coefficients,
+                 id_counter,
+                 univariate_factors):
 
         def add_factor(factor_dimensions, factor_exponents):
             """
@@ -146,11 +143,13 @@ class HornerTree(object):
             The latter represents numbers using logarithms. The logarithmic representation makes it possible
                 to implement exponentation will just a single multiplication.
 
+            # TODO work out the effects on tree size. factoring out x_i applies to more subtrees (more frequent!)
+
+
             -> for performance it is best to not factorize x_i^n, but just compute it in one go:
                 x_i^n (1 power op.) is less expensive than computing  x_i * x_i^(n-1) (1 mul + 1 power op.)
                 the memory cost is higher since more factors exist which have to be evaluated
 
-            # TODO consider effects on tree size. factoring out x_i applies to more subtrees (more frequent!)
 
             -> find all unique scalar factors, add them to the tree as factors
             then find the minimal factorisation for all non scalar factors based on all other factors
@@ -204,11 +203,13 @@ class HornerTree(object):
             subtree_exponents = expnts[factorized_rows, :]
 
             # the factor has to be deducted from the exponents of the sub tree ("factored out")
+            # subtree_exponents[:, factor_dims] -= factor_expnts
             subtree_exponents = factor_out(factor_dims, factor_expnts, subtree_exponents)
 
             self.sub_trees.append(
-                HornerTree(subtree_coefficients, subtree_exponents, prime_array, unique_factor_id_list, unique_factors,
-                           id_counter))
+                self.__class__(subtree_coefficients, subtree_exponents, prime_array, unique_factor_id_list,
+                               unique_factors, tree_coefficients,
+                               id_counter, univariate_factors))
 
             # all other monomials have to be factorized further
             non_factorized_rows = [r for r in range(expnts.shape[0]) if r not in factorized_rows]
@@ -227,11 +228,11 @@ class HornerTree(object):
 
         def decide_factorisation(coeffs, expnts):
             # greedy heuristic:
-            # factor out the monomials which appears in the most terms
+            # factor out the monomials (not variables!) which appears in the most terms
             # factor out the biggest factor possible (as many variables with highest degree possible)
             # NOTE: optimality is not guaranteed with this approach
             # <-> there may be a horner tree (factorisation) which can be evaluated with less instructions
-            # There is no known method for selecting an optimal factorisation order
+            # There is no known method for selecting an optimal factorisation order[1]
 
             usage_statistic = np.zeros((self.dim, int(self.max_degree + 1)), dtype=UINT_DTYPE)
             usage_statistic = compile_usage_statistic(expnts, usage_statistic)
@@ -263,13 +264,41 @@ class HornerTree(object):
                 max_set_size = set_sizes.max()
                 # NOTE: even when every set is only of size 1, one cannot create separate subtrees for every factor
                 # because the factors might have shared monomials (the usage ist just not completely identical)!
-                set_nr = index_of(max_set_size, set_sizes)
+                set_nr = find_first_in(max_set_size, set_sizes)
                 max_factor_ids = np.where(equal_usage_matrix[set_nr])[0]
                 factor_rows = usage_rows[max_factor_ids[0]]  # equal for all factors in set!
                 # those scalar factors combined are the maximal factor
                 factor_dimensions = max_usage_dimensions[max_factor_ids]
                 factor_exponents = max_usage_exponents[max_factor_ids]
                 return add_subtree(coeffs, expnts, factor_rows, factor_dimensions, factor_exponents)
+
+        def decide_factorisation_scalar(coeffs, expnts):
+            # just factor out the variable with the highest usage (=scalar factor):
+            active_exponents = expnts != 0
+            dimension_usages = np.sum(active_exponents, axis=0)
+            max_usage = np.max(dimension_usages)
+            factor_dims = np.array([find_first_in(max_usage, dimension_usages)], dtype=INT_DTYPE)
+            factorized_rows = np.where(active_exponents[:, factor_dims])[0]
+            # factor out as many "times" as possible
+            factor_expnts = np.array([expnts[factorized_rows, factor_dims].min()], dtype=INT_DTYPE)
+            if DEBUG:
+                assert factor_expnts[0] > 0
+            return add_subtree(coeffs, expnts, factorized_rows, factor_dims, factor_expnts)
+
+        if univariate_factors:
+            factorisation_fct = decide_factorisation_scalar
+        else:
+            factorisation_fct = decide_factorisation
+
+        # give every subtree its unique id
+        # equal to the idx of its computed value in the value_array
+        self.tree_id = id_counter.__next__()
+        self.dim = exponents.shape[1]
+        self.order = np.sum(exponents, axis=0).max()
+        self.max_degree = exponents.max()
+
+        self.factors = []
+        self.sub_trees = []
 
         # determine which coefficient the polynomial represented by the current root node has
         # = the coefficient with a zero exponent vector
@@ -283,6 +312,8 @@ class HornerTree(object):
             # there is no zero exponent vector (= constant monomial 1)
             # create node without a coefficient
             self.coefficient = 0.0
+            # having no coefficient simply means that the value of a subtree initially is 0.0
+            tree_coefficients.append(0.0)
             remaining_coefficients = np.copy(coefficients)
             remaining_exponents = np.copy(exponents)
         else:
@@ -291,6 +322,7 @@ class HornerTree(object):
             #   to the polynomial at this node in the horner tree
             empty_monomial_idx = np.where(inactive_exponent_rows)[0]
             self.coefficient = coefficients[empty_monomial_idx[0], 0]
+            tree_coefficients.append(self.coefficient)
             remaining_monomial_idxs = np.where(~inactive_exponent_rows)[0]
             remaining_coefficients = coefficients[remaining_monomial_idxs]
             remaining_exponents = exponents[remaining_monomial_idxs, :]
@@ -298,8 +330,8 @@ class HornerTree(object):
         # find a horner factorisation for the given polynomial
         # all monomials in this tree must be factorized until none remain
         while len(remaining_coefficients) > 0:
-            remaining_coefficients, remaining_exponents = decide_factorisation(remaining_coefficients,
-                                                                               remaining_exponents)
+            remaining_coefficients, remaining_exponents = factorisation_fct(remaining_coefficients,
+                                                                            remaining_exponents)
 
     def __str__(self, indent_lvl=1):
         if self.coefficient == 0.0:
@@ -317,33 +349,34 @@ class HornerTree(object):
     def __repr__(self):
         return self.__str__()
 
-    def num_ops(self):
-        # count the number of instructions done during eval()
-        num_ops = 0
-        for factor, subtree in zip(self.factors, self.sub_trees):
-            num_ops += 2 + subtree.num_ops()
-        return num_ops
+    # def num_ops(self):
+    #     # count the number of instructions done during eval()
+    #     num_ops = 0
+    #     for factor, subtree in zip(self.factors, self.sub_trees):
+    #         num_ops += 2 + subtree.num_ops()
+    #     return num_ops
 
-    def subtree_amount(self):
-        amount = len(self.sub_trees)
-        for t in self.sub_trees:
-            amount += t.subtree_amount()
-        return amount
+    # def subtree_amount(self):
+    #     amount = len(self.sub_trees)
+    #     for t in self.sub_trees:
+    #         amount += t.subtree_amount()
+    #     return amount
+    #
+    #
+    # def fill_value_array(self, value_array):
+    #     # traverse tree and write the coefficients at the correct place
+    #     # print('filling', self.tree_id, self.coefficient)
+    #     value_array[self.tree_id] = self.coefficient
+    #     for t in self.sub_trees:
+    #         t.fill_value_array(value_array)
 
-    def fill_value_array(self, value_array):
-        # traverse tree and write the coefficients at the correct place
-        # print('filling', self.tree_id, self.coefficient)
-        value_array[self.tree_id] = self.coefficient
-        for t in self.sub_trees:
-            t.fill_value_array(value_array)
-
-    def eval(self, factor_values):
-        # p(x) = c_0 + f_1 p_1(x) + f_2 p_2(x) + ...
-        out = self.coefficient
-        for factor, sub_tree in zip(self.factors, self.sub_trees):
-            # eval all sub trees
-            out += factor.eval(factor_values) * sub_tree.eval(factor_values)
-        return out
+    # def eval(self, factor_values):
+    #     # p(x) = c_0 + f_1 p_1(x) + f_2 p_2(x) + ...
+    #     out = self.coefficient
+    #     for factor, sub_tree in zip(self.factors, self.sub_trees):
+    #         # eval all sub trees
+    #         out += factor.eval(factor_values) * sub_tree.eval(factor_values)
+    #     return out
 
     def get_recipe(self):
         # p(x) = c_0 + c_1 p_1(x) + c_2 p_2(x) + ...

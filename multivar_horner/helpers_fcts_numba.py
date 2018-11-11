@@ -19,9 +19,15 @@ def eval_naive(x, coefficients, exponents):
 
 
 # @cc.export('eval_compiled', 'f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :])')
-@jit(f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :], b1[:]), nopython=True, cache=True)
-def eval_recipe(x, value_array, scalar_recipe, monomial_recipe, tree_recipe, tree_ops):
+@jit(f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :], u4[:, :], b1[:]), nopython=True, cache=True)
+def eval_recipe(x, value_array, copy_recipe, scalar_recipe, monomial_recipe, tree_recipe, tree_ops):
     # print(value_array)
+
+    # scalar recipe instruction encoding: target, source
+    for i in range(copy_recipe.shape[0]):
+        # value_array[target] = x[source1]
+        # target, source1, exponent = scalar_recipe[i, 0], scalar_recipe[i, 1], scalar_recipe[i, 2]
+        value_array[copy_recipe[i, 0]] = x[copy_recipe[i, 1]]
 
     # print('computing scalar factors: ...')
     # scalar recipe instruction encoding: target, source, exponent
@@ -113,7 +119,6 @@ def make_symmetric(square_matrix):
     return square_matrix
 
 
-#
 # import numpy as np
 # A = np.array([[0,1,1],[0,0,1],[0,0,1]])
 # print(A)
@@ -139,7 +144,7 @@ def build_row_equality_matrix(matrix, equality_matrix):
 
 
 @jit(i8(i8, i8[:]), nopython=True, cache=True)
-def index_of(value, vector):
+def find_first_in(value, vector):
     """
     returns the index of the first appearance of value in row vector
     :param value:

@@ -16,7 +16,7 @@ multivar_horner
     :target: https://pypi.python.org/pypi/multivar_horner
 
 
-A python package implementing a multivariate horner scheme for efficiently evaluating multivariate polynomials.
+A python package implementing a multivariate `horner scheme ("Horner's method", "Horner's rule") <https://en.wikipedia.org/wiki/Horner%27s_method>`__  for efficiently evaluating multivariate polynomials.
 
 A polynomial is factorised according to a greedy heuristic similar to the one described in [1], with some additional computational tweaks.
 This factorisation is being stored as a "Horner Tree". When the polynomial is fully factorized, a computational "recipe" for evaluating the polynomial is being compiled.
@@ -60,7 +60,7 @@ Usage
 Check code in ``example.py``:
 
 
-::
+.. code-block:: python
 
     import numpy as np
     from multivar_horner.multivar_horner import MultivarPolynomial, HornerMultivarPolynomial
@@ -91,11 +91,17 @@ Check code in ``example.py``:
     print(p_x)  # -29.0
 
     # represent the polynomial in the factorised (near to minimal) form
+    # factors out the monomials! with the highest usage
     polynomial = HornerMultivarPolynomial(coefficients, exponents)
     print(polynomial)  # [15] p(x) = 5.0 + x_2^1 [ x_1^1 x_3^1 [ 3.0 ] + x_1^3 [ 1.0 ] ] + x_1^2 x_3^1 [ 2.0 ]
 
     p_x = polynomial.eval(x)
     print(p_x) # -29.0
+
+    # in order to always just factor out the variable with the highest usage:
+    # [17] p(x) = 5.0 + x_1^1 [ x_1^1 [ x_1^1 [ x_2^1 [ 1.0 ] ] + x_3^1 [ 2.0 ] ] + x_2^1 [ x_3^1 [ 3.0 ] ] ]
+    horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, only_scalar_factors=True)
+
 
 
     # export the factorised polynomial
@@ -118,38 +124,43 @@ Speed Test Results
     Speed test:
     testing 200 evenly distributed random polynomials
 
-     parameters   |  setup time (/s)                        |  eval time (/s)                      |  # operations                        | lucrative after
-    dim | max_deg | naive      | horner     | delta         | naive      | horner     | delta      | naive      | horner     | delta      |     # evals
+         parameters   |  setup time (/s)                        |  eval time (/s)                      |  # operations                        | lucrative after
+    dim | max_deg | naive      | horner     | delta         | naive      | horner     | delta      | naive      | horner     | delta      |    # evals
     ================================================================================================================================================================
-    1   | 1       | 0.005892   | 0.06047    | 9.3 x more    | 0.004712   | 0.0006059  | 6.8 x less | 4          | 2          | 1.0 x less | 13
-    1   | 2       | 0.005843   | 0.08022    | 13 x more     | 0.004772   | 0.0007251  | 5.6 x less | 5          | 4          | 0.2 x less | 18
-    1   | 3       | 0.006712   | 0.1014     | 14 x more     | 0.004644   | 0.0006409  | 6.2 x less | 7          | 6          | 0.2 x less | 24
-    1   | 4       | 0.006179   | 0.1375     | 21 x more     | 0.004477   | 0.0007467  | 5.0 x less | 8          | 7          | 0.1 x less | 35
-    1   | 5       | 0.006059   | 0.1432     | 23 x more     | 0.004627   | 0.0006215  | 6.4 x less | 9          | 9          | 0.0 x more | 34
+    1   | 1       | 0.007341   | 0.07008    | 8.5 x more    | 0.006645   | 0.0008059  | 7.2 x less | 3          | 2          | 0.5 x less | 11
+    1   | 2       | 0.007411   | 0.1092     | 14 x more     | 0.00576    | 0.0007883  | 6.3 x less | 5          | 4          | 0.2 x less | 20
+    1   | 3       | 0.009317   | 0.1233     | 12 x more     | 0.005666   | 0.0007961  | 6.1 x less | 6          | 6          | 0.0 x more | 23
+    1   | 4       | 0.007432   | 0.1448     | 18 x more     | 0.005361   | 0.0007025  | 6.6 x less | 8          | 7          | 0.1 x less | 29
+    1   | 5       | 0.006413   | 0.1635     | 24 x more     | 0.005284   | 0.00076    | 6.0 x less | 10         | 9          | 0.1 x less | 35
 
-    2   | 1       | 0.007445   | 0.1129     | 14 x more     | 0.00638    | 0.0006415  | 8.9 x less | 12         | 5          | 1.4 x less | 18
-    2   | 2       | 0.006407   | 0.2159     | 33 x more     | 0.004935   | 0.0006426  | 6.7 x less | 24         | 13         | 0.8 x less | 49
-    2   | 3       | 0.006468   | 0.3441     | 52 x more     | 0.004673   | 0.001437   | 2.3 x less | 43         | 23         | 0.9 x less | 104
-    2   | 4       | 0.006288   | 0.5189     | 82 x more     | 0.004837   | 0.0007046  | 5.9 x less | 63         | 33         | 0.9 x less | 124
-    2   | 5       | 0.006339   | 0.781      | 122 x more    | 0.004598   | 0.0006951  | 5.6 x less | 95         | 48         | 1.0 x less | 198
+    2   | 1       | 0.008512   | 0.1188     | 13 x more     | 0.007274   | 0.0007133  | 9.2 x less | 12         | 6          | 1.0 x less | 17
+    2   | 2       | 0.00733    | 0.2345     | 31 x more     | 0.005458   | 0.0008188  | 5.7 x less | 24         | 13         | 0.8 x less | 49
+    2   | 3       | 0.007316   | 0.3743     | 50 x more     | 0.005742   | 0.001501   | 2.8 x less | 41         | 22         | 0.9 x less | 87
+    2   | 4       | 0.006453   | 0.5611     | 86 x more     | 0.004923   | 0.00174    | 1.8 x less | 65         | 34         | 0.9 x less | 174
+    2   | 5       | 0.00855    | 0.8063     | 93 x more     | 0.006074   | 0.0007677  | 6.9 x less | 96         | 49         | 1.0 x less | 150
 
-    3   | 1       | 0.006838   | 0.1746     | 24 x more     | 0.005002   | 0.000662   | 6.6 x less | 30         | 11         | 1.7 x less | 39
-    3   | 2       | 0.00725    | 0.5564     | 76 x more     | 0.005399   | 0.0007045  | 6.7 x less | 102        | 36         | 1.8 x less | 117
-    3   | 3       | 0.006433   | 1.3021     | 201 x more    | 0.005007   | 0.0008305  | 5.0 x less | 229        | 79         | 1.9 x less | 310
-    3   | 4       | 0.007125   | 2.5504     | 357 x more    | 0.005796   | 0.0008626  | 5.7 x less | 448        | 149        | 2.0 x less | 516
-    3   | 5       | 0.007424   | 4.4592     | 600 x more    | 0.006275   | 0.000861   | 6.3 x less | 767        | 251        | 2.1 x less | 822
+    3   | 1       | 0.007197   | 0.2007     | 27 x more     | 0.004981   | 0.000889   | 4.6 x less | 32         | 11         | 1.9 x less | 47
+    3   | 2       | 0.006693   | 0.6062     | 90 x more     | 0.005246   | 0.0007333  | 6.2 x less | 96         | 35         | 1.7 x less | 133
+    3   | 3       | 0.006891   | 1.4688     | 212 x more    | 0.005721   | 0.001267   | 3.5 x less | 234        | 81         | 1.9 x less | 328
+    3   | 4       | 0.007264   | 2.725      | 374 x more    | 0.006098   | 0.000823   | 6.4 x less | 456        | 151        | 2.0 x less | 515
+    3   | 5       | 0.008042   | 4.6306     | 575 x more    | 0.00705    | 0.0009687  | 6.3 x less | 753        | 247        | 2.0 x less | 760
 
-    4   | 1       | 0.01081    | 0.3098     | 28 x more     | 0.006394   | 0.0007032  | 8.1 x less | 71         | 20         | 2.5 x less | 53
-    4   | 2       | 0.007201   | 1.5558     | 215 x more    | 0.008119   | 0.0007251  | 10 x less  | 349        | 92         | 2.8 x less | 209
-    4   | 3       | 0.007502   | 5.491      | 731 x more    | 0.007367   | 0.0008973  | 7.2 x less | 1239       | 310        | 3.0 x less | 848
-    4   | 4       | 0.009323   | 13.3025    | 1426 x more   | 0.01137    | 0.001002   | 10 x less  | 2882       | 713        | 3.0 x less | 1282
-    4   | 5       | 0.01223    | 27.3097    | 2232 x more   | 0.01822    | 0.00138    | 12 x less  | 5790       | 1417       | 3.1 x less | 1621
+    4   | 1       | 0.006418   | 0.3839     | 59 x more     | 0.005019   | 0.0007817  | 5.4 x less | 80         | 22         | 2.6 x less | 89
+    4   | 2       | 0.006871   | 1.6235     | 235 x more    | 0.005686   | 0.0008181  | 6.0 x less | 347        | 91         | 2.8 x less | 332
+    4   | 3       | 0.007662   | 5.4757     | 714 x more    | 0.007902   | 0.0009026  | 7.8 x less | 1177       | 296        | 3.0 x less | 781
+    4   | 4       | 0.00936    | 17.9225    | 1914 x more   | 0.01144    | 0.002003   | 4.7 x less | 2808       | 695        | 3.0 x less | 1899
+    4   | 5       | 0.01299    | 33.6465    | 2590 x more   | 0.02014    | 0.001446   | 13 x less  | 5591       | 1369       | 3.1 x less | 1799
 
-    5   | 1       | 0.01036    | 0.6624     | 63 x more     | 0.006455   | 0.0007832  | 7.2 x less | 188        | 40         | 3.7 x less | 115
-    5   | 2       | 0.007524   | 4.7011     | 624 x more    | 0.007443   | 0.0008885  | 7.4 x less | 1333       | 274        | 3.9 x less | 716
-    5   | 3       | 0.01195    | 21.4938    | 1798 x more   | 0.01708    | 0.001224   | 13 x less  | 5825       | 1164       | 4.0 x less | 1355
-    5   | 4       | 0.02044    | 67.563     | 3304 x more   | 0.04303    | 0.002114   | 19 x less  | 17079      | 3395       | 4.0 x less | 1651
-    5   | 5       | 0.04125    | 169.8522   | 4116 x more   | 0.102      | 0.003819   | 26 x less  | 40348      | 7978       | 4.1 x less | 1729
+    5   | 1       | 0.009875   | 0.7415     | 74 x more     | 0.006086   | 0.001003   | 5.1 x less | 182        | 39         | 3.7 x less | 144
+    5   | 2       | 0.00896    | 5.811      | 648 x more    | 0.008984   | 0.002073   | 3.3 x less | 1381       | 281        | 3.9 x less | 840
+    5   | 3       | 0.01242    | 21.5646    | 1735 x more   | 0.01886    | 0.003408   | 4.5 x less | 5431       | 1097       | 4.0 x less | 1395
+    5   | 4       | 0.02282    | 69.0324    | 3024 x more   | 0.0442     | 0.002326   | 18 x less  | 16740      | 3346       | 4.0 x less | 1648
+
+
+    Ran 2 tests in 367.804s
+
+    OK
+    5   | 5       | 0.04214    | 186.1053   | 4415 x more   | 0.1008     | 0.004103   | 24 x less  | 43795      | 8584       | 4.1 x less | 1925
 
 
 # TODO plots, then just link to github on the PyPI description

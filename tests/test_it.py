@@ -9,10 +9,16 @@ import pytest
 from multivar_horner.global_settings import UINT_DTYPE
 from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 
+MAX_DIM = 2
+MAX_DEGREE = 2
+NR_SAMPLES = 200
+
 poly_settings_list = []
 input_list = []
 poly_class_instances = []
 
+
+# TODO also test only_scalar_factor=True
 
 def proto_test_case(data, fct):
     all_good = True
@@ -205,6 +211,7 @@ def speed_test_run(dim, max_degree, nr_samples, template):
                           str(eval_delta), str(num_ops_naive), str(num_ops_horner), ops_delta, str(lucrative_after)))
 
 
+# TODO compare difference in computed values (error)
 class MainTest(unittest.TestCase):
 
     def test_eval(self):
@@ -434,16 +441,13 @@ class MainTest(unittest.TestCase):
         proto_test_case(invalid_test_data, cmp_value_fct)
 
     def test_speed(self):
+        # this test also fulfills the purpose of testing the robustness of the code
+        # (many random polygons are being created and evaluated)
 
-        MAX_DIM = 2
-        MAX_DEGREE = 2
-        NR_SAMPLES = 200
-
+        # todo write results to file
         # TODO test for larger dimensions
         # TODO plot speed
-        # TODO compare difference in computed values (error)
-        # todo print to file
-        # TODO compare performance wrt. the "density" of the polynomials
+        # TODO compare & plot the performance wrt. the "density" of the polynomials
         # naive should stay constant, horner should get slower
 
         print('\nSpeed test:')
@@ -452,8 +456,8 @@ class MainTest(unittest.TestCase):
         print(' {0:11s}  |  {1:38s} |  {2:35s} |  {3:35s} | {4:20s}'.format('parameters', 'setup time (/s)',
                                                                             'eval time (/s)',
                                                                             '# operations', 'lucrative after '))
-        template = '{0:3s} | {1:7s} | {2:10s} | {3:10s} | {4:13s} | {5:10s} | {6:10s} | {7:10s} | '
-        '{8:10s} | {9:10s} | {10:10s} | {11:10s}'
+        template = '{0:3s} | {1:7s} | {2:10s} | {3:10s} | {4:13s} | {5:10s} | {6:10s} | {7:10s} | {8:10s} | ' \
+                   '{9:10s} | {10:10s} | {11:10s}'
 
         print(template.format('dim', 'max_deg', 'naive', 'horner', 'delta', 'naive',
                               'horner', 'delta', 'naive', 'horner', 'delta', '   # evals'))
@@ -461,6 +465,7 @@ class MainTest(unittest.TestCase):
 
         for dim in range(1, MAX_DIM + 1):
             for max_degree in range(1, MAX_DEGREE + 1):
+                # TODO make num samples dependent on parameters, print
                 speed_test_run(dim, max_degree, NR_SAMPLES, template)
             print()
 
