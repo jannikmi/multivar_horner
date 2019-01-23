@@ -21,6 +21,7 @@ def eval_naive(x, coefficients, exponents):
 # @cc.export('eval_compiled', 'f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :])')
 @jit(f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :], u4[:, :], b1[:]), nopython=True, cache=True)
 def eval_recipe(x, value_array, copy_recipe, scalar_recipe, monomial_recipe, tree_recipe, tree_ops):
+    # TODO like a compiler determine which 'registers' can be reused (reduce memory use)
     # print(value_array)
 
     # scalar recipe instruction encoding: target, source

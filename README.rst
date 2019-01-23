@@ -12,8 +12,19 @@ multivar_horner
     :target: https://pypi.python.org/pypi/multivar_horner
 
 
+..
+    disabled. download count is not existing yet
+    .. image:: https://pepy.tech/badge/multivar_horner
+        :alt: Total PyPI downloads
+        :target: https://pypi.python.org/pypi/multivar_horner
+
+
 .. image:: https://img.shields.io/pypi/v/multivar_horner.svg
+    :alt: latest version on PyPI
     :target: https://pypi.python.org/pypi/multivar_horner
+
+
+
 
 
 A python package implementing a multivariate `horner scheme ("Horner's method", "Horner's rule") <https://en.wikipedia.org/wiki/Horner%27s_method>`__  for efficiently evaluating multivariate polynomials.
@@ -57,7 +68,7 @@ Installation with pip:
 Usage
 =====
 
-Check code in ``example.py``:
+Check this code in ``example.py``:
 
 
 .. code-block:: python
@@ -68,7 +79,7 @@ Check code in ``example.py``:
     # input parameters defining the polynomial
     #   p(x) = 5.0 + 1.0 x_1^3 x_2^1 + 2.0 x_1^2 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
     #   with...
-    #       dimension N = 4
+    #       dimension N = 3
     #       amount of monomials M = 4
     #       max_degree D = 3
     # IMPORTANT: the data types and shapes are required by the precompiled helpers in helper_fcts_numba.py
@@ -85,33 +96,42 @@ Check code in ``example.py``:
     print(polynomial)  # [27] p(x) = 5.0 + 1.0 x_1^3 x_2^1 + 2.0 x_1^2 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
 
     # define the query point
-    x = np.array([-2.0, 3.0, 1.0], dtype=np.float64) # numpy row vector (1,N)
+    x = np.array([-2.0, 3.0, 1.0], dtype=np.float64)  # numpy row vector (1,N)
 
     p_x = polynomial.eval(x)
     print(p_x)  # -29.0
 
     # represent the polynomial in the factorised (near to minimal) form
     # factors out the monomials! with the highest usage
-    polynomial = HornerMultivarPolynomial(coefficients, exponents)
-    print(polynomial)  # [15] p(x) = 5.0 + x_2^1 [ x_1^1 x_3^1 [ 3.0 ] + x_1^3 [ 1.0 ] ] + x_1^2 x_3^1 [ 2.0 ]
+    horner_polynomial = HornerMultivarPolynomial(coefficients, exponents)
+    print(horner_polynomial)  # [15] p(x) = 5.0 + x_2^1 [ x_1^1 x_3^1 [ 3.0 ] + x_1^3 [ 1.0 ] ] + x_1^2 x_3^1 [ 2.0 ]
 
-    p_x = polynomial.eval(x)
-    print(p_x) # -29.0
-
-    # in order to always just factor out the variable with the highest usage:
+    # univariate_factors: always just factor out the single variable with the highest usage:
+    horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, univariate_factors=True)
     # [17] p(x) = 5.0 + x_1^1 [ x_1^1 [ x_1^1 [ x_2^1 [ 1.0 ] ] + x_3^1 [ 2.0 ] ] + x_2^1 [ x_3^1 [ 3.0 ] ] ]
-    horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, only_scalar_factors=True)
+    print(horner_polynomial)
 
+    # rectify_input: automatically convert the input to the right numpy data structure with the right data type etc.
+    # validate_input: check if input values are valid (e.g. only non negative exponents)
+    # the default for both options is false, for increased speed
+    coefficients = [5.0, 1.0, 2.0, 3.0] # must not be a column vector, but dimensions must still fit
+    exponents = [[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]]
+    horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True, validate_input=True)
 
+    p_x = horner_polynomial.eval(x)
+    print(p_x)  # -29.0
 
     # export the factorised polynomial
-    path = 'file_name.picke'
+    path = 'file_name.pickle'
     horner_polynomial.export_pickle(path=path)
 
     from multivar_horner.multivar_horner import load_pickle
 
     # import a polynomial
     horner_polynomial = load_pickle(path)
+    p_x = horner_polynomial.eval(x)
+    print(p_x)  # -29.0
+
 
 
 
@@ -124,7 +144,7 @@ Speed Test Results
     Speed test:
     testing 200 evenly distributed random polynomials
 
-         parameters   |  setup time (/s)                        |  eval time (/s)                      |  # operations                        | lucrative after
+     parameters   |  setup time (/s)                        |  eval time (/s)                      |  # operations                        | lucrative after
     dim | max_deg | naive      | horner     | delta         | naive      | horner     | delta      | naive      | horner     | delta      |    # evals
     ================================================================================================================================================================
     1   | 1       | 0.007341   | 0.07008    | 8.5 x more    | 0.006645   | 0.0008059  | 7.2 x less | 3          | 2          | 0.5 x less | 11

@@ -379,6 +379,7 @@ class HornerTree(object):
     #     return out
 
     def get_recipe(self):
+        # TODO do not add an operation for factors equal to 1.0
         # p(x) = c_0 + c_1 p_1(x) + c_2 p_2(x) + ...
         # target = source1 * source2
         # target == source 1

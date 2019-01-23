@@ -156,11 +156,11 @@ class HornerMultivarPolynomial(MultivarPolynomial):
     """
     a representation of a multivariate polynomial using horner factorisation to save evaluation time
 
-    dimension: the amount of variable as input
-    NOTE: the polygon actually needs not to depend on all dimensions
-    order: (for a multivariate polynomial) maximum sum of exponents in any of its monomials
-    degree: the largest exponent in any of its monomials
     dim: the dimensionality of the polynomial.
+    order: (for a multivariate polynomial) maximum sum of exponents in any of its monomials
+    max_degree: the largest exponent in any of its monomials
+        NOTE: the polynomial actually needs not to depend on all dimensions
+    unused_variables: the dimensions the polynomial does not depend on
     """
     # __slots__ declared in parents are available in child classes. However, child subclasses will get a __dict__
     # and __weakref__ unless they also define __slots__ (which should only contain names of any additional slots).
@@ -224,7 +224,7 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
         # compile and store a "recipe" for evaluating the polynomial with just numpy arrays
         self.initial_value_array, self.copy_recipe, self.scalar_recipe, self.monomial_recipe, self.tree_recipe, \
-            self.tree_ops = self.compile_recipes(tree_coefficients)
+        self.tree_ops = self.compile_recipes(tree_coefficients)
 
         compute_num_ops()
         self.representation = get_string_representation()
@@ -246,7 +246,7 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
     def link_monomials(self):
         """
-        TODO precompile
+        TODO numba precompile
         find the optimal factorisation of the unique factors themselves
         since the monomial ids are products of the ids of their scalar factors
         check for the highest possible divisor among all factor ids
@@ -283,8 +283,9 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
             pointer2 = pointer1 - 1
             # find the factors with the highest id which are a factor of the current monomial
+            # TODO back track when no factorisation is possible with that factor
+            # try with the remaining
             while 1:
-
                 if pointer2 < 0:
                     # no factorisation of this monomial has been found, because the remainder after
                     # picking a factorizing monomial cannot be factorised itself

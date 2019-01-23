@@ -18,7 +18,7 @@ input_list = []
 poly_class_instances = []
 
 
-# TODO also test only_scalar_factor=True
+# TODO automatically also test only_scalar_factor=True
 
 def proto_test_case(data, fct):
     all_good = True
