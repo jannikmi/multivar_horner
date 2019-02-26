@@ -1,6 +1,24 @@
 Changelog
 =========
 
+TODO clarify "evenly distributed random polynomials" in readme
+
+
+1.1.0 (2019-02-27)
+__________________
+
+* added option `find_optimal` to find an optimal factorisation with A* search, explanation in readme
+* optimized heuristic factorisation (more clean approach using just binary trees)
+* dropped option `univariate_factors`
+* added option `compute_representation` to compute the string representation of a factorisation only when required
+* added option `keep_tree` to keep the factorisation tree when required
+* clarification and expansion of readme and `example.py`
+* explained usage of optional parameters `rectify_input=True` and `validate_input=True`
+* explained usage of functions `get_gradient()` and `get_partial_derivative(i)`
+* averaged runtime in speed tests
+
+
+
 1.0.1 (2018-11-12)
 __________________
 

@@ -10,6 +10,5 @@ FLOAT_DTYPE = float64  # f8 =  8byte float
 
 DEFAULT_PICKLE_FILE_NAME = 'multivar_polynomial.pickle'
 
-# TODO
-# DEBUG = False
-DEBUG = True
+DEBUG = False
+# DEBUG = True
