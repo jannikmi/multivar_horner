@@ -18,7 +18,9 @@ input_list = []
 poly_class_instances = []
 
 
-# TODO also test only_scalar_factor=True
+# TODO automatically also test only_scalar_factor=True
+# TODO compare difference in computed values (error)
+# TODO test consecutive evaluations of the same polynomial!
 
 def proto_test_case(data, fct):
     all_good = True
@@ -186,19 +188,24 @@ def speed_test_run(dim, max_degree, nr_samples, template):
     input_list = rnd_input_list(nr_samples, dim, max_abs_val=1.0)
 
     setup_time_naive = timeit.timeit("setup_time_fct(MultivarPolynomial)", globals=globals(), number=1)
+    setup_time_naive = setup_time_naive / NR_SAMPLES  # = avg. per sample
+
     # poly_class_instances is not populated with the naive polynomial class instances
     # print(poly_class_instances[0])
     num_ops_naive = get_avg_num_ops()
 
     eval_time_naive = timeit.timeit("eval_time_fct()", globals=globals(), number=1)
+    eval_time_naive = eval_time_naive / NR_SAMPLES  # = avg. per sample
 
-    setup_time_horner = timeit.timeit("setup_time_fct(HornerMultivarPolynomial)", globals=globals(),
-                                      number=1)
+    setup_time_horner = timeit.timeit("setup_time_fct(HornerMultivarPolynomial)", globals=globals(), number=1)
+    setup_time_horner = setup_time_horner / NR_SAMPLES  # = avg. per sample
+
     # poly_class_instances is not populated with the horner polynomial class instances
     # print(poly_class_instances[0])
     num_ops_horner = get_avg_num_ops()
 
     eval_time_horner = timeit.timeit("eval_time_fct()", globals=globals(), number=1)
+    eval_time_horner = eval_time_horner / NR_SAMPLES  # = avg. per sample
 
     setup_delta = difference(setup_time_naive, setup_time_horner)
     eval_delta = difference(eval_time_naive, eval_time_horner)
@@ -211,7 +218,6 @@ def speed_test_run(dim, max_degree, nr_samples, template):
                           str(eval_delta), str(num_ops_naive), str(num_ops_horner), ops_delta, str(lucrative_after)))
 
 
-# TODO compare difference in computed values (error)
 class MainTest(unittest.TestCase):
 
     def test_eval(self):
@@ -223,13 +229,23 @@ class MainTest(unittest.TestCase):
             res1 = poly.eval(x, validate_input=True)
             print(str(poly))
 
-            horner_poly = HornerMultivarPolynomial(coeff, exp, rectify_input=True, validate_input=True)
+            horner_poly = HornerMultivarPolynomial(coeff, exp, rectify_input=True, validate_input=True,
+                                                   compute_representation=True, find_optimal=False)
             res2 = horner_poly.eval(x, validate_input=True)
             print(str(horner_poly))
             # print('x=',x.tolist())
-            if res1 != res2:
-                print('resutls differ:', res1, res2)
+
+            horner_poly_opt = HornerMultivarPolynomial(coeff, exp, rectify_input=True, validate_input=True,
+                                                       compute_representation=True, find_optimal=True)
+            res3 = horner_poly_opt.eval(x, validate_input=True)
+            print(str(horner_poly_opt))
+            # print('x=',x.tolist())
+
+            if res1 != res2 or res2 != res3:
+                print('results differ:', res1, res2, res3)
                 assert False
+
+            assert horner_poly.num_ops >= horner_poly_opt.num_ops
 
             return poly.eval(x, validate_input=True)
 
@@ -451,7 +467,8 @@ class MainTest(unittest.TestCase):
         # naive should stay constant, horner should get slower
 
         print('\nSpeed test:')
-        print('testing {} evenly distributed random polynomials\n'.format(NR_SAMPLES))
+        print('testing {} evenly distributed random polynomials'.format(NR_SAMPLES))
+        print('average timings per polynomial:\n')
 
         print(' {0:11s}  |  {1:38s} |  {2:35s} |  {3:35s} | {4:20s}'.format('parameters', 'setup time (/s)',
                                                                             'eval time (/s)',

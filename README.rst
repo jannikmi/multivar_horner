@@ -12,21 +12,36 @@ multivar_horner
     :target: https://pypi.python.org/pypi/multivar_horner
 
 
+..
+    disabled. download count is not existing yet
+    .. image:: https://pepy.tech/badge/multivar_horner
+        :alt: Total PyPI downloads
+        :target: https://pypi.python.org/pypi/multivar_horner
+
+
 .. image:: https://img.shields.io/pypi/v/multivar_horner.svg
+    :alt: latest version on PyPI
     :target: https://pypi.python.org/pypi/multivar_horner
 
 
 A python package implementing a multivariate `horner scheme ("Horner's method", "Horner's rule") <https://en.wikipedia.org/wiki/Horner%27s_method>`__  for efficiently evaluating multivariate polynomials.
 
 A polynomial is factorised according to a greedy heuristic similar to the one described in [1], with some additional computational tweaks.
-This factorisation is being stored as a "Horner Tree". When the polynomial is fully factorized, a computational "recipe" for evaluating the polynomial is being compiled.
-This "recipe" (stored internally as numpy arrays) allows the evaluation without the additional overhead of traversing the tree (= recursive function calls) and with functions precompiled by ``numba``.
+The factorisation is computed by growing a "Horner Factorisation Tree". When the polynomial is fully factorized (= all leaves cannot be factorised any more), a computational "recipe" for evaluating the polynomial is being compiled.
+This "recipe" (stored internally as numpy arrays) enables fast evaluation with minimal memory requirement, because of the lack of additional overhead of recursive function calls (traversing the tree) and functions precompiled by ``numba`` operating on numpy arrays.
 
-**Advantage:** It is a near to minimal representation (in terms of storage and computational requirements) of a multivariate polynomial.
+All factors in use in the factorisation are computed only once and factorized themselves (=reusing computed values) to save computations.
 
-NOTE: an algorithm for finding the optimal factorisation of any multivariate polynomial is not known (to the best of my knowledge).
+**Pros:**
+ * near to minimal representation of a multivariate polynomial (in the sense of memory and time complexity of the evaluation).
+ * lower error propagation, because of fewer operations [1, Ch. 5]
 
-**Disadvantage:** Extra initial memory and computational effort is required in order to find the factorisation (cf. speed test results below).
+**Cons:**
+ * increased initial computational requirements and memory to find and then store the factorisation (cf. speed test results below).
+ * possibly numerically less stable, because of long "factorisation chains" -> numerical errors can propagate and accumulate
+
+
+It is also possible to search for an optimal factorisation (cf. section "Optimal Horner Factorisation" below)
 
 
 Also see:
@@ -57,7 +72,7 @@ Installation with pip:
 Usage
 =====
 
-Check code in ``example.py``:
+Check this code in ``example.py``:
 
 
 .. code-block:: python
@@ -68,7 +83,7 @@ Check code in ``example.py``:
     # input parameters defining the polynomial
     #   p(x) = 5.0 + 1.0 x_1^3 x_2^1 + 2.0 x_1^2 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
     #   with...
-    #       dimension N = 4
+    #       dimension N = 3
     #       amount of monomials M = 4
     #       max_degree D = 3
     # IMPORTANT: the data types and shapes are required by the precompiled helpers in helper_fcts_numba.py
@@ -79,40 +94,98 @@ Check code in ``example.py``:
     polynomial = MultivarPolynomial(coefficients, exponents)
 
     # visualising the used polynomial representation
+    print(polynomial)
+    # [#ops=27] p(x) = 5.0 x_1^0 x_2^0 x_3^0 + 1.0 x_1^3 x_2^1 x_3^0 + 2.0 x_1^2 x_2^0 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
     # NOTE: the number in square brackets indicates the required number of operations
     #   to evaluate the polynomial (ADD, MUL, POW).
-    #   it is not equal to the visually identifiable number of operations (due to the internally used algorithms)
-    print(polynomial)  # [27] p(x) = 5.0 + 1.0 x_1^3 x_2^1 + 2.0 x_1^2 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
+    # NOTE: in case of unfactorised polynomials many mathematically unnecessary operations are being done,
+    # because of the algorithms in use internally
 
     # define the query point
-    x = np.array([-2.0, 3.0, 1.0], dtype=np.float64) # numpy row vector (1,N)
+    x = np.array([-2.0, 3.0, 1.0], dtype=np.float64)  # numpy row vector (1,N)
 
     p_x = polynomial.eval(x)
     print(p_x)  # -29.0
 
     # represent the polynomial in the factorised (near to minimal) form
-    # factors out the monomials! with the highest usage
-    polynomial = HornerMultivarPolynomial(coefficients, exponents)
-    print(polynomial)  # [15] p(x) = 5.0 + x_2^1 [ x_1^1 x_3^1 [ 3.0 ] + x_1^3 [ 1.0 ] ] + x_1^2 x_3^1 [ 2.0 ]
+    # iteratively factors out the factors with the highest usage
+    # pass compute_representation=True in order to see the factorisation when printing the class
+    # pass keep_tree=True when the factorisation tree should be kept after the factorisation process is done
+    horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, compute_representation=True)
+    print(horner_polynomial)  # [#ops=10] p(x) = x_1 (x_1 (x_1 (c x_2) + c x_3) + c x_2 x_3) + c
+    # NOTE: the displayed number of operations might not match the visually identifiable number of operations,
+    # because the evaluation of the factors (themselves monomials) are being factorised again
 
-    p_x = polynomial.eval(x)
-    print(p_x) # -29.0
+    # BETA feature:
+    # pass find_optimal=True to start an adapted A* search through all possible factorisations
+    # theoretically guaranteed to find the optimal solution, but time and memory consumption are MUCH higher!
+    # (the number of possible factorisations is growing exponentially with the size of the polynomial!)
+    # currently this approach seems to actually try all possible factorisations
+    # improvements need to be made
+    # in the first test runs the results seemed to be identical (#ops) with just fa
+    horner_polynomial_optimal = HornerMultivarPolynomial(coefficients, exponents, find_optimal=True,
+                                                         compute_representation=True)
+    print(horner_polynomial_optimal)  # [#ops=10] p(x) = x_3 (x_1 (c x_1 + c x_2)) + c + c x_1^3 x_2
 
-    # in order to always just factor out the variable with the highest usage:
-    # [17] p(x) = 5.0 + x_1^1 [ x_1^1 [ x_1^1 [ x_2^1 [ 1.0 ] ] + x_3^1 [ 2.0 ] ] + x_2^1 [ x_3^1 [ 3.0 ] ] ]
-    horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, only_scalar_factors=True)
+    # rectify_input: automatically convert the input to the right numpy data structure with the right data type and shape
+    # validate_input: check if input values are valid (e.g. only non negative exponents)
+    # the default for both options is false (increased speed)
+    coefficients = [5.0, 1.0, 2.0, 3.0]  # must not be a column vector, but dimensions must still fit
+    exponents = [[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]]
+    horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True, validate_input=True)
 
-
+    p_x = horner_polynomial.eval(x)
+    print(p_x)  # -29.0
 
     # export the factorised polynomial
-    path = 'file_name.picke'
+    path = 'file_name.pickle'
     horner_polynomial.export_pickle(path=path)
 
     from multivar_horner.multivar_horner import load_pickle
 
     # import a polynomial
     horner_polynomial = load_pickle(path)
+    p_x = horner_polynomial.eval(x)
+    print(p_x)  # -29.0
 
+    # BETA: untested features
+    # derivative and gradient of a polynomial
+    # NOTE: partial derivatives themselves will be instances of the same parent class
+    deriv_2 = horner_polynomial.get_partial_derivative(2)
+
+    grad = horner_polynomial.get_gradient()
+
+
+Optimal Horner Factorisation
+============================
+
+**BETA:**
+
+When passing ``find_optimal=True`` this package allows searching for an optimal factorisation:
+
+
+.. code-block:: python
+
+    horner_polynomial_optimal = HornerMultivarPolynomial(coefficients, exponents, find_optimal=True,
+                                                         compute_representation=True)
+
+
+**Basic idea**: adapted A* search on all possible factorisations:
+
+* allow all meaningful possible factorisation while ranking them according to their lowest possible amount of operations needed for evaluation (heuristic)
+* iteratively factorize the most promising factorisation further until a full factorisation has been found
+
+
+Theoretically this is guaranteed to yield an optimal solution.
+
+
+**NOTE:**
+
+* This requires MUCH more memory and computing time than just trying one factorisation (the number of possible factorisations is growing exponentially with the size of the polynomial!).
+* currently this approach seems to actually try all possible factorisations, because the heuristic in use is too optimistic (improvements needed)
+* in the first test runs the results seemed to be identical (in terms of #ops) with the vanilla approach of just trying one factorisation!
+* one could easily adapt this approach to find all optimal horner factorisations
+* in contrary to univariate polynomials there are possibly many optimal horner factorisations of a multivariate polynomial. Even an optimal horner factorisation must not be the globally minimal representation (other types factorisations possible)!
 
 
 Speed Test Results
@@ -123,39 +196,40 @@ Speed Test Results
 
     Speed test:
     testing 200 evenly distributed random polynomials
+    average timings per polynomial:
 
-         parameters   |  setup time (/s)                        |  eval time (/s)                      |  # operations                        | lucrative after
+     parameters   |  setup time (/s)                        |  eval time (/s)                      |  # operations                        | lucrative after
     dim | max_deg | naive      | horner     | delta         | naive      | horner     | delta      | naive      | horner     | delta      |    # evals
     ================================================================================================================================================================
-    1   | 1       | 0.007341   | 0.07008    | 8.5 x more    | 0.006645   | 0.0008059  | 7.2 x less | 3          | 2          | 0.5 x less | 11
-    1   | 2       | 0.007411   | 0.1092     | 14 x more     | 0.00576    | 0.0007883  | 6.3 x less | 5          | 4          | 0.2 x less | 20
-    1   | 3       | 0.009317   | 0.1233     | 12 x more     | 0.005666   | 0.0007961  | 6.1 x less | 6          | 6          | 0.0 x more | 23
-    1   | 4       | 0.007432   | 0.1448     | 18 x more     | 0.005361   | 0.0007025  | 6.6 x less | 8          | 7          | 0.1 x less | 29
-    1   | 5       | 0.006413   | 0.1635     | 24 x more     | 0.005284   | 0.00076    | 6.0 x less | 10         | 9          | 0.1 x less | 35
+    1   | 1       | 1.895e-05  | 0.0001675  | 7.8 x more    | 1.62e-05   | 2.155e-06  | 6.5 x less | 3          | 1          | 2.0 x less | 11
+    1   | 2       | 2.041e-05  | 0.0002327  | 10 x more     | 1.384e-05  | 2.461e-06  | 4.6 x less | 5          | 3          | 0.7 x less | 19
+    1   | 3       | 2.005e-05  | 0.000294   | 14 x more     | 1.495e-05  | 2.525e-06  | 4.9 x less | 7          | 4          | 0.8 x less | 22
+    1   | 4       | 2.045e-05  | 0.0003652  | 17 x more     | 1.513e-05  | 2.658e-06  | 4.7 x less | 8          | 5          | 0.6 x less | 28
+    1   | 5       | 2.081e-05  | 0.0004009  | 18 x more     | 1.473e-05  | 2.365e-06  | 5.2 x less | 10         | 6          | 0.7 x less | 31
 
-    2   | 1       | 0.008512   | 0.1188     | 13 x more     | 0.007274   | 0.0007133  | 9.2 x less | 12         | 6          | 1.0 x less | 17
-    2   | 2       | 0.00733    | 0.2345     | 31 x more     | 0.005458   | 0.0008188  | 5.7 x less | 24         | 13         | 0.8 x less | 49
-    2   | 3       | 0.007316   | 0.3743     | 50 x more     | 0.005742   | 0.001501   | 2.8 x less | 41         | 22         | 0.9 x less | 87
-    2   | 4       | 0.006453   | 0.5611     | 86 x more     | 0.004923   | 0.00174    | 1.8 x less | 65         | 34         | 0.9 x less | 174
-    2   | 5       | 0.00855    | 0.8063     | 93 x more     | 0.006074   | 0.0007677  | 6.9 x less | 96         | 49         | 1.0 x less | 150
+    2   | 1       | 2.077e-05  | 0.0003436  | 16 x more     | 1.413e-05  | 2.956e-06  | 3.8 x less | 11         | 3          | 2.7 x less | 29
+    2   | 2       | 2.183e-05  | 0.0006544  | 29 x more     | 1.759e-05  | 2.791e-06  | 5.3 x less | 23         | 9          | 1.6 x less | 43
+    2   | 3       | 2.309e-05  | 0.001198   | 51 x more     | 1.566e-05  | 2.67e-06   | 4.9 x less | 43         | 18         | 1.4 x less | 90
+    2   | 4       | 2.27e-05   | 0.001749   | 76 x more     | 1.645e-05  | 2.736e-06  | 5.0 x less | 66         | 28         | 1.4 x less | 126
+    2   | 5       | 2.655e-05  | 0.002581   | 96 x more     | 1.699e-05  | 3.047e-06  | 4.6 x less | 98         | 42         | 1.3 x less | 183
 
-    3   | 1       | 0.007197   | 0.2007     | 27 x more     | 0.004981   | 0.000889   | 4.6 x less | 32         | 11         | 1.9 x less | 47
-    3   | 2       | 0.006693   | 0.6062     | 90 x more     | 0.005246   | 0.0007333  | 6.2 x less | 96         | 35         | 1.7 x less | 133
-    3   | 3       | 0.006891   | 1.4688     | 212 x more    | 0.005721   | 0.001267   | 3.5 x less | 234        | 81         | 1.9 x less | 328
-    3   | 4       | 0.007264   | 2.725      | 374 x more    | 0.006098   | 0.000823   | 6.4 x less | 456        | 151        | 2.0 x less | 515
-    3   | 5       | 0.008042   | 4.6306     | 575 x more    | 0.00705    | 0.0009687  | 6.3 x less | 753        | 247        | 2.0 x less | 760
+    3   | 1       | 2.297e-05  | 0.0007024  | 30 x more     | 1.66e-05   | 2.658e-06  | 5.2 x less | 30         | 8          | 2.8 x less | 49
+    3   | 2       | 2.19e-05   | 0.002274   | 103 x more    | 1.669e-05  | 3.336e-06  | 4.0 x less | 102        | 30         | 2.4 x less | 169
+    3   | 3       | 2.379e-05  | 0.004855   | 203 x more    | 1.768e-05  | 2.86e-06   | 5.2 x less | 222        | 68         | 2.3 x less | 326
+    3   | 4       | 2.451e-05  | 0.009766   | 397 x more    | 2.198e-05  | 3.783e-06  | 4.8 x less | 447        | 137        | 2.3 x less | 535
+    3   | 5       | 2.721e-05  | 0.01648    | 604 x more    | 2.466e-05  | 3.529e-06  | 6.0 x less | 763        | 233        | 2.3 x less | 779
 
-    4   | 1       | 0.006418   | 0.3839     | 59 x more     | 0.005019   | 0.0007817  | 5.4 x less | 80         | 22         | 2.6 x less | 89
-    4   | 2       | 0.006871   | 1.6235     | 235 x more    | 0.005686   | 0.0008181  | 6.0 x less | 347        | 91         | 2.8 x less | 332
-    4   | 3       | 0.007662   | 5.4757     | 714 x more    | 0.007902   | 0.0009026  | 7.8 x less | 1177       | 296        | 3.0 x less | 781
-    4   | 4       | 0.00936    | 17.9225    | 1914 x more   | 0.01144    | 0.002003   | 4.7 x less | 2808       | 695        | 3.0 x less | 1899
-    4   | 5       | 0.01299    | 33.6465    | 2590 x more   | 0.02014    | 0.001446   | 13 x less  | 5591       | 1369       | 3.1 x less | 1799
+    4   | 1       | 2.296e-05  | 0.001601   | 69 x more     | 1.597e-05  | 2.802e-06  | 4.7 x less | 79         | 17         | 3.6 x less | 120
+    4   | 2       | 2.27e-05   | 0.007437   | 327 x more    | 1.996e-05  | 3.723e-06  | 4.4 x less | 382        | 89         | 3.3 x less | 457
+    4   | 3       | 2.834e-05  | 0.02269    | 800 x more    | 3.023e-05  | 3.931e-06  | 6.7 x less | 1181       | 279        | 3.2 x less | 862
+    4   | 4       | 3.638e-05  | 0.05136    | 1410 x more   | 4.494e-05  | 5.186e-06  | 7.7 x less | 2667       | 632        | 3.2 x less | 1291
+    4   | 5       | 5.207e-05  | 0.1111     | 2132 x more   | 8.537e-05  | 7.524e-06  | 10 x less  | 5758       | 1359       | 3.2 x less | 1426
 
-    5   | 1       | 0.009875   | 0.7415     | 74 x more     | 0.006086   | 0.001003   | 5.1 x less | 182        | 39         | 3.7 x less | 144
-    5   | 2       | 0.00896    | 5.811      | 648 x more    | 0.008984   | 0.002073   | 3.3 x less | 1381       | 281        | 3.9 x less | 840
-    5   | 3       | 0.01242    | 21.5646    | 1735 x more   | 0.01886    | 0.003408   | 4.5 x less | 5431       | 1097       | 4.0 x less | 1395
-    5   | 4       | 0.02282    | 69.0324    | 3024 x more   | 0.0442     | 0.002326   | 18 x less  | 16740      | 3346       | 4.0 x less | 1648
-    5   | 5       | 0.04214    | 186.1053   | 4415 x more   | 0.1008     | 0.004103   | 24 x less  | 43795      | 8584       | 4.1 x less | 1925
+    5   | 1       | 2.553e-05  | 0.00305    | 118 x more    | 1.652e-05  | 3.533e-06  | 3.7 x less | 167        | 31         | 4.4 x less | 233
+    5   | 2       | 2.956e-05  | 0.02257    | 763 x more    | 2.941e-05  | 4.167e-06  | 6.1 x less | 1270       | 246        | 4.2 x less | 893
+    5   | 3       | 4.702e-05  | 0.101      | 2147 x more   | 7.98e-05   | 6.612e-06  | 11 x less  | 5605       | 1083       | 4.2 x less | 1379
+    5   | 4       | 0.0001021  | 0.335      | 3278 x more   | 0.000236   | 1.579e-05  | 14 x less  | 18399      | 3521       | 4.2 x less | 1521
+    5   | 5       | 0.0001861  | 0.759      | 4076 x more   | 0.0004799  | 3.037e-05  | 15 x less  | 40980      | 7885       | 4.2 x less | 1688
 
 
 # TODO plots, then just link to github on the PyPI description
@@ -164,10 +238,14 @@ Speed Test Results
 Contact
 =======
 
+
+Tell me if and how your are using this package. This encourages me to develop and test it further.
+
 Most certainly there is stuff I missed, things I could have optimized even further or explained more clearly, etc. I would be really glad to get some feedback on my code.
 
 If you encounter any bugs, have suggestions etc.
 do not hesitate to **open an Issue** or **add a Pull Requests** on Git.
+
 
 
 License

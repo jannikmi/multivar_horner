@@ -25,7 +25,17 @@ def get_prime_array(length):
 
 
 def get_goedel_id_of(prime_idx, exponent, prime_array):
-    # return the unique ID of any scalar monomial x_i^n
+    '''
+    NOTE: factor IDs of monomials (product of scala IDs) potentially grow very large,
+    especially with high dimensionality -> overflow?!
+    python automatically uses the reqired long data type for ints,  no special attention required?!
+    TODO use different method different from goedel id approach
+
+    :param prime_idx:
+    :param exponent:
+    :param prime_array: the unique ID of any scalar monomial x_i^n
+    :return:
+    '''
     return int(prime_array[prime_idx] ** exponent)
 
 
