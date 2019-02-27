@@ -129,8 +129,8 @@ class BasePolynomialNode(object):
 
     def __init__(self, exponents, *args, **kwargs):
         self.exponents = exponents
-        self.dim = self.exponents.shape[1]
         self.num_monomials = self.exponents.shape[0]
+        self.dim = self.exponents.shape[1]
 
         self.unique_exponents = []
         for d in range(self.dim):
@@ -144,10 +144,10 @@ class BasePolynomialNode(object):
             else:
                 self.unique_exponents.append(dim_exponents_unique)
 
+        self.children = None
         self.value_idxs = None
         self.factors = None
         self.has_children = False
-        self.children = None
         self.children_class = None
         self.factorisation_class = None
         self.post_init()
@@ -318,10 +318,10 @@ class OptimalPolynomialNode(BasePolynomialNode):
 
     def __init__(self, exponents, *args, **kwargs):
 
+        self.options = None
         self.cost_estimate = 0
         self.factorisation_measure = 0
         self.fully_factorized = True
-        self.options = None
 
         # self.post_init() is being called at the end
         super(OptimalPolynomialNode, self).__init__(exponents, *args, **kwargs)
