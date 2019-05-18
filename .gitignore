@@ -4,7 +4,7 @@ scrapyard.py
 tmp.py
 .pytest_cache
 .idea/
-file_name.pickle
+*.pickle
 
 
 # GITIGNORE DEFAULTS

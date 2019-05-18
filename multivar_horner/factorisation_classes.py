@@ -10,6 +10,10 @@ class FactorisationNode(object):
     A node representing a factorisation of a polynomial:
     p = f_1 * p_1 + p_2
     its sub problems are polynomials as well -> 'divide and conquer'
+    factorisation in this way results in building a binary "Horner Factorisation Tree"
+    TODO allow whole monomials as factors. otherwise factorisation is ambiguous: f = f1 f2 = f2 f1
+    TODO or remove ambiguity by uniquely identifying identical polynomials
+    just important for optimal factorisation search. not a priority atm.
     """
 
     # prevent dynamic attribute assignment (-> safe memory)
@@ -519,6 +523,7 @@ class OptimalFactorisationRoot(OptimalPolynomialNode):
         use this data to derive better heuristics for factorizing more optimally a priori
         :return:
         """
+        # optimal_factorisations = []
         raise NotImplementedError
 
 

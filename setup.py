@@ -1,8 +1,6 @@
 # -*- coding:utf-8 -*-
-
 import os
 import re
-import sys
 
 from setuptools import setup
 
@@ -17,26 +15,12 @@ def get_version(package):
 
 version = get_version('multivar_horner')
 
-with open('README.rst') as f:
-    readme = f.read()
-
-with open('CHANGELOG.rst') as changelog_file:
-    changelog = changelog_file.read()
-
-# https://stackoverflow.com/questions/23174738/setup-py-packages-and-unicode-literals
-native_string_pckg_name = 'multivar_horner'
-if sys.version_info.major == 2:
-    native_string_pckg_name = b'multivar_horner'
-
 setup(
     name='multivar_horner',
     version=version,
     packages=['multivar_horner'],
-    # package_data={
-    #     native_string_pckg_name: [],
-    # },
-    description='python package implementing a multivariate horner scheme for efficiently'
-                ' evaluating multivariate polynomials',
+    description='python package implementing a multivariate Horner scheme for efficiently '
+                'evaluating multivariate polynomials',
     author='J. Michelfeit',
     author_email='python@michelfe.it',
     license='MIT licence',
@@ -67,7 +51,10 @@ setup(
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Scientific/Engineering :: Physics',
     ],
-    long_description=readme + '\n\n' + changelog,
+    long_description='Python package for computing Horner factorisations of multivariate polynomials '
+                     'for efficient evaluation.\n'
+                     'Please check GitHub for the documentation with plots: \n'
+                     'https://github.com/MrMinimal64/multivar-horner',
     install_requires=[
         'numpy',
         'numba',
