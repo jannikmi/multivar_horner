@@ -10,6 +10,10 @@ class FactorisationNode(object):
     A node representing a factorisation of a polynomial:
     p = f_1 * p_1 + p_2
     its sub problems are polynomials as well -> 'divide and conquer'
+    factorisation in this way results in building a binary "Horner Factorisation Tree"
+    TODO allow whole monomials as factors. otherwise factorisation is ambiguous: f = f1 f2 = f2 f1
+    TODO or remove ambiguity by uniquely identifying identical polynomials
+    just important for optimal factorisation search. not a priority atm.
     """
 
     # prevent dynamic attribute assignment (-> safe memory)
@@ -129,8 +133,8 @@ class BasePolynomialNode(object):
 
     def __init__(self, exponents, *args, **kwargs):
         self.exponents = exponents
-        self.dim = self.exponents.shape[1]
         self.num_monomials = self.exponents.shape[0]
+        self.dim = self.exponents.shape[1]
 
         self.unique_exponents = []
         for d in range(self.dim):
@@ -144,10 +148,10 @@ class BasePolynomialNode(object):
             else:
                 self.unique_exponents.append(dim_exponents_unique)
 
+        self.children = None
         self.value_idxs = None
         self.factors = None
         self.has_children = False
-        self.children = None
         self.children_class = None
         self.factorisation_class = None
         self.post_init()
@@ -318,10 +322,10 @@ class OptimalPolynomialNode(BasePolynomialNode):
 
     def __init__(self, exponents, *args, **kwargs):
 
+        self.options = None
         self.cost_estimate = 0
         self.factorisation_measure = 0
         self.fully_factorized = True
-        self.options = None
 
         # self.post_init() is being called at the end
         super(OptimalPolynomialNode, self).__init__(exponents, *args, **kwargs)
@@ -519,6 +523,7 @@ class OptimalFactorisationRoot(OptimalPolynomialNode):
         use this data to derive better heuristics for factorizing more optimally a priori
         :return:
         """
+        # optimal_factorisations = []
         raise NotImplementedError
 
 

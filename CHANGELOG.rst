@@ -1,7 +1,14 @@
 Changelog
 =========
 
-TODO clarify "evenly distributed random polynomials" in readme
+
+1.2.0 (2019-05-19)
+__________________
+
+* support of newer numpy versions (ndarray.max() not supported)
+* added plotting routine (partly taken from tests)
+* added plots in readme
+* included latest insights into readme
 
 
 1.1.0 (2019-02-27)

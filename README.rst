@@ -8,40 +8,42 @@ multivar_horner
     :target: https://travis-ci.org/MrMinimal64/multivar_horner
 
 
-.. image:: https://img.shields.io/pypi/wheel/multivar_horner.svg
-    :target: https://pypi.python.org/pypi/multivar_horner
+.. image:: https://img.shields.io/pypi/wheel/multivar-horner.svg
+    :target: https://pypi.python.org/pypi/multivar-horner
 
 
-..
-    disabled. download count is not existing yet
-    .. image:: https://pepy.tech/badge/multivar_horner
-        :alt: Total PyPI downloads
-        :target: https://pypi.python.org/pypi/multivar_horner
+.. image:: https://pepy.tech/badge/multivar-horner
+    :alt: Total PyPI downloads
+    :target: https://pypi.python.org/pypi/multivar-horner
 
 
 .. image:: https://img.shields.io/pypi/v/multivar_horner.svg
     :alt: latest version on PyPI
-    :target: https://pypi.python.org/pypi/multivar_horner
+    :target: https://pypi.python.org/pypi/multivar-horner
 
 
 A python package implementing a multivariate `horner scheme ("Horner's method", "Horner's rule") <https://en.wikipedia.org/wiki/Horner%27s_method>`__  for efficiently evaluating multivariate polynomials.
 
-A polynomial is factorised according to a greedy heuristic similar to the one described in [1], with some additional computational tweaks.
-The factorisation is computed by growing a "Horner Factorisation Tree". When the polynomial is fully factorized (= all leaves cannot be factorised any more), a computational "recipe" for evaluating the polynomial is being compiled.
+A polynomial is being factorised according to the greedy heuristic described in [1], with some additional computational tweaks.
+The resulting Horner factorisation requires less operations for evaluation.
+The factorisation is computed by growing a "Horner Factorisation Tree".
+When the polynomial is fully factorized (= all leaves cannot be factorised any more), a computational "recipe" for evaluating the polynomial is being compiled.
 This "recipe" (stored internally as numpy arrays) enables fast evaluation with minimal memory requirement, because of the lack of additional overhead of recursive function calls (traversing the tree) and functions precompiled by ``numba`` operating on numpy arrays.
 
 All factors in use in the factorisation are computed only once and factorized themselves (=reusing computed values) to save computations.
 
 **Pros:**
  * near to minimal representation of a multivariate polynomial (in the sense of memory and time complexity of the evaluation).
+ * less roundoff errors[3], [4]
  * lower error propagation, because of fewer operations [1, Ch. 5]
+
 
 **Cons:**
  * increased initial computational requirements and memory to find and then store the factorisation (cf. speed test results below).
- * possibly numerically less stable, because of long "factorisation chains" -> numerical errors can propagate and accumulate
 
 
-It is also possible to search for an optimal factorisation (cf. section "Optimal Horner Factorisation" below)
+For an exact evaluation of the impact of computing Horner factorisations see the benchmarks below.
+It is also possible to search for an optimal factorisation (cf. section "Optimal Horner Factorisation")
 
 
 Also see:
@@ -86,50 +88,36 @@ Check this code in ``example.py``:
     #       dimension N = 3
     #       amount of monomials M = 4
     #       max_degree D = 3
-    # IMPORTANT: the data types and shapes are required by the precompiled helpers in helper_fcts_numba.py
+    # NOTE: these data types and shapes are required by the precompiled functions in helper_fcts_numba.py
     coefficients = np.array([[5.0], [1.0], [2.0], [3.0]], dtype=np.float64)  # column numpy vector = (M,1)-matrix
     exponents = np.array([[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=np.uint32)  # numpy (M,N)-matrix
 
-    # represent the polynomial in the regular (naive) form
+    # represent the polynomial in the regular, naive form without any factorisation (simply stores the matrices)
     polynomial = MultivarPolynomial(coefficients, exponents)
 
     # visualising the used polynomial representation
     print(polynomial)
     # [#ops=27] p(x) = 5.0 x_1^0 x_2^0 x_3^0 + 1.0 x_1^3 x_2^1 x_3^0 + 2.0 x_1^2 x_2^0 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
-    # NOTE: the number in square brackets indicates the required number of operations
+    # NOTE: the number in square brackets indicates the number of operations required
     #   to evaluate the polynomial (ADD, MUL, POW).
-    # NOTE: in case of unfactorised polynomials many mathematically unnecessary operations are being done,
-    # because of the algorithms in use internally
+    # NOTE: in the case of unfactorised polynomials many unnecessary operations are being done
+    # (internally uses numpy matrix operations)
 
-    # define the query point
+    # define a query point and evaluate the polynomial
     x = np.array([-2.0, 3.0, 1.0], dtype=np.float64)  # numpy row vector (1,N)
-
     p_x = polynomial.eval(x)
     print(p_x)  # -29.0
 
-    # represent the polynomial in the factorised (near to minimal) form
-    # iteratively factors out the factors with the highest usage
-    # pass compute_representation=True in order to see the factorisation when printing the class
-    # pass keep_tree=True when the factorisation tree should be kept after the factorisation process is done
+    # represent the polynomial in factorised form:
+    # uses the heuristic proposed in [1]: iteratively factors out the factor with the highest usage
+    # pass compute_representation=True in order to compile a string representation of the factorisation
+    # pass keep_tree=True when the factorisation tree should be kept after the factorisation process
     horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, compute_representation=True)
     print(horner_polynomial)  # [#ops=10] p(x) = x_1 (x_1 (x_1 (c x_2) + c x_3) + c x_2 x_3) + c
-    # NOTE: the displayed number of operations might not match the visually identifiable number of operations,
-    # because the evaluation of the factors (themselves monomials) are being factorised again
 
-    # BETA feature:
-    # pass find_optimal=True to start an adapted A* search through all possible factorisations
-    # theoretically guaranteed to find the optimal solution, but time and memory consumption are MUCH higher!
-    # (the number of possible factorisations is growing exponentially with the size of the polynomial!)
-    # currently this approach seems to actually try all possible factorisations
-    # improvements need to be made
-    # in the first test runs the results seemed to be identical (#ops) with just fa
-    horner_polynomial_optimal = HornerMultivarPolynomial(coefficients, exponents, find_optimal=True,
-                                                         compute_representation=True)
-    print(horner_polynomial_optimal)  # [#ops=10] p(x) = x_3 (x_1 (c x_1 + c x_2)) + c + c x_1^3 x_2
-
-    # rectify_input: automatically convert the input to the right numpy data structure with the right data type and shape
-    # validate_input: check if input values are valid (e.g. only non negative exponents)
-    # the default for both options is false (increased speed)
+    # pass rectify_input=True to automatically try converting the input to the required numpy data structures
+    # pass validate_input=True to check if input data is valid (e.g. only non negative exponents)
+    # NOTE: the default for both options is false (increased speed)
     coefficients = [5.0, 1.0, 2.0, 3.0]  # must not be a column vector, but dimensions must still fit
     exponents = [[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]]
     horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True, validate_input=True)
@@ -148,6 +136,14 @@ Check this code in ``example.py``:
     p_x = horner_polynomial.eval(x)
     print(p_x)  # -29.0
 
+    # BETA:
+    # pass find_optimal=True to start an adapted A* search through all possible factorisations
+    # theoretically guaranteed to find the optimal solution
+    # NOTE: time and memory consumption is MUCH higher! cf. Readme: "Optimal Horner Factorisation"
+    horner_polynomial_optimal = HornerMultivarPolynomial(coefficients, exponents, find_optimal=True,
+                                                         compute_representation=True)
+    print(horner_polynomial_optimal)  # [#ops=10] p(x) = x_3 (x_1 (c x_1 + c x_2)) + c + c x_1^3 x_2
+
     # BETA: untested features
     # derivative and gradient of a polynomial
     # NOTE: partial derivatives themselves will be instances of the same parent class
@@ -156,40 +152,12 @@ Check this code in ``example.py``:
     grad = horner_polynomial.get_gradient()
 
 
-Optimal Horner Factorisation
-============================
-
-**BETA:**
-
-When passing ``find_optimal=True`` this package allows searching for an optimal factorisation:
+Benchmarks
+==========
 
 
-.. code-block:: python
-
-    horner_polynomial_optimal = HornerMultivarPolynomial(coefficients, exponents, find_optimal=True,
-                                                         compute_representation=True)
-
-
-**Basic idea**: adapted A* search on all possible factorisations:
-
-* allow all meaningful possible factorisation while ranking them according to their lowest possible amount of operations needed for evaluation (heuristic)
-* iteratively factorize the most promising factorisation further until a full factorisation has been found
-
-
-Theoretically this is guaranteed to yield an optimal solution.
-
-
-**NOTE:**
-
-* This requires MUCH more memory and computing time than just trying one factorisation (the number of possible factorisations is growing exponentially with the size of the polynomial!).
-* currently this approach seems to actually try all possible factorisations, because the heuristic in use is too optimistic (improvements needed)
-* in the first test runs the results seemed to be identical (in terms of #ops) with the vanilla approach of just trying one factorisation!
-* one could easily adapt this approach to find all optimal horner factorisations
-* in contrary to univariate polynomials there are possibly many optimal horner factorisations of a multivariate polynomial. Even an optimal horner factorisation must not be the globally minimal representation (other types factorisations possible)!
-
-
-Speed Test Results
-==================
+The benchmarks have been performed on a 15-inch MacBook Pro from 2017 with a 4 core 2,8 GHz Intel Core i7 processor, 16 GB 2133 MHz LPDDR3 RAM and macOS 10.13 High Sierra.
+The software versions in use were Python 3.7, numpy 1.16.3 and numba 0.40.
 
 
 ::
@@ -199,7 +167,7 @@ Speed Test Results
     average timings per polynomial:
 
      parameters   |  setup time (/s)                        |  eval time (/s)                      |  # operations                        | lucrative after
-    dim | max_deg | naive      | horner     | delta         | naive      | horner     | delta      | naive      | horner     | delta      |    # evals
+    dim | max_deg | naive      | Horner     | delta         | naive      | Horner     | delta      | naive      | Horner     | delta      |    # evals
     ================================================================================================================================================================
     1   | 1       | 1.895e-05  | 0.0001675  | 7.8 x more    | 1.62e-05   | 2.155e-06  | 6.5 x less | 3          | 1          | 2.0 x less | 11
     1   | 2       | 2.041e-05  | 0.0002327  | 10 x more     | 1.384e-05  | 2.461e-06  | 4.6 x less | 5          | 3          | 0.7 x less | 19
@@ -232,7 +200,67 @@ Speed Test Results
     5   | 5       | 0.0001861  | 0.759      | 4076 x more   | 0.0004799  | 3.037e-05  | 15 x less  | 40980      | 7885       | 4.2 x less | 1688
 
 
-# TODO plots, then just link to github on the PyPI description
+Average evaluation time per polynomial using Horner factorisation
+
+.. image:: ./plots/eval_time.png
+
+
+Average evaluation time decrease per polynomial using Horner factorisation in comparison to the naive matrix representation
+
+.. image:: ./plots/eval_time_decrease.png
+
+
+Average setup time per polynomial for computing the Horner factorisation
+
+.. image:: ./plots/setup_time.png
+
+
+Average setup time increase per polynomial for computing the Horner factorisation in comparison to the naive matrix representation
+
+.. image:: ./plots/setup_time_increase.png
+
+
+
+
+Optimal Horner Factorisation
+============================
+
+
+When passing ``find_optimal=True`` this package allows searching for an optimal factorisation:
+
+
+.. code-block:: python
+
+    horner_polynomial_optimal = HornerMultivarPolynomial(coefficients, exponents, find_optimal=True)
+
+
+
+**Basic idea**:
+
+Instead of using a heuristic to choose the next factor one can allow a search over all possible (meaningful) factorisations in order to arrive at a minimal Horner factorisation.
+The amount of possible factorisations however is increasing exponentially with the degree of a polynomial and its amount of monomials.
+One possibility to avoid computing each factorisation is to employ a version of A*-search adapted for factorisation trees:
+• Initialise a set of all meaningful possible first level Newton factorisations
+• Rank all factorisation according to a lower bound (“heuristic”) of their lowest possible amount of operations
+• Iteratively factorise the most promising factorisation and update the heuristic
+• Stop when the most promising factorisation is fully factorised
+
+This approach is guaranteed to yield a minimal Horner factorisation, but its performance highly depends on the heuristic in use: Irrelevant factorisations are only being ignored if the heuristic is not too optimistic in estimating the amount of operations. On the other hand the heuristic must be easy to compute, because it would otherwise be computationally cheaper to just try all different factorisations.
+Even though it missing to cover exponentiations, the branch-and-bound method suggested in [2, ch. 3.1] is almost identical to this procedure.
+
+Even with a good heuristic this method is only traceable for small polynomials because of its increased resource requirements.
+Since experiments show that factorisations obtained by choosing one factorisation according to a heuristic have the same or only a slightly higher amount of included operations[2, ch. 7], the computational effort of this approach is not justifiable in most cases.
+A use case however is to compute and store a minimal representation of a polynomial in advance if possible.
+
+**NOTES:**
+
+* currently this approach seems to actually try all possible factorisations, because the heuristic in use is too optimistic (= brute force, improvements needed)
+* This requires MUCH more memory and computing time than just trying one factorisation (the number of possible factorisations is growing exponentially with the size of the polynomial!).
+* in the first test runs the results seemed to be identical (in terms of #ops) with the vanilla approach of just trying one factorisation!
+* one could easily adapt this approach to find all optimal Horner factorisations
+* in contrary to univariate polynomials there are possibly many optimal Horner factorisations of a multivariate polynomial. Even an optimal Horner factorisation must not be the globally minimal representation (other types factorisations possible: e.g. "algebraic factorisation", "common subexpression elimination")!
+
+
 
 
 Contact
@@ -241,7 +269,8 @@ Contact
 
 Tell me if and how your are using this package. This encourages me to develop and test it further.
 
-Most certainly there is stuff I missed, things I could have optimized even further or explained more clearly, etc. I would be really glad to get some feedback on my code.
+Most certainly there is stuff I missed, things I could have optimized even further or explained more clearly, etc.
+I would be really glad to get some feedback.
 
 If you encounter any bugs, have suggestions etc.
 do not hesitate to **open an Issue** or **add a Pull Requests** on Git.
@@ -255,8 +284,13 @@ License
 (see LICENSE.txt).
 
 
-
 References
 ==========
 
-[1] CEBERIO, Martine; KREINOVICH, Vladik. `Greedy Algorithms for Optimizing Multivariate Horner Schemes <http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.330.7430&rep=rep1&type=pdf>`__. ACM SIGSAM Bulletin, 2004, 38. Jg., Nr. 1, S. 8-15.
+[1] M. Ceberio and V. Kreinovich, `"Greedy Algorithms for Optimizing Multivariate Horner Schemes" <http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.330.7430&rep=rep1&type=pdf>`__. ACM SIGSAM Bulletin, 2004, 38. Jg., Nr. 1, S. 8-15.
+
+[2] M. Kojima, `“Efficient evaluation of polynomials and their partial derivatives in homotopy continuation methods” <https://pdfs.semanticscholar.org/db75/5d4f4127e43c0c81884fe2b1c8c48d292ccf.pdf>`__, Journal of the Operations Research Society of Japan, vol. 51, no. 1, pp. 29–54, 2008.
+
+[3] J. M. Peña and T. Sauer, “On the multivariate Horner scheme”, SIAM journal on numerical analysis, vol. 37, no. 4, pp. 1186–1197, 2000.
+
+[4] J. M. Peña and T. Sauer, “On the multivariate Horner scheme II: Running error analysis”, Computing, vol. 65, no. 4, pp. 313–322, 2000.

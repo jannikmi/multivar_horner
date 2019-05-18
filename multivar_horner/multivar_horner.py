@@ -68,8 +68,8 @@ class MultivarPolynomial(object):
 
         self.num_monomials = self.exponents.shape[0]
         self.dim = self.exponents.shape[1]
-        self.order = np.sum(self.exponents, axis=0).max()
-        self.max_degree = self.exponents.max()
+        self.order = np.max(np.sum(self.exponents, axis=0))
+        self.max_degree = np.max(self.exponents)
 
         self.unused_variables = np.where(~np.any(self.exponents, axis=1))[0]
         self.representation = ''
@@ -158,7 +158,6 @@ class MultivarPolynomial(object):
         new_exponents[:, coord_index] -= 1
 
         # must call the proper constructor method also for inherited classes
-        # TODO also use option 'univariate_factors'
         return self.__class__(new_coefficients, new_exponents)
 
     def get_gradient(self):
