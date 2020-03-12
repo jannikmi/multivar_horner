@@ -216,13 +216,25 @@ class MonomialFactor(AbstractFactor):
 
 
 class FactorContainer:
+    """
+    a class for storing and reusing all factors appearing in a factorisation
+    TODO: find a way to use this concept across factorisations, globally
+    """
+
     def __init__(self, prime_array):
         self.factors = []
         self.id2idx = {}
         self.prime_array = prime_array
 
     def get_factor(self, property_list):
+        """
+        creates and stores objects of all required (sub-)factors if necessary
+        :param property_list: a list of dimension and exponent tuples [(d1,e1), (d2,e2)...]
+            representing the scalar factors of a monomial
+        :return: the object representing the factor with the given properties
+        """
 
+        # create all required scalar factors
         scalar_factors = []
         monomial_id = 1
         for d, e in property_list:
@@ -238,7 +250,7 @@ class FactorContainer:
             scalar_factors.append(scalar_factor)
             monomial_id *= scalar_id
 
-        assert len(scalar_factors) > 0
+        assert len(scalar_factors) > 0  # TODO
 
         if len(scalar_factors) == 1:
             # the requested factor is scalar factor
@@ -254,12 +266,17 @@ class FactorContainer:
             self.factors.append(monomial_factor)
         return monomial_factor
 
-    def compile_factors(self, exponent_matrix):
-        # all monomials are independent
-        if np.all(np.sum(exponent_matrix, axis=0) != np.max(exponent_matrix, axis=0)):
-            print(exponent_matrix)
+    def get_factors(self, exponent_matrix):
+        """
+        :param exponent_matrix:
+        :return: a list of all factors represented by the exponent_matrix with an identical ordering
+        """
+        # TODO all monomials are independent, must be the case? otherwise the polynomial could be further factorised?!
+        # if np.all(np.sum(exponent_matrix, axis=0) != np.max(exponent_matrix, axis=0)):
+        #     print(exponent_matrix)
 
         all_factors = []
+        # TODO optimise, modularise into functions: monomial factor, scalar factor... use numpy routines!?
         for mon_nr in range(exponent_matrix.shape[0]):
             exponent_vector = exponent_matrix[mon_nr, :]
             scalar_factors = []
@@ -272,11 +289,11 @@ class FactorContainer:
                     scalar_factors.append(scalar_factor)
 
             if len(scalar_factors) == 0:
-                factor = None
+                factor = None  # monomial consists of no factors
             elif len(scalar_factors) == 1:
-                factor = scalar_factors[0]
+                factor = scalar_factors[0]  # monomial consists of a single scalar factor
             else:
-                factor = self.get_factor(property_list)
+                factor = self.get_factor(property_list)  # monomial consists of a multiple scalar factors
 
             all_factors.append(factor)
 

@@ -16,6 +16,7 @@
 
 import itertools
 import pickle
+from copy import deepcopy
 
 import numpy as np
 
@@ -166,6 +167,12 @@ class MultivarPolynomial(object):
         """
         return [self.get_partial_derivative(i) for i in range(1, self.dim + 1)]
 
+    def change_coefficients(self, coefficients):
+        # TODO test, document...
+        new_poly = deepcopy(self)
+        new_poly.coefficients = coefficients
+        return new_poly
+
 
 class HornerMultivarPolynomial(MultivarPolynomial):
     """
@@ -173,23 +180,30 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
     dim: the dimensionality of the polynomial.
     order: (for a multivariate polynomial) maximum sum of exponents in any of its monomials
+    TODO: lp_degree?
     max_degree: the largest exponent in any of its monomials
         NOTE: the polynomial actually needs not to depend on all dimensions
     unused_variables: the dimensions the polynomial does not depend on
     """
     # __slots__ declared in parents are available in child classes. However, child subclasses will get a __dict__
     # and __weakref__ unless they also define __slots__ (which should only contain names of any additional slots).
-    __slots__ = ['prime_array', 'factorisation_tree', 'factor_container', 'num_ops', 'initial_value_array',
-                 'copy_recipe', 'scalar_recipe', 'monomial_recipe', 'tree_recipe', 'tree_ops']
+    __slots__ = ['prime_array', 'factorisation_tree', 'factor_container', 'num_ops', 'copy_recipe', 'scalar_recipe',
+                 'monomial_recipe', 'num_monomials', 'root_value_idx', 'tree_recipe', 'tree_ops', 'value_array_length']
 
     def __init__(self, coefficients, exponents, rectify_input=False, validate_input=False, keep_tree=False,
                  compute_representation=False, find_optimal=False):
         """
+        TODO describe process
+        the polynomial can be evaluated using a precompiled "recipe"
         :param coefficients: a numpy array column vector of doubles representing the coefficients of the monomials
         :param exponents: a numpy array matrix of unsigned integers representing the exponents of the monomials
             the ordering does not matter, but every exponent row has to be unique!
         :param rectify_input: whether to convert the input parameters into compatible numpy arrays
-        :param validate_input: whether to check if the input parameters fulfill the requirements
+        :param validate_input: whether to check if the input data structures fulfill the requirements
+        :param keep_tree: whether the factorisation tree object should be kept in memory after finishing factorisation
+        :param compute_representation: whether a string representation of the factorisation should be compiled
+        :param find_optimal: whether a search over all possible factorisations should be done in order to find
+            an optimal factorisation in the sense of a minimal amount required operations for evaluation
         """
 
         def compute_num_ops():
@@ -202,49 +216,58 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         def get_string_representation():
             representation = '[#ops={}] p(x)'.format(self.num_ops)
             if compute_representation:
-                representation += ' = ' + self.factorisation_tree.__str__()
+                representation += ' = ' + self.factorisation_tree.get_string_representation(self.coefficients)
             return representation
 
         super(HornerMultivarPolynomial, self).__init__(coefficients, exponents, rectify_input, validate_input)
+
+        self.value_array_length = None  # TODO
 
         # the needed prime numbers for computing all goedel numbers of all used factors
         self.prime_array = get_prime_array(self.dim)
 
         # store all unique factors of the horner factorisation
-        # NOTE: do NOT create all scalar factors with exponent 1 (they might be unused!)
+        # NOTE: do NOT automatically create all scalar factors with exponent 1
+        # (they might be unused, since the polynomial must not actually depend on all variables)
+        # TODO: IMPROVEMENT: build a wrapper to maintain the same "interface", but internally reduce the dimensionality
         self.factor_container = FactorContainer(self.prime_array)
 
-        # factorize the polynomial once and store the factorisation as a tree
-        id_counter = itertools.count(0)
-        tree_coefficients = []
-        # TODO store which coefficient is being used where in the factorisation tree (coeff_id -> value_idx)
-        # TODO easily replace all coefficients, later!
-        if find_optimal:
-            self.factorisation_tree = OptimalFactorisationRoot(self.coefficients, tree_coefficients, id_counter,
-                                                               self.factor_container, exponents=self.exponents)
-        else:
-            self.factorisation_tree = HeuristicFactorisationRoot(self.coefficients, tree_coefficients, id_counter,
-                                                                 self.factor_container, exponents=self.exponents)
+        # find a desired factorisation of the polynomial by building a factorisation tree
+        # (here: recursive object oriented data structure)
 
-        # factor list is now filled with the unique factors
+        # for evaluating the polynomial in tree form intermediary computation results have to be stored in a value array
+        # the nodes of the factorisation tree require space in a value array to store their value during evaluation
+        # assign addresses during factorisation by using a counter
+        # the value array begins with all coefficients of the polynomial
+        # -> start counting at the address after the last coefficient
+        # remember this address. it will be the address of the root polynomial
+        # after the evaluation computations the value of the polynomial will be stored at this address!
+        idx_counter = itertools.count(self.num_monomials)  # TODO not required
+        # TODO new parameter structure!
+        if find_optimal:
+            self.factorisation_tree = OptimalFactorisationRoot(self.exponents, idx_counter, self.factor_container)
+        else:
+            self.factorisation_tree = HeuristicFactorisationRoot(self.exponents, idx_counter, self.factor_container)
+
+        self.root_value_idx = self.factorisation_tree.value_idxs[0]
+
+        # the factor container now contains all unique factors used in the found factorisation
+        # TODO not all from optimal factorisation!? split. multiple containers?!
         # during evaluation of a polynomial the values of all the unique factors are needed at least once
         # -> compute the values of all factors (monomials) once and store them
         # store a pointer to the computed value for every unique factor
         # save instructions for the evaluation -> find factorisation of all factors = again a factorisation tree
         # sort and factorize the monomials to quickly evaluate them once during a query
-        self.link_monomials()
+        self.optimise_factor_evaluation()
 
         # compile and store a "recipe" for evaluating the polynomial with just numpy arrays
-        self.initial_value_array, self.copy_recipe, self.scalar_recipe, self.monomial_recipe, self.tree_recipe, \
-            self.tree_ops = self.compile_recipes(tree_coefficients)
+        self.copy_recipe, self.scalar_recipe, self.monomial_recipe, self.tree_recipe, self.tree_ops = self.compile_recipes()
 
+        self.value_array_length = self.num_monomials + len(self.factor_container.factors)
         compute_num_ops()
         self.representation = get_string_representation()
 
         if not keep_tree:
-            # the trees and factors are not needed any more
-            # a value lookup can be done with just the recipe
-            # free up the memory
             del self.factorisation_tree
             del self.factor_container
             del self.prime_array
@@ -255,12 +278,13 @@ class HornerMultivarPolynomial(MultivarPolynomial):
     def get_num_ops(self):
         return self.num_ops
 
-    def link_monomials(self):
+    def optimise_factor_evaluation(self):
         """
         find the optimal factorisation of the unique factors themselves
         since the monomial ids are products of the ids of their scalar factors
         check for the highest possible divisor among all factor ids
         this leads to a minimal factorisation for quick evaluation of the monomial values
+        TODO add option to skip this optimisation
         :return:
         """
         # sort after their id
@@ -269,7 +293,9 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         # property of the list: the scalar factors of each monomial are stored in front of it
 
         # IMPORTANT: properly set the indices of the values for each factor
-        # the values of every factor are stored after the coefficients
+        # the values of every factor are stored after the coefficients -> offset
+        # each factor requires its own space in the value array
+        # values cannot be overwritten (reusing addresses), because they might be needed again by another factor TODO
         value_idx_offset = self.num_monomials
         for idx, factor in enumerate(unique_factors):
             factor.value_idx = idx + value_idx_offset
@@ -338,23 +364,10 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
             pointer1 -= 1
 
-    def compile_recipes(self, tree_coefficients):
+    def compile_recipes(self):
         # compile a recipe encoding all needed instructions in order to evaluate the polynomial
         # = data structure for representing the factorisation tree
         # -> avoid recursion and function call overhead while evaluating
-
-        # for evaluating the polynomial in tree form intermediary computation results have to be stored in a value array
-        # the value array has one entry for every subtree and one for every factor
-        value_array_length = self.num_monomials + len(self.factor_container.factors)
-
-        initial_value_array = np.empty(value_array_length, dtype=FLOAT_DTYPE)
-
-        # initial_value_array = np.array(tree_coefficients, dtype=FLOAT_DTYPE)..reshape(value_array_length)
-        # the initial value array has the coefficients of all subtrees stored at the index of their id
-        for i, v in enumerate(tree_coefficients):
-            initial_value_array[i] = v
-
-        # self.horner_tree.fill_value_array(value_array)
 
         # compile the recipes for computing the factors
         # scalar factors (depending on x) are being evaluated differently
@@ -374,8 +387,7 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         # for the recipes numba is expecting the data types:
         #   array(uint, 2d, C),
         #   separate boolean array for operations, uint not needed (just 0 or 1)
-        return (initial_value_array,
-                np.array(copy_recipe, dtype=UINT_DTYPE).reshape((-1, 2)),
+        return (np.array(copy_recipe, dtype=UINT_DTYPE).reshape((-1, 2)),
                 np.array(scalar_recipe, dtype=UINT_DTYPE).reshape((-1, 3)),
                 np.array(monomial_recipe, dtype=UINT_DTYPE).reshape((-1, 3)),
                 np.array(tree_recipe, dtype=UINT_DTYPE).reshape((-1, 2)),
@@ -383,9 +395,10 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
     def eval(self, x, validate_input=False):
         """
-        make use of numba precompiled evaluation function:
+        make use of a numba precompiled evaluation function:
         IDEA: encode factorisation in numpy array. "recipe" which values to add or multiply when
-        TODO parallel computing, split up the recipe in independent parts (evaluation of sub trees)
+        NOTE: the evaluation of subtrees is independent and could theoretically be done in parallel
+            probably not worth the effort. more reasonable to just evaluate multiple polynomials in parallel
         :param x:
         :param validate_input: whether to check if the input parameters fulfill the requirements
         :return:
@@ -396,7 +409,9 @@ class HornerMultivarPolynomial(MultivarPolynomial):
             assert len(x.shape) == 1
             assert x.shape[0] == self.dim
 
-        # IMPORTANT: copy the initial value array
-        # the array is being used as temporal storage and values would get the overwritten
-        return eval_recipe(x, self.initial_value_array.copy(), self.copy_recipe, self.scalar_recipe,
-                           self.monomial_recipe, self.tree_recipe, self.tree_ops)
+        value_array = np.empty((self.value_array_length, 1), dtype=FLOAT_DTYPE)
+        # the coefficients are being stored at the beginning of the value array
+        value_array[:len(self.coefficients)] = self.coefficients
+
+        return eval_recipe(x, value_array, self.copy_recipe, self.scalar_recipe,
+                           self.monomial_recipe, self.tree_recipe, self.tree_ops, self.root_value_idx)
