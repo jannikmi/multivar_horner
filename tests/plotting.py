@@ -26,7 +26,7 @@ EXPORT_SIZE_X = 19.0  # inch
 EXPORT_SIZE_Y = 11.0  # inch
 SHOW_PLOTS = False
 PLOTTING_DIR = abspath(join(pardir, 'plots'))
-plt.rcParams.update({'font.size': 30})
+plt.rcParams.update({'font.size': 40})
 PATH2DATA = 'results.pickle'
 
 
@@ -307,7 +307,8 @@ def generate_plots():
 
     print('plotting now...')
 
-    labels = ['avg. setup time increase / s', 'avg. evaluation time reduction / s', 'avg. #operations reduction']
+    # labels = ['avg. setup time increase / s', 'avg. evaluation time reduction / s', 'avg. #operations reduction']
+    labels = ['time / s', 'time / s', 'avg. #operations reduction']
     file_names = ['setup_time_increase', 'eval_time_decrease', 'num_ops_decrease']
 
     # equal "spaced" colors
@@ -334,7 +335,8 @@ def generate_plots():
 
             # plt.plot(x, y, color=c, alpha=alpha, **kwargs)
             c = cm(color_idx[dim - 1])
-            plt.semilogy(DEGREE_RANGE, dim_run_data, color=c, label=str(dim))
+            plt.semilogy(DEGREE_RANGE, dim_run_data, 'x:', color=c, label=str(dim), linewidth=3, markersize=15,
+                         markeredgewidth=2.5)
             # plt.semilogy(DEGREE_RANGE, y_horner, color=c)
             # plt.semilogy(DEGREE_RANGE, y_naive, 'o--', color=c)
 

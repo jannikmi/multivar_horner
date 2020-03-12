@@ -24,22 +24,21 @@ multivar_horner
 
 A python package implementing a multivariate `horner scheme ("Horner's method", "Horner's rule") <https://en.wikipedia.org/wiki/Horner%27s_method>`__  for efficiently evaluating multivariate polynomials.
 
-A polynomial is being factorised according to the greedy heuristic described in [1], with some additional computational tweaks.
-The resulting Horner factorisation requires less operations for evaluation.
-The factorisation is computed by growing a "Horner Factorisation Tree".
+A polynomial in normal form is being factorised according to the greedy heuristic described in [1] with some additional computational tweaks.
+The resulting Horner factorisation requires less operations for evaluation and is being computed by growing a "Horner Factorisation Tree".
 When the polynomial is fully factorized (= all leaves cannot be factorised any more), a computational "recipe" for evaluating the polynomial is being compiled.
 This "recipe" (stored internally as numpy arrays) enables fast evaluation with minimal memory requirement, because of the lack of additional overhead of recursive function calls (traversing the tree) and functions precompiled by ``numba`` operating on numpy arrays.
 
-All factors in use in the factorisation are computed only once and factorized themselves (=reusing computed values) to save computations.
+All factors in use in the factorisation are being computed only once and factorized themselves (=reusing computed values) to save computations.
 
 **Pros:**
- * near to minimal representation of a multivariate polynomial (in the sense of memory and time complexity of the evaluation).
+ * near to minimal representation of a multivariate polynomial (in the sense of memory and time complexity of the evaluation)
  * less roundoff errors[3], [4]
  * lower error propagation, because of fewer operations [1, Ch. 5]
 
 
 **Cons:**
- * increased initial computational requirements and memory to find and then store the factorisation (cf. speed test results below).
+ * increased initial computational requirements and memory to find and then store the factorisation
 
 
 For an exact evaluation of the impact of computing Horner factorisations see the benchmarks below.
@@ -205,7 +204,7 @@ Average evaluation time per polynomial using Horner factorisation
 .. image:: ./plots/eval_time.png
 
 
-Average evaluation time decrease per polynomial using Horner factorisation in comparison to the naive matrix representation
+Average evaluation time decrease per polynomial using Horner factorisation compared to using the naive matrix representation
 
 .. image:: ./plots/eval_time_decrease.png
 
@@ -215,7 +214,7 @@ Average setup time per polynomial for computing the Horner factorisation
 .. image:: ./plots/setup_time.png
 
 
-Average setup time increase per polynomial for computing the Horner factorisation in comparison to the naive matrix representation
+Average setup time increase per polynomial for computing the Horner factorisation compared to using the naive matrix representation
 
 .. image:: ./plots/setup_time_increase.png
 
@@ -258,7 +257,7 @@ A use case however is to compute and store a minimal representation of a polynom
 * This requires MUCH more memory and computing time than just trying one factorisation (the number of possible factorisations is growing exponentially with the size of the polynomial!).
 * in the first test runs the results seemed to be identical (in terms of #ops) with the vanilla approach of just trying one factorisation!
 * one could easily adapt this approach to find all optimal Horner factorisations
-* in contrary to univariate polynomials there are possibly many optimal Horner factorisations of a multivariate polynomial. Even an optimal Horner factorisation must not be the globally minimal representation (other types factorisations possible: e.g. "algebraic factorisation", "common subexpression elimination")!
+* in contrast to univariate polynomials there are possibly many optimal Horner factorisations of a multivariate polynomial. Even an optimal Horner factorisation must not be the globally minimal representation (other types factorisations possible: e.g. "algebraic factorisation", "common subexpression elimination")!
 
 
 

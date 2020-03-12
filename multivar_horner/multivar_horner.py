@@ -217,6 +217,8 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         # factorize the polynomial once and store the factorisation as a tree
         id_counter = itertools.count(0)
         tree_coefficients = []
+        # TODO store which coefficient is being used where in the factorisation tree (coeff_id -> value_idx)
+        # TODO easily replace all coefficients, later!
         if find_optimal:
             self.factorisation_tree = OptimalFactorisationRoot(self.coefficients, tree_coefficients, id_counter,
                                                                self.factor_container, exponents=self.exponents)
@@ -338,7 +340,7 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
     def compile_recipes(self, tree_coefficients):
         # compile a recipe encoding all needed instructions in order to evaluate the polynomial
-        # = clever data structure for representing the factorisation tree
+        # = data structure for representing the factorisation tree
         # -> avoid recursion and function call overhead while evaluating
 
         # for evaluating the polynomial in tree form intermediary computation results have to be stored in a value array

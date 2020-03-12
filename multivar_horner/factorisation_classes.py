@@ -225,7 +225,7 @@ class BasePolynomialNode(object):
         else:
             exponents2 = self.exponents[non_factorized_rows, :]
             node2 = self.children_class(exponents2)
-            if DEBUG:
+            if DEBUG:  # TODO in tests
                 assert exp > 0
                 assert not np.any(exponents1_fact < 0)
                 assert not np.any(exponents2 < 0)
@@ -266,8 +266,8 @@ class BasePolynomialNode(object):
             for i, factor in enumerate(self.factors):
                 self.value_idxs.append(id_counter.__next__())
                 tree_coefficients.append(coefficients[i])
-            # TODO
-            assert (len(coefficients) == len(self.factors))
+            if DEBUG:  # TODO in tests
+                assert (len(coefficients) == len(self.factors))
 
     def get_recipe(self):
         """
