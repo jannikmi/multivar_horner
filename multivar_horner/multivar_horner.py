@@ -23,7 +23,7 @@ import numpy as np
 from .factorisation_classes import HeuristicFactorisationRoot, OptimalFactorisationRoot
 from .global_settings import DEBUG, DEFAULT_PICKLE_FILE_NAME, FLOAT_DTYPE, UINT_DTYPE
 from .helper_classes import FactorContainer, ScalarFactor
-from .helper_fcts import get_prime_array, rectify, validate
+from .helper_fcts import get_prime_array, rectify, validate, rectify_coefficients, validate_coefficients
 from .helpers_fcts_numba import eval_recipe, naive_eval
 
 
@@ -46,10 +46,11 @@ class MultivarPolynomial(object):
     """
 
     # prevent dynamic attribute assignment (-> safe memory)
-    __slots__ = ['coefficients', 'exponents', 'existing_exponents', 'num_monomials', 'dim', 'order', 'max_degree',
-                 'unused_variables', 'representation', 'heuristic']
+    __slots__ = ['coefficients', 'exponents', 'existing_exponents', 'num_monomials', 'num_ops',
+                 'dim', 'order', 'max_degree', 'unused_variables', 'representation', 'heuristic']
 
-    def __init__(self, coefficients, exponents, rectify_input=False, validate_input=False):
+    def __init__(self, coefficients, exponents, rectify_input=False, validate_input=False,
+                 compute_representation=False, *args, **kwargs):
         """
         :param coefficients: a numpy array column vector of doubles representing the coefficients of the monomials
         :param exponents: a numpy array matrix of unsigned integers representing the exponents of the monomials
@@ -57,6 +58,14 @@ class MultivarPolynomial(object):
         :param rectify_input: whether to convert the input parameters into compatible numpy arrays
         :param validate_input: whether to check if the input parameters fulfill the requirements
         """
+
+        def get_num_ops():
+            # count the number of instructions done when evaluating polynomial:
+            y, x = self.exponents.shape
+            # exponentiation: x*y
+            # multiplication coefficient and scalar factors (monomials): x*y
+            # sum: y-1
+            return 2 * x * y + y - 1
 
         if rectify_input:
             coefficients, exponents = rectify(coefficients, exponents)
@@ -71,46 +80,44 @@ class MultivarPolynomial(object):
         self.dim = self.exponents.shape[1]
         self.order = np.max(np.sum(self.exponents, axis=0))
         self.max_degree = np.max(self.exponents)
+        self.num_ops = get_num_ops()
 
         self.unused_variables = np.where(~np.any(self.exponents, axis=1))[0]
-        self.representation = ''
         self.existing_exponents = None
         self.heuristic = None
+        self.representation = None
+        self.compute_string_representation(compute_representation)
+
+    def compute_string_representation(self, compute_representation=True, coeff_fmt_str='{:.2}',
+                                      factor_fmt_str='x_{dim}^{exp}', *args, **kwargs):
+        representation = '[#ops={}] p(x)'.format(self.num_ops)
+        if compute_representation:
+            representation += ' = '
+            monomials = []
+            for i, exp_vect in enumerate(self.exponents):
+                monomial = [coeff_fmt_str.format(self.coefficients[i, 0])]
+                for dim, exp in enumerate(exp_vect):
+                    # show all operations, even 1 * x_i^0
+                    monomial.append(factor_fmt_str.format(**{'dim': dim + 1, 'exp': exp}))
+
+                monomials.append(' '.join(monomial))
+
+            representation += ' + '.join(monomials)
+
+        self.representation = representation
+        return self.representation
 
     def __str__(self):
-        return self.get_representation()
+        return self.representation
 
     def __repr__(self):
-        return self.__str__()
-
-    def get_representation(self):
-
-        s = '[#ops={}] p(x) = '.format(self.get_num_ops())
-        monomials = []
-        for i, exp_vect in enumerate(self.exponents):
-            monomial = [str(self.coefficients[i, 0])]
-            for dim, exp in enumerate(exp_vect):
-                # if exp > 0:
-                # show all operations, even 1 * x_i^0
-                monomial.append('x_{}^{}'.format(dim + 1, exp))
-            monomials.append(' '.join(monomial))
-
-        s += ' + '.join(monomials)
-        return s
+        return self.representation
 
     def export_pickle(self, path=DEFAULT_PICKLE_FILE_NAME):
         print('storing polynomial in file "{}" ...'.format(path))
         with open(path, 'wb') as f:
             pickle.dump(self, f)
         print('...done.\n')
-
-    def get_num_ops(self):
-        # count the number of instructions done when evaluating polynomial:
-        y, x = self.exponents.shape
-        # exponentiation: x*y
-        # multiplication coefficient and scalar factors (monomials): x*y
-        # sum: y-1
-        return 2 * x * y + y - 1
 
     def eval(self, x, validate_input=True):
         """
@@ -126,7 +133,7 @@ class MultivarPolynomial(object):
 
         return naive_eval(x, self.coefficients, self.exponents)
 
-    def get_partial_derivative(self, i):
+    def get_partial_derivative(self, i, *args, **kwargs):
         """
         TODO test
         f(x) = a x^b
@@ -159,19 +166,33 @@ class MultivarPolynomial(object):
         new_exponents[:, coord_index] -= 1
 
         # must call the proper constructor method also for inherited classes
-        return self.__class__(new_coefficients, new_exponents)
+        return self.__class__(new_coefficients, new_exponents, *args, **kwargs)
 
-    def get_gradient(self):
+    def get_gradient(self, *args, **kwargs):
         """
         :return: the list of all partial derivatives
         """
-        return [self.get_partial_derivative(i) for i in range(1, self.dim + 1)]
+        return [self.get_partial_derivative(i, *args, **kwargs) for i in range(1, self.dim + 1)]
 
-    def change_coefficients(self, coefficients):
-        # TODO test, document...
-        new_poly = deepcopy(self)
-        new_poly.coefficients = coefficients
-        return new_poly
+    def change_coefficients(self, coefficients, rectify_input=False, validate_input=False,
+                            compute_representation=False, in_place=False, *args, **kwargs):
+
+        if rectify_input:
+            coefficients = rectify_coefficients(coefficients)
+
+        if validate_input:
+            validate_coefficients(coefficients)
+
+        assert len(coefficients) == self.num_monomials
+
+        if in_place:
+            updated_poly = self
+        else:
+            updated_poly = deepcopy(self)
+
+        updated_poly.coefficients = coefficients
+        updated_poly.compute_string_representation(compute_representation, *args, **kwargs)
+        return updated_poly
 
 
 class HornerMultivarPolynomial(MultivarPolynomial):
@@ -191,7 +212,7 @@ class HornerMultivarPolynomial(MultivarPolynomial):
                  'monomial_recipe', 'num_monomials', 'root_value_idx', 'tree_recipe', 'tree_ops', 'value_array_length']
 
     def __init__(self, coefficients, exponents, rectify_input=False, validate_input=False, keep_tree=False,
-                 compute_representation=False, find_optimal=False):
+                 compute_representation=False, find_optimal=False, *args, **kwargs):
         """
         TODO describe process
         the polynomial can be evaluated using a precompiled "recipe"
@@ -213,15 +234,11 @@ class HornerMultivarPolynomial(MultivarPolynomial):
             # do not count "copy" instructions (not really a mathematical operation)
             self.num_ops = self.scalar_recipe.shape[0] + self.monomial_recipe.shape[0] + self.tree_ops.shape[0]
 
-        def get_string_representation():
-            representation = '[#ops={}] p(x)'.format(self.num_ops)
-            if compute_representation:
-                representation += ' = ' + self.factorisation_tree.get_string_representation(self.coefficients)
-            return representation
+        super(HornerMultivarPolynomial, self).__init__(coefficients, exponents, rectify_input, validate_input,
+                                                       compute_representation=False)
 
-        super(HornerMultivarPolynomial, self).__init__(coefficients, exponents, rectify_input, validate_input)
-
-        self.value_array_length = None  # TODO
+        self.value_array_length = None
+        self.representation = None
 
         # the needed prime numbers for computing all goedel numbers of all used factors
         self.prime_array = get_prime_array(self.dim)
@@ -242,17 +259,14 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         # -> start counting at the address after the last coefficient
         # remember this address. it will be the address of the root polynomial
         # after the evaluation computations the value of the polynomial will be stored at this address!
-        idx_counter = itertools.count(self.num_monomials)  # TODO not required
-        # TODO new parameter structure!
         if find_optimal:
-            self.factorisation_tree = OptimalFactorisationRoot(self.exponents, idx_counter, self.factor_container)
+            self.factorisation_tree = OptimalFactorisationRoot(self.exponents, self.factor_container)
         else:
-            self.factorisation_tree = HeuristicFactorisationRoot(self.exponents, idx_counter, self.factor_container)
+            self.factorisation_tree = HeuristicFactorisationRoot(self.exponents, self.factor_container)
 
         self.root_value_idx = self.factorisation_tree.value_idxs[0]
 
-        # the factor container now contains all unique factors used in the found factorisation
-        # TODO not all from optimal factorisation!? split. multiple containers?!
+        # the factor container now contains all unique factors used in the computed and picked factorisation
         # during evaluation of a polynomial the values of all the unique factors are needed at least once
         # -> compute the values of all factors (monomials) once and store them
         # store a pointer to the computed value for every unique factor
@@ -265,12 +279,26 @@ class HornerMultivarPolynomial(MultivarPolynomial):
 
         self.value_array_length = self.num_monomials + len(self.factor_container.factors)
         compute_num_ops()
-        self.representation = get_string_representation()
+        self.compute_string_representation(compute_representation, *args, **kwargs)
 
         if not keep_tree:
             del self.factorisation_tree
             del self.factor_container
             del self.prime_array
+
+    def compute_string_representation(self, compute_representation=True, *args, **kwargs):
+        representation = '[#ops={}] p(x)'.format(self.num_ops)
+        if compute_representation:
+            try:
+                representation += ' = ' + \
+                                  self.factorisation_tree.get_string_representation(self.coefficients, *args, **kwargs)
+            except AttributeError:
+                pass
+            # exponentiation with 1 won't cause an operation in this representation
+            # but are present in the string representation due to string formatting restrictions
+            # -> they should not be displayed (misleading)
+            representation = representation.replace('^1', '')  # <- workaround for the default string format
+        self.representation = representation
 
     def __str__(self):
         return self.representation
@@ -409,9 +437,9 @@ class HornerMultivarPolynomial(MultivarPolynomial):
             assert len(x.shape) == 1
             assert x.shape[0] == self.dim
 
-        value_array = np.empty((self.value_array_length, 1), dtype=FLOAT_DTYPE)
+        value_array = np.empty(self.value_array_length, dtype=FLOAT_DTYPE)
         # the coefficients are being stored at the beginning of the value array
-        value_array[:len(self.coefficients)] = self.coefficients
+        value_array[:len(self.coefficients)] = self.coefficients.flatten()
 
         return eval_recipe(x, value_array, self.copy_recipe, self.scalar_recipe,
                            self.monomial_recipe, self.tree_recipe, self.tree_ops, self.root_value_idx)

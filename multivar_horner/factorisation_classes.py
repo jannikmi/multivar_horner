@@ -27,38 +27,34 @@ class FactorisationNode:
         self.non_factorized_rows = non_factorized_rows
         self.value_idx = None
 
-    def get_string_representation(self, *args, **kwargs):
-        if type(self.factor) == tuple:
-            dim, exp = self.factor
-            if exp == 1:
-                s = f'x_{dim + 1}'
-            else:
-                s = f'x_{dim + 1}^{exp}'
-        else:
-            s = self.factor.__str__()
-        s += f' ({self.node1_fact.get_string_representation(*args, **kwargs)})'
+    def get_string_representation(self, factor_fmt_str='x_{dim}^{exp}', *args, **kwargs):
+        s = self.factor.__str__(factor_fmt_str, *args, **kwargs)
+        s += ' ({})'.format(
+            self.node1_fact.get_string_representation(factor_fmt_str=factor_fmt_str, *args,
+                                                      **kwargs))
         if self.node2 is not None:
-            s += f' + {self.node1_fact.get_string_representation(*args, **kwargs)}'
+            s += ' + {}'.format(
+                self.node2.get_string_representation(factor_fmt_str=factor_fmt_str, *args,
+                                                     **kwargs))
         return s
 
-    def __str__(self):
-        return self.get_string_representation()
+    def __str__(self, *args, **kwargs):
+        return self.get_string_representation(*args, **kwargs)
 
     def __gt__(self, other):  # arbitrary, required for sorting in heap
         return True
 
-    def compile_factors(self, factor_container, idx_counter, coefficient_idxs):
+    def compile_factors(self, factor_container, coefficient_idxs):
         # create and store the unique ScalarFactor instance
-        # TODO combine with factorisation possible? -> create factor object earlier
         # own factor is a scalar factor: only one property
         self.factor = factor_container.get_factor([self.factor])
 
         coeff_idxs1 = coefficient_idxs[self.factorized_rows]
-        self.node1_fact.compile_factors(factor_container, idx_counter, coeff_idxs1)
+        self.node1_fact.compile_factors(factor_container, coeff_idxs1)
 
         if self.node2 is not None:
             coeff_idxs2 = coefficient_idxs[self.non_factorized_rows]
-            self.node2.compile_factors(factor_container, idx_counter, coeff_idxs2)
+            self.node2.compile_factors(factor_container, coeff_idxs2)
 
         # this node does not need its own index in the value array, but can reuse the index of its first node
         # child nodes are being evaluated earlier
@@ -142,6 +138,12 @@ class BasePolynomialNode:
         self.dim = self.exponents.shape[1]
 
         self.unique_exponents = []
+
+        # NOTE: not useful to test (expensive)
+        # if np.all(np.sum(exponent_matrix, axis=0) == np.max(exponent_matrix, axis=0)):
+        #   all monomials are independent
+        #   pass
+
         for d in range(self.dim):
             dim_exponents = self.exponents[:, d]
             # sort in ascending order (used for finding the most common scalar factor)
@@ -197,9 +199,12 @@ class BasePolynomialNode:
 
         return max_usage_option
 
-    def get_string_representation(self, coefficients=None, coefficient_format='{:.2}'):
+    def get_string_representation(self, coefficients=None, coeff_fmt_str='{:.2}', factor_fmt_str='x_{dim}^{exp}',
+                                  *args, **kwargs):
+
         if self.has_children:
-            return self.get_child().get_string_representation(coefficients, coefficient_format)
+            return self.get_child().get_string_representation(coefficients=coefficients, coeff_fmt_str=coeff_fmt_str,
+                                                              factor_fmt_str=factor_fmt_str, *args, **kwargs)
         else:
             monomial_representations = []
             for i, exp_vect in enumerate(self.exponents):
@@ -207,15 +212,13 @@ class BasePolynomialNode:
                     coeff_repr = 'c'
                 else:
                     coeff_idx = self.value_idxs[i]  # look up the correct index of the coefficient
-                    coeff_repr = coefficient_format.format(coefficients[coeff_idx,0])
+                    coeff_repr = coeff_fmt_str.format(coefficients[coeff_idx, 0])
 
                 monomial_repr = [coeff_repr]
                 for dim, exp in enumerate(exp_vect):
                     if exp > 0:
-                        if exp == 1:
-                            monomial_repr.append('x_{}'.format(dim + 1))
-                        else:
-                            monomial_repr.append('x_{}^{}'.format(dim + 1, exp))
+                        monomial_repr.append(factor_fmt_str.format(**{'dim': dim + 1, 'exp': exp}))
+
                 monomial_representations.append(' '.join(monomial_repr))
             return ' + '.join(monomial_representations)
 
@@ -240,7 +243,7 @@ class BasePolynomialNode:
         else:
             exponents2 = self.exponents[non_factorized_rows, :]
             node2 = self.children_class(exponents2)
-            if DEBUG:  # TODO in tests
+            if DEBUG:  # TODO move to tests
                 assert exp > 0
                 assert not np.any(exponents1_fact < 0)
                 assert not np.any(exponents2 < 0)
@@ -257,17 +260,17 @@ class BasePolynomialNode:
     def get_child(self):
         return self.children
 
-    def compile_factors(self, factor_container, idx_counter, coefficient_idxs):
+    def compile_factors(self, factor_container, coefficient_idxs):
         """
-        'bottom up' approach TODO combine with factorize() possible?!
+        'bottom up' approach.
+        factorisation has been done (fixed), simply "collect" all existing factors and link addresses correctly
         :param factor_container: class storing and managing all existing factors
-        :param idx_counter: counter object for assigning indices in the value array
         :param coefficient_idxs: the indices of the given coefficients in the global coefficient array of the root polynomial
         :return:
         """
         if self.has_children:
             child = self.get_child()
-            child.compile_factors(factor_container, idx_counter, coefficient_idxs)
+            child.compile_factors(factor_container, coefficient_idxs)
             # this node does not need its own index (storage space) in the value array,
             # it can reuse the value index of its sub problem
             self.value_idxs = [child.value_idx]
@@ -505,7 +508,7 @@ class OptimalFactorisationRoot(OptimalPolynomialNode):
     ATTENTION: a completely new heuristic for estimating the lower bound would be required!
     """
 
-    def __init__(self, exponents, idx_counter, factor_container, *args, **kwargs):
+    def __init__(self, exponents, factor_container, *args, **kwargs):
         """
         :param coefficients: a numpy array column vector of doubles representing the coefficients of the monomials
         :param exponents: a numpy array matrix of unsigned integers representing the exponents of the monomials
@@ -524,7 +527,7 @@ class OptimalFactorisationRoot(OptimalPolynomialNode):
         # collect all appearing factors in the best solution and assign ids (=idx in the value array) to the nodes
         # need to store which coefficient is being used where in the factorisation tree (coeff_id -> value_idx)
         coefficient_idxs = np.arange(self.num_monomials, dtype=np.int)
-        self.compile_factors(factor_container, idx_counter, coefficient_idxs)
+        self.compile_factors(factor_container, coefficient_idxs)
 
     def find_all_optimal(self):
         """
@@ -545,12 +548,12 @@ class HeuristicFactorisationRoot(BasePolynomialNode):
     commonly used factor (heuristic).
     """
 
-    def __init__(self, exponents, idx_counter, factor_container, *args, **kwargs):
+    def __init__(self, exponents, factor_container, *args, **kwargs):
         super(HeuristicFactorisationRoot, self).__init__(exponents, *args, **kwargs)
         # polynomial is fully factorized now
         # collect all appearing factors in the factorisation tree and assign ids (=idx in the value array) to the nodes
         # need to store which coefficient is being used where in the factorisation tree (coeff_id -> value_idx)
         coefficient_idxs = np.arange(self.num_monomials, dtype=np.int)
-        self.compile_factors(factor_container, idx_counter, coefficient_idxs)
+        self.compile_factors(factor_container, coefficient_idxs)
 
-# TODO factorisation taking the numerical stability (coefficients) into account
+# TODO define factorisation taking the numerical stability (coefficients) into account

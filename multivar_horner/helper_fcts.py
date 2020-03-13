@@ -39,6 +39,11 @@ def get_goedel_id_of(prime_idx, exponent, prime_array):
     return int(prime_array[prime_idx] ** exponent)
 
 
+def rectify_coefficients(coefficients):
+    rectified_coefficients = np.atleast_1d(np.array(coefficients, dtype=np.float64)).reshape(-1, 1)
+    return rectified_coefficients
+
+
 def rectify(coefficients, exponents):
     """
     convert the input into numpy arrays valid as input to MultivarPolynomial
@@ -47,10 +52,9 @@ def rectify(coefficients, exponents):
     :param exponents: possibly a nested python list of exponents to be converted
     :return: the input converted into appropriate numpy data types
     """
-    rectified_coefficients = np.atleast_1d(np.array(coefficients, dtype=np.float64)).reshape(-1, 1)
+    rectified_coefficients = rectify_coefficients(coefficients)
 
     rectified_exponents = np.atleast_2d(np.array(exponents, dtype=np.int))
-
     # exponents must not be negative!
     # ATTENTION: when converting to unsigned integer, negative integers become large!
     assert not np.any(rectified_exponents < 0)
@@ -65,6 +69,16 @@ def rectify(coefficients, exponents):
     return rectified_coefficients, rectified_exponents
 
 
+def validate_coefficients(coefficients):
+    assert type(coefficients) is np.ndarray
+    # coefficients must be given as a column vector (2D)
+    assert coefficients.shape[1] == 1 and len(coefficients.shape) == 2
+    # there must be at least one entry
+    assert coefficients.shape[0] > 0
+    # there must not be any coefficients with 0.0
+    assert not np.any(coefficients == 0.0)
+
+
 def validate(coefficients, exponents):
     """
     raises an error when the given input is not valid
@@ -72,17 +86,16 @@ def validate(coefficients, exponents):
     :param exponents: a numpy array matrix of unsigned integers representing the exponents of the monomials
     :return:
     """
-    # coefficients must be given as a column vector (2D)
-    assert coefficients.shape[1] == 1 and len(coefficients.shape) == 2
+
+    validate_coefficients(coefficients)
+
+    assert type(exponents) is np.ndarray
     # exponents must be 2D (matrix) = a list of exponent vectors
     assert len(exponents.shape) == 2
-    # there must be at least one entry
-    assert coefficients.shape[0] > 0
     # exponents must not be negative
     assert not np.any(exponents < 0)
     # there must not be duplicate exponent vectors
     assert exponents.shape == np.unique(exponents, axis=0).shape
-    # there must not be any coefficients with 0.0
-    assert not np.any(coefficients == 0.0)
+
     # must have the same amount of entries
     assert coefficients.shape[0] == exponents.shape[0]

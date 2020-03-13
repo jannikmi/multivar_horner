@@ -91,10 +91,10 @@ class PriorityQueue2D:
         return all_items
 
 
-class AbstractFactor(object):
+class AbstractFactor:
     __slots__ = ['monomial_id', 'value_idx']
 
-    def __str__(self):
+    def __str__(self, *args, **kwargs):
         raise NotImplementedError()
 
     def __repr__(self):
@@ -118,15 +118,15 @@ class ScalarFactor(AbstractFactor):
         self.monomial_id = factor_id
         self.value_idx = None  # initialize the idx with None to catch faulty evaluation tries
 
-    def __str__(self):
+    def __str__(self, factor_fmt_str='x_{dim}^{exp}', *args, **kwargs):
         # variable numbering starts with 1: x_1, x_2, ...
-        if self.exponent == 1:
-            return 'x_{}'.format(self.dimension + 1)
-        else:
-            return 'x_{}^{}'.format(self.dimension + 1, self.exponent)
+        # if self.exponent == 1:
+        #     return 'x_{}'.format(self.dimension + 1)
 
-    def __repr__(self):
-        return self.__str__()
+        return factor_fmt_str.format(**{'dim': self.dimension + 1, 'exp': self.exponent})
+
+    def __repr__(self,*args, **kwargs):
+        return self.__str__(*args, **kwargs)
 
     @staticmethod
     def num_ops(self):
@@ -271,9 +271,6 @@ class FactorContainer:
         :param exponent_matrix:
         :return: a list of all factors represented by the exponent_matrix with an identical ordering
         """
-        # TODO all monomials are independent, must be the case? otherwise the polynomial could be further factorised?!
-        # if np.all(np.sum(exponent_matrix, axis=0) != np.max(exponent_matrix, axis=0)):
-        #     print(exponent_matrix)
 
         all_factors = []
         # TODO optimise, modularise into functions: monomial factor, scalar factor... use numpy routines!?

@@ -13,7 +13,7 @@ from numba import b1, f8, jit, u4
 
 # TODO     TypingError: numba doesn't support kwarg for prod
 # TODO
-# # @jit(f8(f8[:], f8[:], u4[:, :]), nopython=True, cache=True)
+# @jit(f8(f8[:], f8[:], u4[:, :]), nopython=True, cache=True)
 def naive_eval(x, coefficients, exponents):
     return np.sum(coefficients.T * np.prod(np.power(x, exponents), axis=1), axis=1)[0]
 

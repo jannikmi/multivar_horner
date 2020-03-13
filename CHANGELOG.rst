@@ -2,6 +2,21 @@ Changelog
 =========
 
 
+1.3.0 (2020-03-xx)
+__________________
+
+
+* NEW FEATURE: changing coefficients on the fly with `poly.change_coefficients(coeffs)`
+* the real valued coefficients are now included in the string representation of a factorised polynomial
+* added instructions in readme, example.py
+
+* restructured the factorisation routine (simplified, clean up)
+* extended tests
+
+* debugging string representation
+
+
+
 1.2.0 (2019-05-19)
 __________________
 
