@@ -1,5 +1,6 @@
-# TODO s:
+# -*- coding:utf-8 -*-
 
+# TODO s:
 # matlab binding?
 # optimize naive version without factorisation: compute all needed exponents only once. order exponents cleverly.
 # store at which index the later entries (exponents in column) will just be 0 -> reduce the matrix size piecewise
@@ -14,17 +15,17 @@
 # test factorisation for univariate polynomials! should always find optimum (unique 1D horner fact.)
 
 
-import itertools
 import pickle
 from copy import deepcopy
 
 import numpy as np
 
-from .factorisation_classes import HeuristicFactorisationRoot, OptimalFactorisationRoot
-from .global_settings import DEBUG, DEFAULT_PICKLE_FILE_NAME, FLOAT_DTYPE, UINT_DTYPE
-from .helper_classes import FactorContainer, ScalarFactor
-from .helper_fcts import get_prime_array, rectify, validate, rectify_coefficients, validate_coefficients
-from .helpers_fcts_numba import eval_recipe, naive_eval
+# from .factorisation_classes import HeuristicFactorisationRoot, OptimalFactorisationRoot
+from multivar_horner.factorisation_classes import HeuristicFactorisationRoot, OptimalFactorisationRoot
+from multivar_horner.global_settings import DEBUG, DEFAULT_PICKLE_FILE_NAME, FLOAT_DTYPE, UINT_DTYPE
+from multivar_horner.helper_classes import FactorContainer, ScalarFactor
+from multivar_horner.helper_fcts import get_prime_array, rectify, rectify_coefficients, validate, validate_coefficients
+from multivar_horner.helpers_fcts_numba import eval_recipe, naive_eval
 
 
 # is not a helper function to make it an importable part of the package
@@ -275,7 +276,8 @@ class HornerMultivarPolynomial(MultivarPolynomial):
         self.optimise_factor_evaluation()
 
         # compile and store a "recipe" for evaluating the polynomial with just numpy arrays
-        self.copy_recipe, self.scalar_recipe, self.monomial_recipe, self.tree_recipe, self.tree_ops = self.compile_recipes()
+        self.copy_recipe, self.scalar_recipe, self.monomial_recipe, self.tree_recipe, self.tree_ops = \
+            self.compile_recipes()
 
         self.value_array_length = self.num_monomials + len(self.factor_container.factors)
         compute_num_ops()

@@ -1,18 +1,18 @@
+# -*- coding:utf-8 -*-
+
+# TODO compare difference in computed values (=numerical error)
+# TODO test consecutive evaluations of the same polynomial
+# TODO 0 coefficients should be ignored
+# TODO test all conversions, and data rectifications
+# TODO debug wrong reprensentation
+
+
 import unittest
 
 import numpy as np
 import pytest
 
 from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
-
-
-# TODO compare difference in computed values (=numerical error)
-# TODO test consecutive evaluations of the same polynomial
-# TODO 0 coefficients should be ignored
-# TODO test all conversions, and data rectifications
-
-
-# TODO debug wrong reprensentation
 
 
 def proto_test_case(data, fct):
@@ -279,12 +279,11 @@ COEFF_CHANGE_DATA = [
 
     # [20] p(x) = 1.0 x_1^3 x_2^1 + 2.0 x_1^2 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
     # [17] p(x) = x_2^1 [ x_1^3 [ 1.0 ] + x_1^1 x_3^1 [ 3.0 ] ] + x_1^2 x_3^1 [ 2.0 ]
-    ((
-         [1.0, 1.0, 1.0],  # coeffs1
-         [[3, 1, 0], [2, 0, 1], [2, 1, 1]],
-         [1.0, 1.0, 1.0],
-         [1.0, 2.0, 3.0],  # coeffs2
-     ),
+    (([1.0, 1.0, 1.0],  # coeffs1
+      [[3, 1, 0], [2, 0, 1], [2, 1, 1]],
+      [1.0, 1.0, 1.0],
+      [1.0, 2.0, 3.0],  # coeffs2
+      ),
      6.0),
 ]
 
@@ -297,16 +296,15 @@ class MainTest(unittest.TestCase):
         for inp, expected_output in INVALID_INPUT_DATA:
             coeff, exp, x = inp
             with pytest.raises(AssertionError):
-                poly = MultivarPolynomial(coeff, exp, rectify_input=False, validate_input=True,
-                                          compute_representation=True)
+                MultivarPolynomial(coeff, exp, rectify_input=False, validate_input=True, compute_representation=True)
 
             with pytest.raises(AssertionError):
-                horner_poly = HornerMultivarPolynomial(coeff, exp, rectify_input=False, validate_input=True,
-                                                       compute_representation=True, find_optimal=False)
+                HornerMultivarPolynomial(coeff, exp, rectify_input=False, validate_input=True,
+                                         compute_representation=True, find_optimal=False)
 
             with pytest.raises(AssertionError):
-                horner_poly_opt = HornerMultivarPolynomial(coeff, exp, rectify_input=False, validate_input=True,
-                                                           compute_representation=True, find_optimal=True)
+                HornerMultivarPolynomial(coeff, exp, rectify_input=False, validate_input=True,
+                                         compute_representation=True, find_optimal=True)
 
         print('OK.')
 

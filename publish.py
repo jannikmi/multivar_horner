@@ -1,74 +1,99 @@
 import os
 import re
 import sys
-from os import listdir
-from os.path import abspath, join, pardir, isfile
+from os.path import abspath, isfile, join, pardir
 
 """
 required packages
-numpy, Numba
+numpy
+(numba)
 
+
+these packages have to be installed in virtual environment in use:
+
+right python version! (will influence the tox environments!)
 for testing:
-pip-tools
-rstcheck
-pytest
+conda install pytest
+conda install isort 
+conda install twine 
+conda install tox
 
-for uploading/publishing:
-twine
+pip install rstcheck pip-tools 
+
+rstcheck>=3.3.1
+twine for uploading securely
+
+
+documentation generation:
+conda install sphinx
+https://docs.readthedocs.io/en/stable/intro/getting-started-with-sphinx.html
+
+Use the Makefile to build the docs, like so:
+make html
+
+
+--cov-config=tox.ini
 
 pip-tools package:
+TODO write bash script for this
 its important to pin requirements to get reproducible errors!
 compile a new requirements file (with the latest versions)
-source activate pathEnv
+
+conda activate tzEnv
 pip-compile --upgrade
 same as?!:
+pip-compile --output-file=requirements.txt requirements.in
 pip-compile --output-file requirements.txt requirements.in
+
 only update the flask package:
 pip-compile --upgrade-package flask
 compile a new requirements file (with versions currently used in the virtual env )
-pip-compile --generate-hashes requirements.in
+pip-compile --generate-hashes requirements_numba.in
 
-do NOT sync. will install ONLY the packages specified! (no more tox etc. installed!)
+do NOT sync. will install ONLY the packages specified! (tox etc. would not be installed any more!)
 pip-sync
 
 commands
 tox -r to rebuild your tox virtualenvs when you've made changes to requirements setup
+# rstcheck will complain about non referenced hyperlinks in doc .rst files! (cannot detect cross file references!)
 rstcheck *.rst
-tox -r -e py36-codestyle
-tox -r -e py36
+tox -r -e codestyle
+tox -r -e py37
+tox -r -e py37-numba
+
+automatically update imports: isort -rc .
+dont use for example.py
+
+
+Use the Makefile to build the docs, like so:
+cd ./docs
+make html
+# for online build of docs, release tag must be created!
+
+use bandit to check for vulnerabilities:
+
+conda install bandit
+bandit ./multivar_horner/*.py
+
+
 """
 
-def get_version(package):
-    """
-    Return package version as listed in `__version__` in `__init__.py`.
-    """
-    init_py = open(os.path.join(package, '__init__.py')).read()
-    return re.search("__version__ = ['\"]([^'\"]+)['\"]", init_py).group(1)
+PACKAGE = 'multivar_horner'
+VERSION_FILE = 'VERSION'
+VIRT_ENV_NAME = 'py37Env'
+VIRT_ENV_COMMAND = f'. ~/miniconda3/etc/profile.d/conda.sh; conda activate {VIRT_ENV_NAME}; '
 
 
-def set_version(new_version_number=None, old_version_number=''):
-    """
-    Set package version as listed in `__version__` in `__init__.py`.
-    """
-    if new_version_number is None:
-        return ValueError
-
-    import fileinput
-    import sys
-
-    file = os.path.join('multivar_horner', '__init__.py')
-
-    for line in fileinput.input(file, inplace=1):
-        if old_version_number in line:
-            line = line.replace(old_version_number, new_version_number)
-        sys.stdout.write(line)
+# TODO not required, set version in version file
+def get_version():
+    return open(VERSION_FILE, 'r').read().strip()
 
 
-def convert_version(new_version_input='', old_version='1.0.0'):
-    new_version_input = re.search('\d\.\d\.\d+', new_version_input)
+def parse_version(new_version_input='', old_version_str='1.0.0'):
+    new_version_input = re.search(r'\d\.\d\.\d+', new_version_input)
 
     if new_version_input is None:
-        return None
+        raise ValueError  # will cause new input request
     else:
         new_version_input = new_version_input.group()
 
@@ -76,25 +101,30 @@ def convert_version(new_version_input='', old_version='1.0.0'):
 
     split_new_version = [int(x) for x in new_version_input.split('.')]
     # print(split_new_version)
-    split_old_version = [int(x) for x in old_version.split('.')]
+    split_old_version = [int(x) for x in old_version_str.split('.')]
     # print(split_old_version)
 
     for i in range(3):
         if split_new_version[i] > split_old_version[i]:
             break
         if split_new_version[i] < split_old_version[i]:
-            return None
+            raise ValueError  # will cause new input request
 
     return new_version_input
 
 
-def routine(command=None, message='', option1='next', option2='exit'):
+def set_version(new_version_str):
+    with open(VERSION_FILE, 'w') as version_file:
+        version_file.write(new_version_str)
+
+
+def routine(cmd=None, message='', option1='next', option2='exit'):
     while 1:
         print(message)
 
-        if command:
-            print('running command:', command)
-            os.system(command)
+        if cmd:
+            print('running command:', cmd)
+            os.system(cmd)
 
         print('__________\nDone. Options:')
         print('1)', option1)
@@ -130,7 +160,7 @@ if __name__ == "__main__":
     except ValueError:
         pass
 
-    old_version = get_version('multivar_horner')
+    old_version = get_version()
 
     print('The actual version number is:', old_version)
     print('Enter new version number:')
@@ -138,39 +168,39 @@ if __name__ == "__main__":
     while 1:
         try:
             version_input = input()
-        except ValueError:
-            pass
-
-        version_number = convert_version(version_input, old_version)
-        if version_number is not None:
-            set_version(version_number, old_version, )
+            version_str = parse_version(version_input, old_version)
+            set_version(version_str)
             break
+        except ValueError:
+            print(
+                f'Invalid version input. Should be of format "x.x.xxx" and higher than the old version {old_version}.')
+            pass  # try again
 
-        print('Invalid version input. Should be of format "x.x.xxx" and higher than the old version.')
-
-    version = get_version('multivar_horner')
-    print('version number has been set to:', version)
+    version = get_version()
+    print('the version number has been set to:', version)
     print('=====================')
 
-    routine(None, 'Remember to write a changelog now for version %s' % version, 'Done. Continue', 'Exit')
-    routine(None, 'Are all dependencies written in setup.py, requirements.in/.txt and the Readme?', 'OK. Continue', 'Exit')
+    # TODO data could contain errors, test before upload
+    routine(None, 'Remember to list all relevant importable objects in __all__ variable in __init__.py!',
+            'OK. Continue', 'Exit')
     routine(None,
-            'Maybe update test routine (requirements.txt) with pip-compile! Commands are written in the beginning of this script',
+            'Maybe re-pin the test dependencies (requirements.txt) with pip-compile!'
+            ' Commands are written in the beginning of this script',
             'Done. Run tests', 'Exit')
-
-    # print('Enter virtual env name:')
-    # virtual env has to be given!
-    # virt_env_name = input()
-    virt_env_name = 'pathEnv'
-    virt_env_act_command = 'source activate ' + virt_env_name.strip() + '; '
+    routine(None,
+            'Are all pinned dependencies written in setup.py and the Documentation?',
+            'OK. Continue',
+            'Exit')
+    routine(None, 'Are all (new) features documented? (documentation, example.py)', 'OK. Continue', 'Exit')
+    routine(None, 'Remember to write a changelog now for version %s' % version, 'Done. Continue', 'Exit')
 
     print('___________')
     print('Running TESTS:')
 
-    # routine(virt_env_act_command + "pip-compile requirements.in;pip-sync",
-    #         'pinning the requirements.txt and bringing virtualEnv to exactly the specified state:', 'next: build check')
+    # routine(VIRT_ENV_COMMAND + "pip-compile requirements_numba.in;pip-sync",
+    #      'pinning the requirements.txt and bringing virtualEnv to exactly the specified state:', 'next: build check')
 
-    routine(virt_env_act_command + "rstcheck *.rst", 'checking syntax of all .rst files:', 'next: build check')
+    routine(VIRT_ENV_COMMAND + "rstcheck *.rst", 'checking syntax of all .rst files:', 'next: build check')
 
     # IMPORTANT: -r flag to rebuild tox virtual env
     # only when dependencies have changed!
@@ -183,22 +213,23 @@ if __name__ == "__main__":
     except ValueError:
         pass
 
-    routine(virt_env_act_command + "tox" + rebuild_flag + " -e py36-codestyle",
-            'checking syntax, codestyle and imports',
+    # routine(VIRT_ENV_COMMAND + "tox" + rebuild_flag, 'checking syntax, codestyle and imports', 'continue')
+    routine(f'{VIRT_ENV_COMMAND} tox {rebuild_flag} -e codestyle', 'checking syntax, codestyle and imports',
             'continue')
-
-    routine(virt_env_act_command + "tox" + rebuild_flag + " -e py36", 'checking if package is building with tox',
-            'continue')
+    routine(f'{VIRT_ENV_COMMAND} tox {rebuild_flag}  -e py37', 'build tests py3', 'continue')
 
     print('Tests finished.')
 
     routine(None,
-            'Please commit your changes, push and wait if Travis tests build successfully. Only then merge them into the master.',
+            'Please commit your changes, push and wait if Travis tests build successfully. '
+            'Only then merge them into the master.',
             'Build successful. Publish and upload now.', 'Exit.')
 
     # TODO do this automatically, problem are the commit messages (often the same as changelog)
     # git commit --message
     # git push dev
+
+    # TODO wait for Travis to finish positively
 
     # if not in master
 
@@ -206,8 +237,6 @@ if __name__ == "__main__":
     # git merge ...
 
     # TODO switching to master
-
-    # TODO wait for Travis to finish
 
     print('=================')
     print('PUBLISHING:')
@@ -218,20 +247,20 @@ if __name__ == "__main__":
     routine("python3 setup.py sdist bdist_wheel", 'building the package now.')
 
     path = abspath(join(__file__, pardir, 'dist'))
-    all_archives_this_version = [f for f in listdir(path) if isfile(join(path, f)) and version_number in f]
+    all_archives_this_version = [f for f in os.listdir(path) if isfile(join(path, f)) and version_str in f]
     paths2archives = [abspath(join(path, f)) for f in all_archives_this_version]
     command = "twine upload --repository-url https://test.pypi.org/legacy/ " + ' '.join(paths2archives)
 
     # upload all archives of this version
-    routine(virt_env_act_command + command, 'testing if upload works.')
+    routine(VIRT_ENV_COMMAND + command, 'testing if upload works.')
 
-    command = "twine upload " + ' '.join(paths2archives)
-    routine(virt_env_act_command + command, 'real upload to PyPI.')
+    command = f"twine upload " + ' '.join(paths2archives)
+    routine(VIRT_ENV_COMMAND + command, 'real upload to PyPI.')
 
     # tag erstellen
     routine(None, 'Do you want to create a git release tag?', 'Yes', 'No')
 
-    routine("git tag -a v%s -m 'Version %s'" % (version, version), 'Creating tag', 'Continue')
+    routine(f"git tag -a v{version} -m 'Version {version}'", 'Creating tag', 'Continue')
 
     routine(None, 'Do you want to push the git release tag?', 'Yes', 'No')
     # in den master pushen
@@ -239,6 +268,6 @@ if __name__ == "__main__":
 
     print('______________')
     print('Publishing Done.')
-    print('when the upload didnt work run:')
-    print('python3 setup.py bdist_wheel upload')
-    print('sudo -H pip3 install multivar_horner --upgrade')
+    print('now run:')
+    print("only when the upload didn't work: python3 setup.py bdist_wheel upload")
+    print(f'sudo -H pip install {PACKAGE} --upgrade')

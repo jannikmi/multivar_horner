@@ -12,14 +12,14 @@ from numba import b1, f8, jit, u4
 
 
 # TODO     TypingError: numba doesn't support kwarg for prod
-# TODO
+# TODO find alternative formulation, make speed comparison more fair
 # @jit(f8(f8[:], f8[:], u4[:, :]), nopython=True, cache=True)
 def naive_eval(x, coefficients, exponents):
     return np.sum(coefficients.T * np.prod(np.power(x, exponents), axis=1), axis=1)[0]
 
 
 # @cc.export('eval_compiled', 'f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :], u4[:, :], b1[:], u4)')
-# @jit(f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :], u4[:, :], b1[:], u4), nopython=True, cache=True)
+@jit(f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :], u4[:, :], b1[:], u4), nopython=True, cache=True, debug=True)
 def eval_recipe(x, value_array, copy_recipe, scalar_recipe, monomial_recipe, tree_recipe, tree_ops, root_value_address):
     # IMPORTANT: the order of following the recipes is not arbitrary!
     # print(value_array)
@@ -100,7 +100,7 @@ def num_ops_1D_horner(unique_exponents):
     return num_ops
 
 
-# @jit(u4(u4[:, :]), nopython=True, cache=True)
+@jit(u4(u4[:, :]), nopython=True, cache=True)
 def true_num_ops(exponent_matrix):
     """
     without counting additions (just MUL & POW) and but WITH considering the coefficients (1 MUL per monomial)
@@ -119,7 +119,7 @@ def true_num_ops(exponent_matrix):
     return num_ops
 
 
-# @jit(u4[:](u4, u4[:], u4[:], u4[:, :]), nopython=True, cache=True)
+@jit(u4[:](u4, u4[:], u4[:], u4[:, :]), nopython=True, cache=True)
 def compile_usage(dim, usage_vector, unique_exponents, exponent_matrix):
     """
     :return: a vector with the usage count of every unique exponent
@@ -135,7 +135,7 @@ def compile_usage(dim, usage_vector, unique_exponents, exponent_matrix):
     return usage_vector
 
 
-# @jit(b1[:](u4, b1[:], u4[:], u4[:], u4[:, :]), nopython=True, cache=True)
+@jit(b1[:](u4, b1[:], u4[:], u4[:], u4[:, :]), nopython=True, cache=True)
 def compile_valid_options(dim, valid_option_vector, usage_vector, unique_exponents, exponent_matrix):
     if len(valid_option_vector) == 0:
         # there are no unique exponents
@@ -154,7 +154,7 @@ def compile_valid_options(dim, valid_option_vector, usage_vector, unique_exponen
     return valid_option_vector
 
 
-# @jit(u4(u4, u4, u4[:, :]), nopython=True, cache=True)
+@jit(u4(u4, u4, u4[:, :]), nopython=True, cache=True)
 def count_usage(dim, exp, exponent_matrix):
     """
     :return: the amount of times a scalar factor appears in the monomials
@@ -168,7 +168,7 @@ def count_usage(dim, exp, exponent_matrix):
     return usage_cnt
 
 
-# @jit(u4(u4, u4), nopython=True, cache=True)
+@jit(u4(u4, u4), nopython=True, cache=True)
 def factor_num_ops(dim, exp):
     """
     :param factor: a tuple (dim, exp) representing the scalar factor: x_dim^exp

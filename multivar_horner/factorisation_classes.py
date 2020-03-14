@@ -265,7 +265,8 @@ class BasePolynomialNode:
         'bottom up' approach.
         factorisation has been done (fixed), simply "collect" all existing factors and link addresses correctly
         :param factor_container: class storing and managing all existing factors
-        :param coefficient_idxs: the indices of the given coefficients in the global coefficient array of the root polynomial
+        :param coefficient_idxs: the indices of the given coefficients in the global coefficient array
+            of the root polynomial
         :return:
         """
         if self.has_children:

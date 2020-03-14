@@ -53,9 +53,9 @@ Also see:
 Dependencies
 ============
 
-(``python3``),
+(``python3.6+``),
 ``numpy``,
-``Numba``
+``numba``
 
 
 Installation

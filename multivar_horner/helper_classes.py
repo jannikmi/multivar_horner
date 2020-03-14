@@ -1,7 +1,5 @@
 import heapq  # implementation of the heap queue algorithm, also known as the priority queue algorithm (binary tree)
 
-import numpy as np
-
 from .helper_fcts import get_goedel_id_of
 
 
@@ -125,7 +123,7 @@ class ScalarFactor(AbstractFactor):
 
         return factor_fmt_str.format(**{'dim': self.dimension + 1, 'exp': self.exponent})
 
-    def __repr__(self,*args, **kwargs):
+    def __repr__(self, *args, **kwargs):
         return self.__str__(*args, **kwargs)
 
     @staticmethod
