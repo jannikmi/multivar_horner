@@ -2,6 +2,22 @@ Changelog
 =========
 
 
+1.3.1 (2020)
+__________________
+
+
+* added __call__ method for evaluating a polynomial in a simplified notation v=p(x)
+* added test for numerical stability
+* added plotting features for evaluation the numerical stability
+* TODO added tests comparing functionality to other approaches
+* clarified docstrings
+* split up requirements.txt (into basic dependencies and test dependencies)
+* added class AbstractPolynomial
+* TODO added sphinx documentation
+* TODO updated benchmark results
+* TODO removed goedel id
+
+
 1.3.0 (2020-03-14)
 __________________
 

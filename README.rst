@@ -14,40 +14,13 @@ multivar_horner
 
 .. image:: https://pepy.tech/badge/multivar-horner
     :alt: Total PyPI downloads
-    :target: https://pypi.python.org/pypi/multivar-horner
+    :target: https://pepy.tech/project/multivar-horner
 
 
 .. image:: https://img.shields.io/pypi/v/multivar_horner.svg
     :alt: latest version on PyPI
     :target: https://pypi.python.org/pypi/multivar-horner
 
-
-A python package implementing a multivariate `horner scheme ("Horner's method", "Horner's rule") <https://en.wikipedia.org/wiki/Horner%27s_method>`__  for efficiently evaluating multivariate polynomials.
-
-A polynomial in normal form is being factorised according to the greedy heuristic described in [1] with some additional computational tweaks.
-The resulting Horner factorisation requires less operations for evaluation and is being computed by growing a "Horner Factorisation Tree".
-When the polynomial is fully factorized (= all leaves cannot be factorised any more), a computational "recipe" for evaluating the polynomial is being compiled.
-This "recipe" (stored internally as numpy arrays) enables fast evaluation with minimal memory requirement, because of the lack of additional overhead of recursive function calls (traversing the tree) and functions precompiled by ``numba`` operating on numpy arrays.
-
-All factors in use in the factorisation are being computed only once and factorized themselves (=reusing computed values) to save computations.
-
-**Pros:**
- * near to minimal representation of a multivariate polynomial (in the sense of memory and time complexity of the evaluation)
- * less roundoff errors[3], [4]
- * lower error propagation, because of fewer operations [1, Ch. 5]
-
-
-**Cons:**
- * increased initial computational requirements and memory to find and then store the factorisation
-
-
-For an exact evaluation of the impact of computing Horner factorisations see the benchmarks below.
-It is also possible to search for an optimal factorisation (cf. section "Optimal Horner Factorisation")
-
-
-Also see:
-`GitHub <https://github.com/MrMinimal64/multivar_horner>`__,
-`PyPI <https://pypi.python.org/pypi/multivar_horner/>`__
 
 
 Dependencies
@@ -181,72 +154,6 @@ Check this code in ``example.py``:
 
 
 
-Benchmarks
-==========
-
-
-The benchmarks have been performed on a 15-inch MacBook Pro from 2017 with a 4 core 2,8 GHz Intel Core i7 processor, 16 GB 2133 MHz LPDDR3 RAM and macOS 10.13 High Sierra.
-The software versions in use were Python 3.7, numpy 1.16.3 and numba 0.40.1
-
-
-::
-
-    Speed test:
-    testing 200 evenly distributed random polynomials
-    average timings per polynomial:
-
-     parameters   |  setup time (/s)                        |  eval time (/s)                      |  # operations                        | lucrative after
-    dim | max_deg | naive      | Horner     | delta         | naive      | Horner     | delta      | naive      | Horner     | delta      |    # evals
-    ================================================================================================================================================================
-    1   | 1       | 1.895e-05  | 0.0001675  | 7.8 x more    | 1.62e-05   | 2.155e-06  | 6.5 x less | 3          | 1          | 2.0 x less | 11
-    1   | 2       | 2.041e-05  | 0.0002327  | 10 x more     | 1.384e-05  | 2.461e-06  | 4.6 x less | 5          | 3          | 0.7 x less | 19
-    1   | 3       | 2.005e-05  | 0.000294   | 14 x more     | 1.495e-05  | 2.525e-06  | 4.9 x less | 7          | 4          | 0.8 x less | 22
-    1   | 4       | 2.045e-05  | 0.0003652  | 17 x more     | 1.513e-05  | 2.658e-06  | 4.7 x less | 8          | 5          | 0.6 x less | 28
-    1   | 5       | 2.081e-05  | 0.0004009  | 18 x more     | 1.473e-05  | 2.365e-06  | 5.2 x less | 10         | 6          | 0.7 x less | 31
-
-    2   | 1       | 2.077e-05  | 0.0003436  | 16 x more     | 1.413e-05  | 2.956e-06  | 3.8 x less | 11         | 3          | 2.7 x less | 29
-    2   | 2       | 2.183e-05  | 0.0006544  | 29 x more     | 1.759e-05  | 2.791e-06  | 5.3 x less | 23         | 9          | 1.6 x less | 43
-    2   | 3       | 2.309e-05  | 0.001198   | 51 x more     | 1.566e-05  | 2.67e-06   | 4.9 x less | 43         | 18         | 1.4 x less | 90
-    2   | 4       | 2.27e-05   | 0.001749   | 76 x more     | 1.645e-05  | 2.736e-06  | 5.0 x less | 66         | 28         | 1.4 x less | 126
-    2   | 5       | 2.655e-05  | 0.002581   | 96 x more     | 1.699e-05  | 3.047e-06  | 4.6 x less | 98         | 42         | 1.3 x less | 183
-
-    3   | 1       | 2.297e-05  | 0.0007024  | 30 x more     | 1.66e-05   | 2.658e-06  | 5.2 x less | 30         | 8          | 2.8 x less | 49
-    3   | 2       | 2.19e-05   | 0.002274   | 103 x more    | 1.669e-05  | 3.336e-06  | 4.0 x less | 102        | 30         | 2.4 x less | 169
-    3   | 3       | 2.379e-05  | 0.004855   | 203 x more    | 1.768e-05  | 2.86e-06   | 5.2 x less | 222        | 68         | 2.3 x less | 326
-    3   | 4       | 2.451e-05  | 0.009766   | 397 x more    | 2.198e-05  | 3.783e-06  | 4.8 x less | 447        | 137        | 2.3 x less | 535
-    3   | 5       | 2.721e-05  | 0.01648    | 604 x more    | 2.466e-05  | 3.529e-06  | 6.0 x less | 763        | 233        | 2.3 x less | 779
-
-    4   | 1       | 2.296e-05  | 0.001601   | 69 x more     | 1.597e-05  | 2.802e-06  | 4.7 x less | 79         | 17         | 3.6 x less | 120
-    4   | 2       | 2.27e-05   | 0.007437   | 327 x more    | 1.996e-05  | 3.723e-06  | 4.4 x less | 382        | 89         | 3.3 x less | 457
-    4   | 3       | 2.834e-05  | 0.02269    | 800 x more    | 3.023e-05  | 3.931e-06  | 6.7 x less | 1181       | 279        | 3.2 x less | 862
-    4   | 4       | 3.638e-05  | 0.05136    | 1410 x more   | 4.494e-05  | 5.186e-06  | 7.7 x less | 2667       | 632        | 3.2 x less | 1291
-    4   | 5       | 5.207e-05  | 0.1111     | 2132 x more   | 8.537e-05  | 7.524e-06  | 10 x less  | 5758       | 1359       | 3.2 x less | 1426
-
-    5   | 1       | 2.553e-05  | 0.00305    | 118 x more    | 1.652e-05  | 3.533e-06  | 3.7 x less | 167        | 31         | 4.4 x less | 233
-    5   | 2       | 2.956e-05  | 0.02257    | 763 x more    | 2.941e-05  | 4.167e-06  | 6.1 x less | 1270       | 246        | 4.2 x less | 893
-    5   | 3       | 4.702e-05  | 0.101      | 2147 x more   | 7.98e-05   | 6.612e-06  | 11 x less  | 5605       | 1083       | 4.2 x less | 1379
-    5   | 4       | 0.0001021  | 0.335      | 3278 x more   | 0.000236   | 1.579e-05  | 14 x less  | 18399      | 3521       | 4.2 x less | 1521
-    5   | 5       | 0.0001861  | 0.759      | 4076 x more   | 0.0004799  | 3.037e-05  | 15 x less  | 40980      | 7885       | 4.2 x less | 1688
-
-
-Average evaluation time per polynomial using Horner factorisation
-
-.. image:: ./plots/eval_time.png
-
-
-Average evaluation time decrease per polynomial using Horner factorisation compared to using the naive matrix representation
-
-.. image:: ./plots/eval_time_decrease.png
-
-
-Average setup time per polynomial for computing the Horner factorisation
-
-.. image:: ./plots/setup_time.png
-
-
-Average setup time increase per polynomial for computing the Horner factorisation compared to using the naive matrix representation
-
-.. image:: ./plots/setup_time_increase.png
 
 
 
@@ -304,13 +211,6 @@ I would be really glad to get some feedback.
 If you encounter any bugs, have suggestions etc.
 do not hesitate to **open an Issue** or **add a Pull Requests** on Git.
 
-
-
-License
-=======
-
-``multivar_horner`` is distributed under the terms of the MIT license
-(see LICENSE.txt).
 
 
 References

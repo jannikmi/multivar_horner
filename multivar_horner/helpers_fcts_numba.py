@@ -11,19 +11,29 @@ import numpy as np
 from numba import b1, f8, jit, u4
 
 
-# TODO     TypingError: numba doesn't support kwarg for prod
-# TODO find alternative formulation, make speed comparison more fair
-# @jit(f8(f8[:], f8[:], u4[:, :]), nopython=True, cache=True)
+@jit(f8(f8[:], f8[:], u4[:, :]), nopython=True, cache=True)
 def naive_eval(x, coefficients, exponents):
-    return np.sum(coefficients.T * np.prod(np.power(x, exponents), axis=1), axis=1)[0]
+    nr_coeffs = len(coefficients)
+    # nr_monomials,nr_dims = exponents.shape
+    # assert nr_monomials == nr_coeffs
+    # assert len(x) == nr_dims
+    acc = 0.0
+    for i in range(nr_coeffs):
+        acc = acc + coefficients[i] * np.prod(np.power(x, exponents[i, :]))
+    return acc
+
+    # equivalent one liner:
+    # TypingError: numba doesn't support kwarg for prod
+    # return np.sum(coefficients.T * np.prod(np.power(x, exponents), axis=1), axis=1)[0]
 
 
 # @cc.export('eval_compiled', 'f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :], u4[:, :], b1[:], u4)')
 @jit(f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :], u4[:, :], b1[:], u4), nopython=True, cache=True, debug=True)
 def eval_recipe(x, value_array, copy_recipe, scalar_recipe, monomial_recipe, tree_recipe, tree_ops, root_value_address):
     # IMPORTANT: the order of following the recipes is not arbitrary!
-    # print(value_array)
 
+    # in order to evaluate scalar factors with exponent 1, no exponentiation operation is required
+    # simply copy the values of x to the value array
     # copy recipe instruction encoding: target, source
     # [target, source] = copy_recipe[i, :]
     for i in range(copy_recipe.shape[0]):
@@ -38,6 +48,9 @@ def eval_recipe(x, value_array, copy_recipe, scalar_recipe, monomial_recipe, tre
         # value_array[target] = x[source1] ** exponent
         value_array[scalar_recipe[i, 0]] = x[scalar_recipe[i, 1]] ** scalar_recipe[i, 2]
 
+    # # DEBUG:
+    # accessed_idxs = set()
+
     # print('computing monomial factors: ...')
     # monomial recipe instruction encoding: target, source1, source2
     # [target, source1, source2] = monomial_recipe[i, :]
@@ -47,6 +60,10 @@ def eval_recipe(x, value_array, copy_recipe, scalar_recipe, monomial_recipe, tre
         # value_array[target] = value_array[source1] * value_array[source2]
         value_array[monomial_recipe[i, 0]] = value_array[monomial_recipe[i, 1]] * value_array[monomial_recipe[i, 2]]
 
+        # # DEBUG:
+        # accessed_idxs.add(monomial_recipe[i, 1])
+        # accessed_idxs.add(monomial_recipe[i, 2])
+
     # print('evaluating factorisation tree: ...')
     # tree recipe instruction encoding: target, source
     # [target, source] = tree_recipe[i, :]
@@ -54,27 +71,45 @@ def eval_recipe(x, value_array, copy_recipe, scalar_recipe, monomial_recipe, tre
     # value_array[target] = value_array[target] *op* value_array[source]
     for i in range(tree_recipe.shape[0]):
         target = tree_recipe[i, 0]
+        source = tree_recipe[i, 1]
         if tree_ops[i]:  # ADDITION: 1
             # print('value[{}] = {} + {}'.format(target, value_array[target], value_array[source1]))
             # value_array[target] = value_array[target] + value_array[source1]
-            value_array[target] = value_array[target] + value_array[tree_recipe[i, 1]]
+            value_array[target] = value_array[target] + value_array[source]
         else:  # MULTIPLICATION: 0
             # print('value[{}] = {} * {}'.format(target, value_array[target], value_array[source1]))
             # value_array[target] = value_array[target] * value_array[source1]
-            value_array[target] = value_array[target] * value_array[tree_recipe[i, 1]]
+            value_array[target] = value_array[target] * value_array[source]
+
+        # # DEBUG:
+        # accessed_idxs.add(target)
+        # accessed_idxs.add(source)
+
+    # # DEBUG:
+    # all_idxs = {x for x in range(len(value_array))}
+    # non_accessed_idxs = all_idxs - accessed_idxs
+    # # coefficients are stored in the indices until one before the root address
+    # coefficient_idxs = {x for x in range(root_value_address)}
+    # non_accessed_coefficients = non_accessed_idxs & coefficient_idxs
+    # if len(non_accessed_coefficients) > 0:
+    #     raise ValueError(f'BUG: these coefficients have been accessed: {non_accessed_coefficients}')
+    #
+    # # NOTE: no indices must be accessed when the polynomial is a constant
+    # if len(non_accessed_idxs) > 0 and len(value_array) > 1:
+    #     raise ValueError(f'BUG: these idxs have been accessed: {non_accessed_idxs}')
 
     return value_array[root_value_address]  # return value of the root node
 
 
-# @jit(u4(u4[:]), nopython=True, cache=True)
+@jit(u4(u4[:]), nopython=True, cache=True)
 def num_ops_1D_horner(unique_exponents):
     """
     :param unique_exponents: np array of unique exponents sorted in increasing order without 0
-    :return: the number of operations of the one dimensional horner factorisation
+    :return: the number of operations of the one dimensional Horner factorisation
         without counting additions (just MUL & POW) and without considering the coefficients
 
 
-    NOTE: in 1D the horner factorisation is both unique and optimal (minimal amount of operations)
+    NOTE: in 1D the Horner factorisation is both unique and optimal (minimal amount of operations)
     """
     nr_unique_exponents = unique_exponents.shape[0]
     # the exponent 0 is not present!
@@ -171,8 +206,7 @@ def count_usage(dim, exp, exponent_matrix):
 @jit(u4(u4, u4), nopython=True, cache=True)
 def factor_num_ops(dim, exp):
     """
-    :param factor: a tuple (dim, exp) representing the scalar factor: x_dim^exp
-    :return: the amount of operations required to evaluate the given scalar factor
+    :return: the amount of operations required to evaluate the scalar factor
     """
     if exp >= 2:
         # 1 MUL + 1 POW

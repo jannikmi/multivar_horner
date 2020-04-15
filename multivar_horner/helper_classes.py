@@ -73,13 +73,10 @@ class PriorityQueue2D:
         return item
 
     def get(self):
-        # try:
         cost1, heap_id = self.lvl1_heap.get()
         lvl2_heap = self.id2heap[heap_id]
         cost2, item = lvl2_heap.get()
         return item  # return only the item without the costs
-        # except IndexError:
-        #     return None
 
     def get_all(self):
         all_items = []
@@ -98,16 +95,24 @@ class AbstractFactor:
     def __repr__(self):
         raise NotImplementedError()
 
-    def eval(self, factor_values):
-        # the value of all used factors has already been computed
-        return factor_values[self.value_idx]
-
-    def compute(self, x, factor_values):
+    def compute(self, x, value_array):  # unused
         raise NotImplementedError()
+
+    def eval(self, value_array):
+        """
+        looks up the computed value in the value array
+        self.compute() has to be called before!
+        then the value is stored at the value index in the value array
+        :param value_array:
+        :return: the computed value of self
+        """
+        return value_array[self.value_idx]
 
 
 class ScalarFactor(AbstractFactor):
-    # a monomial with just one variable: x_i^n
+    """
+    a factor depending on just one variable: :math:`f(x) = x_d^e`
+    """
     __slots__ = ['dimension', 'exponent']
 
     def __init__(self, factor_dimension, factor_exponent, factor_id):
@@ -127,12 +132,12 @@ class ScalarFactor(AbstractFactor):
         return self.__str__(*args, **kwargs)
 
     @staticmethod
-    def num_ops(self):
-        # count the number of instructions done during compute (during eval() only looks up the computed value)
-        return 1
+    def num_ops():
 
-    def compute(self, x, factor_values):
-        factor_values[self.value_idx] = x[self.dimension] ** self.exponent
+        return 1  # the number of instructions required for computing the value
+
+    def compute(self, x, value_array):
+        value_array[self.value_idx] = x[self.dimension] ** self.exponent
 
     def get_recipe(self):
         """
@@ -151,11 +156,12 @@ class ScalarFactor(AbstractFactor):
 
 class MonomialFactor(AbstractFactor):
     """
+    a factor ('monomial') consisting of a product of scalar factors:
+    :math:`m(x) = x_i^j * ... * x_k^l`
+
     factorisation_idxs: the indices of the values of all factors.
-        cannot be set at construction time, because the list of all factors is sorted
-        at the end of building the horner factorisation tree (when all factors are known)
+        can be set at construction time, because  TODO
     """
-    # a monomial consisting of a product of scalar factors: x_i^j * x_k^l * ...
     __slots__ = ['scalar_factors', 'factorisation_idxs']
 
     def __init__(self, scalar_factors):
@@ -166,6 +172,7 @@ class MonomialFactor(AbstractFactor):
         # this is a unique id for every monomial
         # the id of a monomial the product of the ids of its scalar factors
         self.monomial_id = 1
+        # TODO remove?!
         for f in self.scalar_factors:
             self.monomial_id *= f.monomial_id
 
@@ -187,13 +194,13 @@ class MonomialFactor(AbstractFactor):
         # count the number of instructions done during compute (during eval() only looks up the computed value)
         return len(self.factorisation_idxs) - 1
 
-    def compute(self, x, factor_values):
+    def compute(self, x, value_array):
         # IMPORTANT: compute() of all the sub factors has had to be called before!
-        value = factor_values[self.factorisation_idxs[0]]
+        value = value_array[self.factorisation_idxs[0]]
         for idx in self.factorisation_idxs[1:]:
-            value *= factor_values[idx]
+            value *= value_array[idx]
 
-        factor_values[self.value_idx] = value
+        value_array[self.value_idx] = value
 
     def get_recipe(self):
         """

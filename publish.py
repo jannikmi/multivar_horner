@@ -42,8 +42,8 @@ compile a new requirements file (with the latest versions)
 conda activate tzEnv
 pip-compile --upgrade
 same as?!:
-pip-compile --output-file=requirements.txt requirements.in
-pip-compile --output-file requirements.txt requirements.in
+pip-compile --output-file=requirements.txt requirements_tests.in
+pip-compile --output-file requirements.txt requirements_tests.in
 
 only update the flask package:
 pip-compile --upgrade-package flask
@@ -225,7 +225,7 @@ if __name__ == "__main__":
             'Only then merge them into the master.',
             'Build successful. Publish and upload now.', 'Exit.')
 
-    # TODO do this automatically, problem are the commit messages (often the same as changelog)
+    # TODO do this automatically, problem are the commit messages <- often the same as changelog!
     # git commit --message
     # git push dev
 

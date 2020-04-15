@@ -7,11 +7,11 @@ from multivar_horner.multivar_horner import MultivarPolynomial, HornerMultivarPo
 #       dimension N = 3
 #       amount of monomials M = 4
 #       max_degree D = 3
-# NOTE: these data types and shapes are required by the precompiled functions in helper_fcts_numba.py
-coefficients = np.array([[5.0], [1.0], [2.0], [3.0]], dtype=np.float64)  # column numpy vector = (M,1)-matrix
-exponents = np.array([[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=np.uint32)  # numpy (M,N)-matrix
+# NOTE: these data types and shapes are required by the Numba jit compiled functions
+coefficients = np.array([[5.0], [1.0], [2.0], [3.0]], dtype=np.float64)  # numpy (M,1) ndarray
+exponents = np.array([[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=np.uint32)  # numpy (M,N) ndarray
 
-# represent the polynomial in the regular, naive form without any factorisation (simply stores the matrices)
+# represent the polynomial in the canonical form (without any factorisation)
 # pass compute_representation=True in order to compile a string representation of the factorised polynomial
 polynomial = MultivarPolynomial(coefficients, exponents, compute_representation=True)
 
@@ -30,8 +30,12 @@ print(polynomial)
 #                   + 2.0e+00 (x1 ** 2) (x2 ** 0) (x3 ** 1) + 3.0e+00 (x1 ** 1) (x2 ** 1) (x3 ** 1)
 
 # define a query point and evaluate the polynomial
-x = np.array([-2.0, 3.0, 1.0], dtype=np.float64)  # numpy row vector (1,N)
+x = np.array([-2.0, 3.0, 1.0], dtype=np.float64)  # numpy (1,N) ndarray
 p_x = polynomial.eval(x)
+print(p_x)  # -29.0
+
+# a simplified notation for this:
+p_x = polynomial(x)
 print(p_x)  # -29.0
 
 # represent the polynomial in factorised form:
@@ -59,7 +63,7 @@ print(p_x)  # -29.0
 # in order to access the polynomial string representation with the updated coefficients pass compute_representation=True
 # NOTE: the string representation of the Horner factorisation depends on the factorisation tree
 #   the polynomial object must hence have keep_tree=True
-new_coefficients = [7.0, 2.0, 0.5, 0.75]  # must not be a column vector, but dimensions must still fit
+new_coefficients = [7.0, 2.0, 0.5, 0.75]  # must not be a ndarray, but the length must still fit
 new_polynomial = horner_polynomial.change_coefficients(new_coefficients, rectify_input=True, validate_input=True,
                                                        compute_representation=True, in_place=False)
 print(new_polynomial)

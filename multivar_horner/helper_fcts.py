@@ -39,6 +39,7 @@ def get_goedel_id_of(prime_idx, exponent, prime_array):
     return int(prime_array[prime_idx] ** exponent)
 
 
+# TODO typing
 def rectify_coefficients(coefficients):
     rectified_coefficients = np.atleast_1d(np.array(coefficients, dtype=np.float64)).reshape(-1, 1)
     return rectified_coefficients
@@ -69,7 +70,7 @@ def rectify(coefficients, exponents):
     return rectified_coefficients, rectified_exponents
 
 
-def validate_coefficients(coefficients):
+def validate_coefficients(coefficients) -> None:
     assert type(coefficients) is np.ndarray
     # coefficients must be given as a column vector (2D)
     assert coefficients.shape[1] == 1 and len(coefficients.shape) == 2
@@ -79,12 +80,10 @@ def validate_coefficients(coefficients):
     assert not np.any(coefficients == 0.0)
 
 
-def validate(coefficients, exponents):
+def validate(coefficients, exponents) -> None:
     """
-    raises an error when the given input is not valid
-    :param coefficients: a numpy array column vector of doubles representing the coefficients of the monomials
-    :param exponents: a numpy array matrix of unsigned integers representing the exponents of the monomials
-    :return:
+    raise an error when the given input parameters of a polynomial are not valid
+    # TODO
     """
 
     validate_coefficients(coefficients)
@@ -95,6 +94,9 @@ def validate(coefficients, exponents):
     # exponents must not be negative
     assert not np.any(exponents < 0)
     # there must not be duplicate exponent vectors
+    if exponents.shape != np.unique(exponents, axis=0).shape:
+        raise ValueError
+
     assert exponents.shape == np.unique(exponents, axis=0).shape
 
     # must have the same amount of entries

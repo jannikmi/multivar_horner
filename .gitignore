@@ -119,3 +119,5 @@ venv.bak/
 # mypy
 .mypy_cache/
 publish_old.py
+playground.py
+tests/debug.py

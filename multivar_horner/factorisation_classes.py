@@ -1,6 +1,6 @@
 import numpy as np
 
-from .global_settings import DEBUG, ID_ADD, ID_MULT, UINT_DTYPE
+from .global_settings import ID_ADD, ID_MULT, UINT_DTYPE
 from .helper_classes import PriorityQueue2D
 from .helpers_fcts_numba import compile_valid_options, count_usage, factor_num_ops, num_ops_1D_horner, true_num_ops
 
@@ -9,11 +9,12 @@ class FactorisationNode:
     """
     A node representing a factorisation of a polynomial:
     p = f_1 * p_1 + p_2
-    its sub problems are polynomials as well -> 'divide and conquer'
+    its sub problems are polynomials as well ('divide and conquer' -> recursion)
     factorisation in this way results in building a binary "Horner Factorisation Tree"
-    TODO allow whole monomials as factors. otherwise factorisation is ambiguous: f = f1 f2 = f2 f1
-    TODO or remove ambiguity by uniquely identifying identical polynomials
-    just important for optimal factorisation search. not a priority atm.
+    TODO factorisation is ambiguous: f = f1 f2 = f2 f1
+        increases the amount of possible factorisations (relevant for search over all factorisations!)
+        allow whole monomials as factors or remove ambiguity by uniquely identifying identical polynomials
+        just important for optimal factorisation search. not a priority atm.
     """
 
     # prevent dynamic attribute assignment (-> safe memory)
@@ -27,15 +28,13 @@ class FactorisationNode:
         self.non_factorized_rows = non_factorized_rows
         self.value_idx = None
 
-    def get_string_representation(self, factor_fmt_str='x_{dim}^{exp}', *args, **kwargs):
-        s = self.factor.__str__(factor_fmt_str, *args, **kwargs)
+    def get_string_representation(self, *args, **kwargs):
+        s = self.factor.__str__(*args, **kwargs)
         s += ' ({})'.format(
-            self.node1_fact.get_string_representation(factor_fmt_str=factor_fmt_str, *args,
-                                                      **kwargs))
+            self.node1_fact.get_string_representation(*args, **kwargs))
         if self.node2 is not None:
             s += ' + {}'.format(
-                self.node2.get_string_representation(factor_fmt_str=factor_fmt_str, *args,
-                                                     **kwargs))
+                self.node2.get_string_representation(*args, **kwargs))
         return s
 
     def __str__(self, *args, **kwargs):
@@ -93,7 +92,6 @@ class FactorisationNode:
 
 
 class OptimalFactorisationNode(FactorisationNode):
-    # prevent dynamic attribute assignment (-> safe memory)
     __slots__ = ['cost_estimate', 'factorisation_measure', 'fully_factorized']
 
     def __init__(self, factor, node1_fact, node2, factorized_rows, non_factorized_rows):
@@ -126,6 +124,8 @@ class BasePolynomialNode:
     """
     The base class representing a multivariate polynomial as a child node in a factorisation tree for finding
         a good factorisation of a bigger multivariate polynomial
+
+    TODO document
     """
 
     # prevent dynamic attribute assignment (-> safe memory)
@@ -139,10 +139,9 @@ class BasePolynomialNode:
 
         self.unique_exponents = []
 
-        # NOTE: not useful to test (expensive)
+        #  all monomials are independent...
         # if np.all(np.sum(exponent_matrix, axis=0) == np.max(exponent_matrix, axis=0)):
-        #   all monomials are independent
-        #   pass
+        # NOTE: not useful (too expensive)
 
         for d in range(self.dim):
             dim_exponents = self.exponents[:, d]
@@ -177,7 +176,7 @@ class BasePolynomialNode:
 
     def choose_option(self):
         """
-        :return: the option with the maximum usage in all monomials
+        :return: the option with the maximum usage in all monomials (<- 'heuristic')
         """
 
         if self.num_monomials <= 1:
@@ -199,12 +198,11 @@ class BasePolynomialNode:
 
         return max_usage_option
 
-    def get_string_representation(self, coefficients=None, coeff_fmt_str='{:.2}', factor_fmt_str='x_{dim}^{exp}',
-                                  *args, **kwargs):
+    def get_string_representation(self, coefficients=None, coeff_fmt_str='{:.2}', factor_fmt_str='x_{dim}^{exp}'):
 
         if self.has_children:
             return self.get_child().get_string_representation(coefficients=coefficients, coeff_fmt_str=coeff_fmt_str,
-                                                              factor_fmt_str=factor_fmt_str, *args, **kwargs)
+                                                              factor_fmt_str=factor_fmt_str)
         else:
             monomial_representations = []
             for i, exp_vect in enumerate(self.exponents):
@@ -226,8 +224,13 @@ class BasePolynomialNode:
         return self.get_string_representation()
 
     def factorize(self, dim, exp):
-        # 'top down' approach
-        # create a representation of the polynomial with all the monomials 'benefiting' from factorisation
+        """
+        factorize the polynomial represented by this node:
+        find all the monomials 'benefiting' from this factorisation
+        create and store a factorized representation of this polynomial
+        'top down' approach
+        """
+
         factorized_rows = self.exponents[:, dim] >= exp
         exponents1_fact = self.exponents[factorized_rows, :]
         # the factor has to be deducted from the exponents (="factored out")
@@ -243,12 +246,13 @@ class BasePolynomialNode:
         else:
             exponents2 = self.exponents[non_factorized_rows, :]
             node2 = self.children_class(exponents2)
-            if DEBUG:  # TODO move to tests
-                assert exp > 0
-                assert not np.any(exponents1_fact < 0)
-                assert not np.any(exponents2 < 0)
-                assert exponents1_fact.shape[1] == exponents2.shape[1] and len(exponents2.shape) == 2
-                assert exponents1_fact.shape[0] + exponents2.shape[0] == self.num_monomials
+
+            # if DEBUG:  # TODO move to tests, create unit tests
+            #     assert exp > 0
+            #     assert not np.any(exponents1_fact < 0)
+            #     assert not np.any(exponents2 < 0)
+            #     assert exponents1_fact.shape[1] == exponents2.shape[1] and len(exponents2.shape) == 2
+            #     assert exponents1_fact.shape[0] + exponents2.shape[0] == self.num_monomials
 
         factor = (dim, exp)
         child = self.factorisation_class(factor, node1_fact, node2, factorized_rows, non_factorized_rows)
@@ -262,8 +266,9 @@ class BasePolynomialNode:
 
     def compile_factors(self, factor_container, coefficient_idxs):
         """
-        'bottom up' approach.
-        factorisation has been done (fixed), simply "collect" all existing factors and link addresses correctly
+        factorisation has been done (fixed)
+        now "collect" all existing factors and link value addresses correctly
+        'bottom up' approach
         :param factor_container: class storing and managing all existing factors
         :param coefficient_idxs: the indices of the given coefficients in the global coefficient array
             of the root polynomial
@@ -292,10 +297,14 @@ class BasePolynomialNode:
             # the own recipe is the recipe of its factorisation
             return self.get_child().get_recipe()
         else:
-            # this node cannot be factorized
-            # for evaluation the sum of all evaluated monomials multiplied with their coefficients has to be computed
+            # this node has not been factorized (represents a regular polynomial)
+            # for evaluation, the sum of all evaluated monomials (='factors')
+            # multiplied with their coefficients has to be computed
             # p = c1 * mon1 + c2 * mon2 ...
-            # the final evaluated value of this node has to be stored at the first of its value indices
+            # the value of the coefficients in the value array are only being used once
+            # -> their address can be reused for storing intermediary results
+            # the final evaluated value of this node must be stored at the first of its value indices
+            # this
             initial_coeff_value_idx = self.value_idxs[0]
             factor = self.factors[0]
             tree_recipe = []
