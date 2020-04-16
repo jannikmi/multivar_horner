@@ -15,7 +15,7 @@ __________________
 * added tests comparing functionality to naive polynomial evaluation
 * added basic API functionality test
 * clarified docstrings
-* more verbose error messages during input verification 
+* more verbose error messages during input verification
 * split up requirements.txt (into basic dependencies and test dependencies)
 * added class AbstractPolynomial
 * TODO added sphinx documentation

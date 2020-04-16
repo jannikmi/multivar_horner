@@ -5,6 +5,7 @@
 # TODO compare difference in computed values of other methods (=numerical error)
 # TODO test all input parameter conversions, and data rectifications
 # TODO test derivative correctness
+# TODO test factorisation for 1D polynomials! should always find optimum = unique 1D Horner factorisation
 # TODO test: addresses of factors must never be target addresses
 #  (value would be overwritten, but might need to be reused)
 #   might not be relevant in the future any more with other computation procedures reusing addresses
