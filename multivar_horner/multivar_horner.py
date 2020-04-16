@@ -68,7 +68,7 @@ class AbstractPolynomial(ABC):
     :ivar unused_variables: the dimensions the polynomial does not depend on
     :ivar order: the maximum sum of exponents in any of its monomials
     :ivar lp_degree: the maximum l2-norm of the exponents vectors of all monomials. cf
-    :ivar max_degree: the largest exponent in any of its monomials (= l1-max_degree)
+    :ivar max_degree: the largest exponent in any of its monomials (= l1-degree)
     """
 
     # prevent dynamic attribute assignment (-> safe memory)
@@ -84,19 +84,19 @@ class AbstractPolynomial(ABC):
         if validate_input:
             validate(coefficients, exponents)
 
-        self.coefficients = coefficients
-        self.exponents = exponents
+        self.coefficients: np.ndarray = coefficients
+        self.exponents: np.ndarray = exponents
         self.compute_representation = compute_representation
 
-        self.num_monomials = self.exponents.shape[0]
-        self.dim = self.exponents.shape[1]
-        self.max_degree = np.max(self.exponents)
-        self.lp_degree = np.max(np.linalg.norm(self.exponents, axis=0))
-        self.order = np.max(np.sum(self.exponents, axis=0))
+        self.num_monomials: int = self.exponents.shape[0]
+        self.dim: int = self.exponents.shape[1]
+        self.max_degree: int = np.max(self.exponents)
+        self.lp_degree: float = np.max(np.linalg.norm(self.exponents, axis=0))
+        self.order: int = np.max(np.sum(self.exponents, axis=0))
         self.unused_variables = np.where(~np.any(self.exponents, axis=1))[0]
 
-        self.num_ops = 0
-        self.representation = 'p(x)'
+        self.num_ops: int = 0
+        self.representation: str = 'p(x)'
 
     def __str__(self):
         return self.representation
@@ -110,7 +110,7 @@ class AbstractPolynomial(ABC):
     def get_num_ops(self):
         return self.num_ops
 
-    def compute_string_representation(self, *args, **kwargs):
+    def compute_string_representation(self, *args, **kwargs) -> str:
         # self.representation has already been set during construction
         return self.representation
 
@@ -124,10 +124,10 @@ class AbstractPolynomial(ABC):
         """
         TODO test
         :param i: dimension to derive with respect to
-        all other arguments will be passed to the constructor of the derivative polynomial
+        all given additional arguments will be passed to the constructor of the derivative polynomial
 
-        :return: the partial derivative of this polynomial wrt. the i-th coordinate
-        # ATTENTION: coordinate counting starts with 1! (first coordinates is #1)
+        :return: the partial derivative of this polynomial wrt. the i-th dimension
+        # ATTENTION: dimension counting starts with 1 -> the first dimension is #1!
         """
 
         assert (0 < i <= self.dim)

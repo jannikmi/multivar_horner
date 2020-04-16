@@ -73,10 +73,10 @@ def rnd_input_list(length, dim, max_abs_val):
     return [(np.random.rand(dim) - 0.5) * (2 * max_abs_val) for i in range(length)]
 
 
-
 def vectorize(obj):
     return lambda x: np.array([obj(np.atleast_1d(x_i)) for x_i in x])
 
-def vander(X, exponents):
-    return np.array([[(x ** ex).prod() for ex in exponents] for x in X])
-
+#
+# vectorised version of naive_eval() in multivar_horner.helpers_fcts_numba
+def naive_eval_reference(X, exponents, coefficients):
+    return np.dot(np.array([[(x ** ex).prod() for ex in exponents] for x in X]), coefficients)

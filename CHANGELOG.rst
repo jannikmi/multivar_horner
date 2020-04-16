@@ -2,14 +2,15 @@ Changelog
 =========
 
 
-1.3.1 (2020)
+1.3.1 (2020-x-x)
 __________________
 
 
 * added __call__ method for evaluating a polynomial in a simplified notation v=p(x)
 * added test for numerical stability
 * added plotting features for evaluation the numerical stability
-* TODO added tests comparing functionality to other approaches
+* added tests comparing functionality to 1D numpy polynomials
+* added basic API functionality test
 * clarified docstrings
 * split up requirements.txt (into basic dependencies and test dependencies)
 * added class AbstractPolynomial

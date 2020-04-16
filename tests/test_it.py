@@ -4,8 +4,12 @@
 
 # TODO compare difference in computed values of other methods (=numerical error)
 # TODO test all input parameter conversions, and data rectifications
-# TODO use numpy.testing.assert_allclose() or similar
-# TODO test gradient
+# TODO test derivative correctness
+# TODO test: addresses of factors must never be target addresses
+#  (value would be overwritten, but might need to be reused)
+#   might not be relevant in the future any more with other computation procedures reusing addresses
+
+
 import itertools
 import pickle
 import sys
@@ -22,16 +26,25 @@ from multivar_horner.global_settings import UINT_DTYPE
 from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 
 # settings for numerical stability tests
-from tests.test_helpers import rnd_settings_list, TEST_RESULTS_PICKLE, vander, vectorize
+from tests.test_helpers import rnd_settings_list, TEST_RESULTS_PICKLE, vectorize, naive_eval_reference
+
+MAX_DIMENSION = 4
+DIM_RANGE = list(range(1, MAX_DIMENSION))
+MAX_DEGREE = 4
+DEGREE_RANGE = list(range(1, MAX_DEGREE))
+NR_TEST_POLYNOMIALS = 5  # repetitions
+MAX_COEFF_MAGNITUDE = 1e0
+MAX_INP_MAGNITUDE = MAX_COEFF_MAGNITUDE  # max magnitude of evaluation points x
 
 # numercial tests
-DIM_RANGE = list(range(1, 8))
-DEGREE_RANGE = list(range(1, 8))
 MAX_DEGREE_NUMERICAL_TEST = 10
-NR_TEST_POLYNOMIALS = 5
 NR_COEFF_CHANGES = 20
-MAX_COEFF_MAGNITUDE = 1e0
-MAX_NUMERICAL_ERROR = 10 ** (log10(MAX_COEFF_MAGNITUDE) - 10)  # n orders of magnitudes less than the coefficients
+
+# numerical error
+# n orders of magnitudes less than the coefficients
+# maximally the machine precision
+MAX_ERR_EXPONENT = max(-15, (int(log10(MAX_COEFF_MAGNITUDE)) - 10))
+MAX_NUMERICAL_ERROR = 10 ** MAX_ERR_EXPONENT
 
 INVALID_INPUT_DATA = [
     # calling with x of another dimension
@@ -111,8 +124,6 @@ VALID_TEST_DATA = [
      33.5),
 
     # p(x) =  1.0* x_1^1 + 1.0 * x_2^1
-    # TODO verify the length of the value arrat
-    # TODO actually no computations needed for coefficients of 1.0
     (([1.0, 1.0],
       [[1, 0], [0, 1]],
       [0.0, 0.0]),
@@ -277,8 +288,6 @@ def proto_test_case(data, fct):
     assert all_good
 
 
-# TODO dim
-
 def evaluate_numerical_error(dim, max_degree):
     # basic idea: evaluating a polynomial at x = all 1 should give the sum of coefficients
     # -> any deviation is the numerical error
@@ -328,36 +337,68 @@ def evaluate_numerical_error(dim, max_degree):
     return results
 
 
-# def id2exponent_vect(prime_list, monomial_id):
-#     # find the exponent vector corresponding to a monomial id
-#     # = prime decomposition
-#     exponent_vect = np.zeros(prime_list.shape, dtype=UINT_DTYPE)
-#     current_id = monomial_id
-#     for i, prime in enumerate(prime_list):
-#         while 1:
-#             quotient, remainder = divmod(current_id, prime)
-#             if remainder == 0:
-#                 exponent_vect[i] += 1
-#                 current_id = quotient
-#             else:
-#                 break
-#
-#         if current_id == 0:
-#             break
-#
-#     if current_id != 0:
-#         raise ValueError('no factorisation found')
-#
-#     return exponent_vect
-#
-#
-# def _sparse_range_generator(max_value, density):
-#     for i in range(max_value):
-#         if random.random() < density:
-#             yield i
-
-
 class MainTest(unittest.TestCase):
+
+    # TODO split up tests into cross class test cases and single class test cases,
+    #  then use inheritance to change test class
+    def test_construction_basic(self):
+        """
+        test the basic construction API functionalities
+        :return:
+        """
+        print('\nTESTING COSNTRUCTION API...')
+        coefficients = np.array([[5.0], [1.0], [2.0], [3.0]], dtype=np.float64)
+        exponents = np.array([[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=np.uint32)
+
+        polynomial1 = MultivarPolynomial(coefficients, exponents, compute_representation=False)
+        polynomial2 = MultivarPolynomial(coefficients, exponents, compute_representation=True)
+        # both must have a string representation
+        # [#ops=27] p(x)
+        # [#ops=27] p(x) = 5.0 x_1^0 x_2^0 x_3^0 + 1.0 x_1^3 x_2^1 x_3^0 + 2.0 x_1^2 x_2^0 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
+        assert len(str(polynomial1)) < len(str(polynomial2))
+        assert str(polynomial1) == polynomial1.representation
+        assert polynomial1.num_ops == 27
+
+        return_str_repr = polynomial1.compute_string_representation(coeff_fmt_str='{:1.1e}',
+                                                                    factor_fmt_str='(x{dim} ** {exp})')
+        # the representation should get updated
+        assert return_str_repr == polynomial1.representation
+
+        polynomial1 = HornerMultivarPolynomial(coefficients, exponents, compute_representation=False)
+        polynomial2 = HornerMultivarPolynomial(coefficients, exponents, compute_representation=True)
+        # [#ops=10]
+        # [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0
+        assert len(str(polynomial1)) < len(str(polynomial2))
+        assert str(polynomial1) == polynomial1.representation
+        assert polynomial1.num_ops == 10
+
+        return_str_repr = polynomial1.compute_string_representation(coeff_fmt_str='{:1.1e}',
+                                                                    factor_fmt_str='(x{dim} ** {exp})')
+        # the representation should get updated
+        assert return_str_repr == polynomial1.representation
+
+        # converting the input to the required numpy data structures
+        coefficients = [5.0, 1.0, 2.0, 3.0]
+        exponents = [[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]]
+        horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True, validate_input=True,
+                                                     compute_representation=True, keep_tree=True)
+
+        # search for an optimal factorisation
+        horner_polynomial_optimal = HornerMultivarPolynomial(coefficients, exponents, find_optimal=True,
+                                                             compute_representation=True, rectify_input=True,
+                                                             validate_input=True)
+        assert horner_polynomial_optimal.num_ops <= horner_polynomial.num_ops
+
+        # partial derivative:
+        deriv_2 = horner_polynomial.get_partial_derivative(2, compute_representation=True)
+
+        # NOTE: partial derivatives themselves will be instances of the same parent class
+        assert deriv_2.__class__ is horner_polynomial.__class__
+
+        grad = horner_polynomial.get_gradient(compute_representation=True)
+        # partial derivative for every dimension
+        assert len(grad) == horner_polynomial.dim
+        print('OK.\n')
 
     def test_invalid_input_detection(self):
 
@@ -377,7 +418,7 @@ class MainTest(unittest.TestCase):
 
         print('OK.')
 
-    def test_eval(self):
+    def test_eval_cases(self):
         def cmp_value_fct(inp):
             coeff, exp, x = inp
             x = np.array(x).T
@@ -406,13 +447,55 @@ class MainTest(unittest.TestCase):
 
             return res1
 
-        print('TEST EVALUATION...')
+        print('\nTESTING EVALUATION CASES...')
         proto_test_case(VALID_TEST_DATA, cmp_value_fct)
-        print('OK.')
+        print('OK.\n')
+
+    def test_eval_compare_vandermonde_nd(self):
+        print('TEST COMPARISON TO VANDERMONDE POLYNOMIAL EVALUATION...')
+        for dim, deg in itertools.product(DIM_RANGE, DEGREE_RANGE):
+            exponents = np.array(list(itertools.product(range(deg), repeat=dim)), dtype=UINT_DTYPE)
+            coeffs = np.random.rand(exponents.shape[0])
+            X = np.random.rand(NR_TEST_POLYNOMIALS, dim)
+            p_ref = naive_eval_reference(X, exponents, coeffs)
+            for cls in [MultivarPolynomial, HornerMultivarPolynomial]:
+                p_mv = vectorize(cls(coeffs[:, None], exponents))
+                assert np.allclose(p_ref, p_mv(X))
+
+        print('OK.\n')
+
+    def test_eval_api(self):
+        print('\nTESTING EVALUATION API...')
+        keys = ['rectify_input', 'validate_input']
+        vals = [True, False]
+        exponents = np.array(list(itertools.product(DEGREE_RANGE, repeat=MAX_DIMENSION)), dtype=UINT_DTYPE)
+        coeffs = np.random.rand(exponents.shape[0])
+        X = np.random.rand(NR_TEST_POLYNOMIALS, MAX_DIMENSION)
+        p_ref = naive_eval_reference(X, exponents, coeffs)
+        for kwargs in [dict(zip(keys, tf)) for tf in itertools.product(*[vals] * len(keys))]:
+            for cls in [MultivarPolynomial, HornerMultivarPolynomial]:
+                p_mv = vectorize(cls(coeffs[:, None], exponents, **kwargs))
+                assert np.allclose(p_ref, p_mv(X))
+
+        print('OK.\n')
+
+    def test_eval_compare_numpy_1d(self):
+        print('TEST COMPARISON TO NUMPY 1D POLYNOMIAL EVALUATION...')
+        x = MAX_INP_MAGNITUDE * ((np.random.rand(NR_TEST_POLYNOMIALS) * 2) - 1)
+        for ncoeff in range(1, 8):
+            exponents = np.arange(ncoeff, dtype=UINT_DTYPE).reshape(ncoeff, 1)
+            coeffs = np.random.rand(ncoeff)
+            ##p_np = lambda x: np.polyval(coeffs[::-1], x)
+            p_np = np.polynomial.Polynomial(coeffs)
+            for cls in [MultivarPolynomial, HornerMultivarPolynomial]:
+                p_mv = vectorize(cls(coeffs[:, None], exponents))
+                assert np.allclose(p_np(x), p_mv(x))
+
+        print('OK.\n')
 
     def test_change_coefficients(self):
 
-        print('TEST CHANGING COEFFICIENTS...')
+        print('\nTEST CHANGING COEFFICIENTS...')
 
         # Test if coefficients can actually be changed, representation should change accordingly
 
@@ -502,68 +585,20 @@ class MainTest(unittest.TestCase):
             return res1
 
         proto_test_case(VALID_TEST_DATA, cmp_value_changed_coeffs_fct)
-        print('OK.')
-
-    # TODO understand
-    def test_eval_compare_numpy_1d(self):
-        print('TEST COMPARISON TO NUMPY 1D POLYNOMIAL EVALUATION...')
-        x = -10 + np.random.rand(100) * 20
-        for ncoeff in range(1, 8):
-            exponents = np.array(range(ncoeff), dtype=UINT_DTYPE).reshape(ncoeff, 1)
-            coeffs = np.random.rand(len(exponents))
-            ##p_np = lambda x: np.polyval(coeffs[::-1], x)
-            p_np = np.polynomial.Polynomial(coeffs)
-            for cls in [MultivarPolynomial, HornerMultivarPolynomial]:
-                p_mv = vectorize(cls(coeffs[:, None], exponents))
-                assert np.allclose(p_np(x), p_mv(x))
-
         print('OK.\n')
 
-    def test_eval_compare_vandermonde_nd(self):
-        print('TEST COMPARISON TO VANDERMONDE POLYNOMIAL EVALUATION...')
-        for ndim, deg in itertools.product(range(1, 5), range(1, 5)):
-            exponents = np.array(list(itertools.product(range(deg), repeat=ndim)),
-                                 dtype=UINT_DTYPE)
-            coeffs = np.random.rand(exponents.shape[0])
-            X = np.random.rand(100, ndim)
-            V = vander(X, exponents)
-            for cls in [MultivarPolynomial, HornerMultivarPolynomial]:
-                p_mv = vectorize(cls(coeffs[:, None], exponents))
-                assert np.allclose(np.dot(V, coeffs), p_mv(X))
+    def test_numerical_stability(self):
 
-        print('OK.\n')
+        print('\nevaluating the numerical error:')
+        results = []
+        for dim, max_degree in product(DIM_RANGE, DEGREE_RANGE):
+            results += evaluate_numerical_error(dim, max_degree)  # do not append list as entry
 
-    def test_api(self):
-        print('\nTESTING API...')
-        ndim = 3
-        deg = 3
-        keys = ['rectify_input', 'validate_input']
-        vals = [True, False]
-        exponents = np.array(list(itertools.product(range(deg), repeat=ndim)),
-                             dtype=UINT_DTYPE)
-        coeffs = np.random.rand(exponents.shape[0])
-        X = np.random.rand(10, ndim)
-        V = vander(X, exponents)
-        ref = np.dot(V, coeffs)
-        for kwds in [dict(zip(keys, tf)) for tf in
-                     itertools.product(*(vals,) * len(keys))]:
-            for cls in [MultivarPolynomial, HornerMultivarPolynomial]:
-                p_mv = vectorize(cls(coeffs[:, None], exponents, **kwds))
-                assert np.allclose(ref, p_mv(X))
+        with open(TEST_RESULTS_PICKLE, 'wb') as f:
+            print(f'exporting numerical test results in {TEST_RESULTS_PICKLE}')
+            pickle.dump(results, f)
 
-        print('OK.\n')
-
-        #
-    # def test_numerical_stability(self):
-    #
-    #     print('evaluating the numerical error:')
-    #     results = []
-    #     for dim, max_degree in product(DIM_RANGE, DEGREE_RANGE):
-    #         results += evaluate_numerical_error(dim, max_degree)  # do not append list as entry
-    #
-    #     with open(TEST_RESULTS_PICKLE, 'wb') as f:
-    #         print(f'exporting numerical test results in {TEST_RESULTS_PICKLE}')
-    #         pickle.dump(results, f)
+        print('done.\n')
 
 
 if __name__ == '__main__':
