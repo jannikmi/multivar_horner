@@ -20,15 +20,15 @@
 import pickle
 from copy import deepcopy
 from abc import ABC, abstractmethod
-from typing import List, Union
+from typing import List
 
 import numpy as np
 
 from multivar_horner.factorisation_classes import HeuristicFactorisationRoot, OptimalFactorisationRoot
 from multivar_horner.global_settings import DEBUG, DEFAULT_PICKLE_FILE_NAME, FLOAT_DTYPE, UINT_DTYPE, TYPE_1D_FLOAT, \
-    TYPE_2D_INT
-from multivar_horner.helper_classes import FactorContainer, ScalarFactor, MonomialFactor
-from multivar_horner.helper_fcts import get_prime_array, rectify, rectify_coefficients, validate, validate_coefficients
+    TYPE_2D_INT, BOOL_DTYPE
+from multivar_horner.helper_classes import FactorContainer
+from multivar_horner.helper_fcts import rectify, rectify_coefficients, validate, validate_coefficients
 from multivar_horner.helpers_fcts_numba import eval_recipe, naive_eval
 
 
@@ -343,7 +343,7 @@ class HornerMultivarPolynomial(AbstractPolynomial):
 
     # __slots__ declared in parents are available in child classes. However, child subclasses will get a __dict__
     # and __weakref__ unless they also define __slots__ (which should only contain names of any additional slots).
-    __slots__ = ['prime_array', 'factorisation_tree', 'factor_container',
+    __slots__ = ['factorisation_tree', 'factor_container',
                  'copy_recipe', 'scalar_recipe',  # TODO
                  'monomial_recipe', 'root_value_idx', 'tree_recipe', 'tree_ops', 'value_array_length']
 
@@ -356,13 +356,10 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         self.value_array_length = None
         self.representation = None
 
-        # the needed prime numbers for computing all Goedel numbers of all used factors
-        self.prime_array = get_prime_array(self.dim)
-
         # all unique factors of the Horner factorisation need to be stored
         # NOTE: do NOT automatically create all scalar factors with exponent 1
         # (they might be unused, since the polynomial must not actually depend on all variables)
-        self.factor_container = FactorContainer(self.prime_array)
+        self.factor_container = FactorContainer()
 
         # find a desired factorisation of the polynomial by building a factorisation tree
         # (= recursive object oriented data structure)
@@ -384,7 +381,8 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         # for evaluating the polynomial in tree form intermediary results have to be stored in a value array
         # the value array begins with the coefficients of the polynomial
         # (without further optimisation) every factor requires its own address
-        self.value_array_length = self.num_monomials + len(self.factor_container.factors)
+        self.value_array_length = self.num_monomials + len(self.factor_container.scalar_factors) + len(
+            self.factor_container.monomial_factors)
 
         # remember the address of the root polynomial
         # after the evaluation computations the value of the polynomial will be stored at this address!
@@ -395,7 +393,6 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         if not keep_tree:
             del self.factorisation_tree
             del self.factor_container
-            del self.prime_array
 
     def compute_string_representation(self, coeff_fmt_str: str = '{:.2}', factor_fmt_str: str = 'x_{dim}^{exp}', *args,
                                       **kwargs) -> str:
@@ -423,42 +420,41 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         -> acquire a data structure representing the factorisation tree
         -> avoid recursion and function call overhead during evaluation
         -> enables the use of jit compiled functions
+
+        the factor container must now contain all unique factors used in the chosen factorisation
+        during evaluation of a polynomial the values of all the factors are needed at least once
+        -> compute the values of all factors once and store them
+        -> store a pointer to the computed value for every factor ('value index' = address in the value array)
+        this is required for compiling evaluation instructions depending on the factor values
+        monomial factors exist only if their value is required during the evaluation of the parent polynomial
+        scalar factors exist only if their value is required during the evaluation of existing monomial factors
+        (scalar factors can be 'standalone' factors as well)
+        -> values must not be overwritten (reusing addresses), because they might be needed again by another factor
+        -> (without further optimisation) each factor requires its own space in the value array
         :return: the compiled recipes (numpy ndarrays)
         """
-
-        # the factor container now contains all unique factors used in the chosen factorisation
-        # sort factors after their id, in ascending order -> 'smaller' factors come first
-        # TODO without goedel id?!
-        # -> property of the list: the scalar factors of each monomial are stored in front of it
-        # -> IMPORTANT: value idx assignment will happen first for the scalar factors
-        unique_factors = list(sorted(self.factor_container.factors, key=lambda f: f.monomial_id))
-
-        # during evaluation of a polynomial the values of all the factors are needed at least once
-        # -> compute the values of all factors once and store them
-        # -> store a pointer to the computed value for every factor ('value index' = address in the value array)
-        # this is required for compiling evaluation instructions depending on the factor values
-        # monomial factors exist only if their value is required during the evaluation of the parent polynomial
-        # scalar factors exist only if their value is required during the evaluation of existing monomial factors
-        # (scalar factors can be 'standalone' factors as well)
-        # -> values cannot be overwritten (reusing addresses), because they might be needed again by another factor
-        # -> (without further optimisation) each factor requires its own space in the value array
-        value_idx_offset = self.num_monomials  # the values of the factors are being stored after the coefficients
-        for idx, factor in enumerate(unique_factors):
-            factor.value_idx = idx + value_idx_offset
-            if type(factor) is MonomialFactor:
-                # monomials
-                factor.factorisation_idxs = [f.value_idx for f in factor.scalar_factors]
+        # the values of the factors are being stored after the coefficients
+        # start the address assignment with the correct offset
+        value_idx = self.num_monomials
 
         # compile the recipes for computing the value of all factors
         copy_recipe = []  # skip computing factors with exp 1, just copy x value
         scalar_recipe = []
         monomial_recipe = []
 
-        # IMPORTANT: instructions for evaluating the scalar factors have to come first in the recipe!
-        for f in self.factor_container.factors:
-            copy_instr, scalar_instr, monomial_instr = f.get_recipe()
+        # -> IMPORTANT: value idx assignment must happen first for the scalar factors
+        for scalar_factor in self.factor_container.scalar_factors:
+            scalar_factor.value_idx = value_idx
+            value_idx += 1
+            copy_instr, scalar_instr = scalar_factor.get_recipe()
             copy_recipe += copy_instr
             scalar_recipe += scalar_instr
+
+        for monomial_factor in self.factor_container.monomial_factors:
+            monomial_factor.value_idx = value_idx
+            value_idx += 1
+            monomial_factor.factorisation_idxs = [f.value_idx for f in monomial_factor.scalar_factors]
+            monomial_instr = monomial_factor.get_recipe()
             monomial_recipe += monomial_instr
 
         # compile the recipe for evaluating the Horner factorisation tree
@@ -469,7 +465,7 @@ class HornerMultivarPolynomial(AbstractPolynomial):
                 np.array(scalar_recipe, dtype=UINT_DTYPE).reshape((-1, 3)),
                 np.array(monomial_recipe, dtype=UINT_DTYPE).reshape((-1, 3)),
                 np.array(tree_recipe, dtype=UINT_DTYPE).reshape((-1, 2)),
-                np.array(tree_ops, dtype=np.bool))
+                np.array(tree_ops, dtype=BOOL_DTYPE))
 
     def eval(self, x: TYPE_1D_FLOAT, validate_input: bool = False) -> float:
         """

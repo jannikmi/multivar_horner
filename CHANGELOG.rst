@@ -7,16 +7,21 @@ __________________
 
 
 * added __call__ method for evaluating a polynomial in a simplified notation v=p(x)
+* factor evaluation is not being optimised any more, simplifies polynomial construction,
+    the concept of Goedel ID not required any more
 * added test for numerical stability
 * added plotting features for evaluation the numerical stability
 * added tests comparing functionality to 1D numpy polynomials
+* added tests comparing functionality to naive polynomial evaluation
 * added basic API functionality test
 * clarified docstrings
+* more verbose error messages during input verification 
 * split up requirements.txt (into basic dependencies and test dependencies)
 * added class AbstractPolynomial
 * TODO added sphinx documentation
 * TODO updated benchmark results
-* TODO removed goedel id
+
+* added typing
 
 
 1.3.0 (2020-03-14)

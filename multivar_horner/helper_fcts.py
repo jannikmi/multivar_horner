@@ -1,45 +1,8 @@
-import itertools
+# -*- coding:utf-8 -*-
 
 import numpy as np
 
 
-# https://stackoverflow.com/questions/2068372/fastest-way-to-list-all-primes-below-n/3035188#3035188
-# a generator yielding all prime numbers in ascending order
-def erat2():
-    D = {}
-    yield 2
-    for q in itertools.islice(itertools.count(3), 0, None, 2):
-        p = D.pop(q, None)
-        if p is None:
-            D[q * q] = q
-            yield q
-        else:
-            x = p + q
-            while x in D or not (x & 1):
-                x += p
-            D[x] = p
-
-
-def get_prime_array(length):
-    return np.array(list(itertools.islice(erat2(), length)), dtype=np.uint32)
-
-
-def get_goedel_id_of(prime_idx, exponent, prime_array):
-    '''
-    NOTE: factor IDs of monomials (product of scala IDs) potentially grow very large,
-    especially with high dimensionality -> overflow?!
-    python automatically uses the reqired long data type for ints,  no special attention required?!
-    TODO use different method different from goedel id approach
-
-    :param prime_idx:
-    :param exponent:
-    :param prime_array: the unique ID of any scalar monomial x_i^n
-    :return:
-    '''
-    return int(prime_array[prime_idx] ** exponent)
-
-
-# TODO typing
 def rectify_coefficients(coefficients):
     rectified_coefficients = np.atleast_1d(np.array(coefficients, dtype=np.float64)).reshape(-1, 1)
     return rectified_coefficients
@@ -71,33 +34,29 @@ def rectify(coefficients, exponents):
 
 
 def validate_coefficients(coefficients) -> None:
-    assert type(coefficients) is np.ndarray
-    # coefficients must be given as a column vector (2D)
-    assert coefficients.shape[1] == 1 and len(coefficients.shape) == 2
-    # there must be at least one entry
-    assert coefficients.shape[0] > 0
-    # there must not be any coefficients with 0.0
-    assert not np.any(coefficients == 0.0)
+
+    assert type(coefficients) is np.ndarray, 'coefficients must be given as numpy ndarray'
+    assert len(coefficients.shape) == 2 and coefficients.shape[1] == 1, \
+        'coefficients must be given as a [n, 1] ndarray'
+
+    assert coefficients.shape[0] > 0, 'there must be at least one coefficient'
+
+    # assert not np.any(coefficients == 0.0), 'there must not be any coefficients with 0.0'
+    # allowed since coefficients should be changeable
 
 
 def validate(coefficients, exponents) -> None:
     """
     raise an error when the given input parameters of a polynomial are not valid
-    # TODO
     """
 
     validate_coefficients(coefficients)
 
-    assert type(exponents) is np.ndarray
-    # exponents must be 2D (matrix) = a list of exponent vectors
-    assert len(exponents.shape) == 2
-    # exponents must not be negative
-    assert not np.any(exponents < 0)
-    # there must not be duplicate exponent vectors
+    assert type(exponents) is np.ndarray, 'exponents must be given as numpy ndarray'
+    assert len(exponents.shape) == 2, 'exponents must be 2 dimensional (a list of exponent vectors)'
+    assert not np.any(exponents < 0), 'exponents must not be negative'
+
     if exponents.shape != np.unique(exponents, axis=0).shape:
-        raise ValueError
+        raise ValueError('there must not be duplicate exponent vectors')
 
-    assert exponents.shape == np.unique(exponents, axis=0).shape
-
-    # must have the same amount of entries
-    assert coefficients.shape[0] == exponents.shape[0]
+    assert coefficients.shape[0] == exponents.shape[0], 'there must be as many exponent vectors as coefficients'

@@ -31,6 +31,7 @@ def naive_eval(x, coefficients, exponents):
 @jit(f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :], u4[:, :], b1[:], u4), nopython=True, cache=True, debug=True)
 def eval_recipe(x, value_array, copy_recipe, scalar_recipe, monomial_recipe, tree_recipe, tree_ops, root_value_address):
     # IMPORTANT: the order of following the recipes is not arbitrary!
+    #   scalar factors need to be evaluated before monomial factors depending on them...
 
     # in order to evaluate scalar factors with exponent 1, no exponentiation operation is required
     # simply copy the values of x to the value array
