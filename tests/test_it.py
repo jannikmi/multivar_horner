@@ -13,10 +13,8 @@
 
 import itertools
 import pickle
-import sys
 import unittest
 from itertools import product
-from math import log10
 
 import numpy as np
 import pytest
@@ -27,315 +25,10 @@ from multivar_horner.global_settings import UINT_DTYPE
 from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 
 # settings for numerical stability tests
-from tests.test_helpers import rnd_settings_list, TEST_RESULTS_PICKLE, vectorize, naive_eval_reference
-
-MAX_DIMENSION = 4
-DIM_RANGE = list(range(1, MAX_DIMENSION))
-MAX_DEGREE = 4
-DEGREE_RANGE = list(range(1, MAX_DEGREE))
-NR_TEST_POLYNOMIALS = 5  # repetitions
-MAX_COEFF_MAGNITUDE = 1e0
-MAX_INP_MAGNITUDE = MAX_COEFF_MAGNITUDE  # max magnitude of evaluation points x
-
-# numercial tests
-MAX_DEGREE_NUMERICAL_TEST = 10
-NR_COEFF_CHANGES = 20
-
-# numerical error
-# n orders of magnitudes less than the coefficients
-# maximally the machine precision
-MAX_ERR_EXPONENT = max(-15, (int(log10(MAX_COEFF_MAGNITUDE)) - 10))
-MAX_NUMERICAL_ERROR = 10 ** MAX_ERR_EXPONENT
-
-INVALID_INPUT_DATA = [
-    # calling with x of another dimension
-    (([1.0, 2.0, 3.0],
-      [[3, 1, 0], [2, 0, 1], [1, 1, 1]],
-      [-2.0, 3.0]),
-     29.0),
-
-    (([1.0, 2.0, 3.0],
-      [[3, 1, 0], [2, 0, 1], [1, 1, 1]],
-      [-2.0, 3.0, 1.0, 4.0]),
-     29.0),
-
-    # negative exponents are not allowed
-    (([1.0, 2.0, 3.0],
-      [[3, -1, 0], [2, 0, 1], [1, 1, 1]],
-      [-2.0, 3.0, 1.0, 4.0]),
-     29.0),
-
-    # duplicate exponent entries are not allowed
-    (([1.0, 2.0, 3.0],
-      [[3, 1, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]],
-      [-2.0, 3.0, 1.0, 4.0]),
-     29.0),
-
-]
-
-VALID_TEST_DATA = [
-    #
-    # p(x) =  5.0
-    (([5.0],  # coefficients
-      [0],  # exponents
-      [0.0]),  # x
-     5.0),  # p(x)
-
-    # p(1.0) = 1.0
-    (([5.0],
-      [0],
-      [1.0]),
-     5.0),
-
-    # p(-1.0) = -1.0
-    (([5.0],
-      [0],
-      [-1.0]),
-     5.0),
-
-    # p(33.5) =33.5
-    (([5.0],
-      [0],
-      [33.5]),
-     5.0),
-
-    # p(x) =  1.0* x_1^1
-    # p(0.0) = 0.0
-    (([1.0],  # coefficients
-      [1],  # exponents
-      [0.0]),  # x
-     0.0),  # p(x)
-
-    # p(1.0) = 1.0
-    (([1.0],
-      [1],
-      [1.0]),
-     1.0),
-
-    # p(-1.0) = -1.0
-    (([1.0],
-      [1],
-      [-1.0]),
-     -1.0),
-
-    # p(33.5) =33.5
-    (([1.0],
-      [1],
-      [33.5]),
-     33.5),
-
-    # p(x) =  1.0* x_1^1 + 1.0 * x_2^1
-    (([1.0, 1.0],
-      [[1, 0], [0, 1]],
-      [0.0, 0.0]),
-     0.0),
-
-    (([1.0, 1.0],
-      [[1, 0], [0, 1]],
-      [1.0, 0.0]),
-     1.0),
-
-    (([1.0, 1.0],
-      [[1, 0], [0, 1]],
-      [-1.0, 0.0]),
-     -1.0),
-
-    (([1.0, 1.0],
-      [[1, 0], [0, 1]],
-      [-1.0, 1.0]),
-     0.0),
-
-    (([1.0, 1.0],
-      [[1, 0], [0, 1]],
-      [-1.0, -2.0]),
-     -3.0),
-
-    (([1.0, 1.0],
-      [[1, 0], [0, 1]],
-      [33.5, 0.0]),
-     33.5),
-
-    # p(x) =  5.0 +  1.0* x_1^1
-    (([5.0, 1.0],
-      [[0, 0], [1, 0]],
-      [0.0, 0.0]),
-     5.0),
-
-    (([5.0, 1.0],
-      [[0, 0], [1, 0]],
-      [1.0, 0.0]),
-     6.0),
-
-    (([5.0, 1.0],
-      [[0, 0], [1, 0]],
-      [-1.0, 0.0]),
-     4.0),
-
-    (([5.0, 1.0],
-      [[0, 0], [1, 0]],
-      [33.5, 0.0]),
-     38.5),
-
-    # p(x) =  5.0 + 2.0* x_1^1 + 1.0* x_1^2
-    (([5.0, 2.0, 1.0],
-      [[0, 0], [1, 0], [2, 0]],
-      [0.0, 0.0]),
-     5.0),
-
-    (([5.0, 2.0, 1.0],
-      [[0, 0], [1, 0], [2, 0]],
-      [1.0, 0.0]),
-     8.0),  # p(x) =  5.0 + 2.0 + 1.0
-
-    (([5.0, 2.0, 1.0],
-      [[0, 0], [1, 0], [2, 0]],
-      [-1.0, 0.0]),
-     4.0),  # p(x) =  5.0 - 2.0 + 1.0
-
-    (([5.0, 2.0, 1.0],
-      [[0, 0], [1, 0], [2, 0]],
-      [2.0, 0.0]),
-     13.0),  # p(x) =  5.0 + 2.0* 2.0^1 + 1.0* 2.0^2
-
-    # p(x) =  5.0 + 2.0* x_1^1 + 1.0* x_1^2 + 2.0* x_1^2 *x_2^1
-    (([5.0, 2.0, 1.0, 2.0],
-      [[0, 0], [1, 0], [2, 0], [2, 1]],
-      [0.0, 0.0]),
-     5.0),
-
-    (([5.0, 2.0, 1.0, 2.0],
-      [[0, 0], [1, 0], [2, 0], [2, 1]],
-      [1.0, 0.0]),
-     8.0),  # p(x) =  5.0 + 2.0* 1^1 + 1.0* 1^2 + 2.0* 1^2 *0^1
-
-    (([5.0, 2.0, 1.0, 2.0],
-      [[0, 0], [1, 0], [2, 0], [2, 1]],
-      [1.0, 1.0]),
-     10.0),  # p(x) =  5.0 + 2.0* 1^1 + 1.0* 1^2 + 2.0* 1^2 *1^1
-
-    (([5.0, 2.0, 1.0, 2.0],
-      [[0, 0], [1, 0], [2, 0], [2, 1]],
-      [-1.0, 0.0]),
-     4.0),  # p(x) =  5.0 + 2.0* (-1)^1 + 1.0* (-1)^2 + 2.0* (-1)^2 *0^1
-
-    (([5.0, 2.0, 1.0, 2.0],
-      [[0, 0], [1, 0], [2, 0], [2, 1]],
-      [-1.0, 1.0]),
-     6.0),  # p(x) =  5.0 + 2.0* (-1)^1 + 1.0* (-1)^2 + 2.0* (-1)^2 *1^1
-
-    (([5.0, 2.0, 1.0, 2.0],
-      [[0, 0], [1, 0], [2, 0], [2, 1]],
-      [-1.0, 2.0]),
-     8.0),  # p(x) =  5.0 + 2.0* (-1)^1 + 1.0* (-1)^2 + 2.0* (-1)^2 *2^1
-
-    (([5.0, 2.0, 1.0, 2.0],
-      [[0, 0], [1, 0], [2, 0], [2, 1]],
-      [-1.0, 3.0]),
-     10.0),  # p(x) =  5.0 + 2.0* (-1)^1 + 1.0* (-1)^2 + 2.0* (-1)^2 *3^1
-
-    (([5.0, 2.0, 1.0, 2.0],
-      [[0, 0], [1, 0], [2, 0], [2, 1]],
-      [-2.0, 3.0]),
-     # p(x) = 5.0 + 2.0* (-2)^1 + 1.0* (-2)^2 + 2.0* (-2)^2 *3^1 = 5.0 + 2.0* (-2) + 1.0* 4 + 2.0* 4 *3
-     29.0),
-
-    # as in paper: "Greedy Algorithms for Optimizing Multivariate Horner Schemes"
-    # [20] p(x) = 1.0 x_1^3 x_2^1 + 1.0 x_1^2 x_3^1 + 1.0 x_1^2 x_2^1 x_3^1
-    # [17] p(x) = x_2^1 [ x_1^3 [ 1.0 ] + x_1^1 x_3^1 [ 1.0 ] ] + x_1^2 x_3^1 [ 1.0 ]
-    (([1.0, 1.0, 1.0],
-      [[3, 1, 0], [2, 0, 1], [2, 1, 1]],
-      [1.0, 1.0, 1.0]),
-     3.0),
-
-    # [20] p(x) = 1.0 x_1^3 x_2^1 + 2.0 x_1^2 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
-    # [17] p(x) = x_2^1 [ x_1^3 [ 1.0 ] + x_1^1 x_3^1 [ 3.0 ] ] + x_1^2 x_3^1 [ 2.0 ]
-    (([1.0, 2.0, 3.0],
-      [[3, 1, 0], [2, 0, 1], [1, 1, 1]],
-      [-2.0, 3.0, 1.0]),
-     -34.0),
-
-    # [27] p(x) = 1.0 x_3^1 + 2.0 x_1^3 x_2^3 + 3.0 x_1^2 x_2^3 x_3^1 + 4.0 x_1^1 x_2^5 x_3^1
-    (([1.0, 2.0, 3.0, 4.0],
-      [[0, 0, 1], [3, 3, 0], [2, 3, 1], [1, 5, 1]],
-      [-2.0, 3.0, 1.0]),
-     -2051.0),
-]
-
-COEFF_CHANGE_DATA = [
-
-    # [20] p(x) = 1.0 x_1^3 x_2^1 + 2.0 x_1^2 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
-    # [17] p(x) = x_2^1 [ x_1^3 [ 1.0 ] + x_1^1 x_3^1 [ 3.0 ] ] + x_1^2 x_3^1 [ 2.0 ]
-    (([1.0, 1.0, 1.0],  # coeffs1
-      [[3, 1, 0], [2, 0, 1], [2, 1, 1]],
-      [1.0, 1.0, 1.0],
-      [1.0, 2.0, 3.0],  # coeffs2
-      ),
-     6.0),
-]
-
-
-def proto_test_case(data, fct):
-    all_good = True
-    for input, expected_output in data:
-        print('\n')
-        actual_output = fct(input)
-        print(f'p({input[2]}) == {expected_output}')
-        if actual_output != expected_output:
-            print(f'ERROR: p(x) == {actual_output}')
-            all_good = False
-        else:
-            print('OK.')
-
-    assert all_good
-
-
-def evaluate_numerical_error(dim, max_degree):
-    # basic idea: evaluating a polynomial at x = all 1 should give the sum of coefficients
-    # -> any deviation is the numerical error
-    results = []
-    x = np.ones(dim, dtype=np.float)
-    max_error = 0.0
-    ctr_total = 0
-    ctr_total_max = NR_TEST_POLYNOMIALS * NR_COEFF_CHANGES
-
-    print(f'evaluating numerical error: dim: {dim}, max. degree: {max_degree} ...')
-    for poly_ctr, (coefficients, exponents) in enumerate(rnd_settings_list(NR_TEST_POLYNOMIALS, dim, max_degree,
-                                                                           max_abs_coeff=MAX_COEFF_MAGNITUDE,
-                                                                           integer_coeffs=False)):
-        # debug: validate_input=True
-        nr_monomials = exponents.shape[0]
-        # find factorisation (expensive)
-        poly_horner = HornerMultivarPolynomial(coefficients, exponents, validate_input=True)
-        ctr_total += 1
-
-        for coeff_ctr in range(NR_COEFF_CHANGES):
-            # simply change coefficients of the found factorisation (cheap)
-            coefficients = (np.random.rand(nr_monomials, 1) - 0.5) * (2 * MAX_COEFF_MAGNITUDE)
-            # is testing for in_place=True at the same time
-            poly_horner.change_coefficients(coefficients, validate_input=True, in_place=True)
-            p_x_horner = poly_horner.eval(x)
-
-            poly = MultivarPolynomial(coefficients, exponents)
-            p_x_expected = np.sum(coefficients)
-            p_x = poly.eval(x)
-
-            result = (poly, poly_horner, p_x_expected, p_x, p_x_horner)
-            results.append(result)
-            abs_numerical_error = abs(p_x_horner - p_x_expected)
-            max_error = max(max_error, abs_numerical_error)
-            sys.stdout.write(f'\r(poly #{poly_ctr} coeff #{coeff_ctr}, {ctr_total / ctr_total_max:.1%})'
-                             f' max numerical error: {max_error:.2e}')
-            sys.stdout.flush()
-            if max_error > MAX_NUMERICAL_ERROR:
-                # # DEBUG:
-                # with open('coefficients.pickle', 'wb') as f:
-                #     pickle.dump(coefficients, f)
-                # with open('exponents.pickle', 'wb') as f:
-                #     pickle.dump(exponents, f)
-                raise AssertionError(f'numerical error {max_error:.2e} exceeded limit of {MAX_NUMERICAL_ERROR:.2e} ')
-
-    print('\n... done.\n')
-    return results
+from tests.test_helpers import vectorize, naive_eval_reference, \
+    proto_test_case, evaluate_numerical_error
+from tests.test_settings import NR_TEST_POLYNOMIALS, MAX_INP_MAGNITUDE, DIM_RANGE, DEGREE_RANGE, TEST_RESULTS_PICKLE, \
+    INVALID_INPUT_DATA, VALID_TEST_DATA, COEFF_CHANGE_DATA
 
 
 class MainTest(unittest.TestCase):
@@ -454,7 +147,9 @@ class MainTest(unittest.TestCase):
 
     def test_eval_compare_vandermonde_nd(self):
         print('TEST COMPARISON TO VANDERMONDE POLYNOMIAL EVALUATION...')
-        for dim, deg in itertools.product(DIM_RANGE, DEGREE_RANGE):
+        degree_range = range(1, 4)
+        dim_range = range(1, 4)
+        for dim, deg in itertools.product(dim_range, degree_range ):
             exponents = np.array(list(itertools.product(range(deg), repeat=dim)), dtype=UINT_DTYPE)
             coeffs = np.random.rand(exponents.shape[0])
             X = np.random.rand(NR_TEST_POLYNOMIALS, dim)
@@ -469,9 +164,11 @@ class MainTest(unittest.TestCase):
         print('\nTESTING EVALUATION API...')
         keys = ['rectify_input', 'validate_input']
         vals = [True, False]
-        exponents = np.array(list(itertools.product(DEGREE_RANGE, repeat=MAX_DIMENSION)), dtype=UINT_DTYPE)
+        max_dim = 3
+        degree_range = range(1,4)
+        exponents = np.array(list(itertools.product(degree_range, repeat=max_dim)), dtype=UINT_DTYPE)
         coeffs = np.random.rand(exponents.shape[0])
-        X = np.random.rand(NR_TEST_POLYNOMIALS, MAX_DIMENSION)
+        X = np.random.rand(NR_TEST_POLYNOMIALS, max_dim)
         p_ref = naive_eval_reference(X, exponents, coeffs)
         for kwargs in [dict(zip(keys, tf)) for tf in itertools.product(*[vals] * len(keys))]:
             for cls in [MultivarPolynomial, HornerMultivarPolynomial]:

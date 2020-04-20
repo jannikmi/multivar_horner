@@ -2,10 +2,10 @@ Changelog
 =========
 
 
-1.3.1 (2020-x-x)
+2.0.0 (2020-x-x)
 __________________
 
-
+* ATTENTION: changed polynomial degree class attribute names to comply with naming conventions of the scientific literature
 * added __call__ method for evaluating a polynomial in a simplified notation v=p(x)
 * factor evaluation is not being optimised any more, simplifies polynomial construction,
     the concept of Goedel ID not required any more

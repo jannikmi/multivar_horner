@@ -1,10 +1,5 @@
 # -*- coding:utf-8 -*-
 
-# TODO s:
-# matlab binding?
-# optimize naive version without factorisation: compute all needed exponents only once. order exponents cleverly.
-# store at which index the later entries (exponents in column) will just be 0 -> reduce the matrix size piecewise
-
 
 import pickle
 from copy import deepcopy
@@ -31,11 +26,67 @@ def load_pickle(path: str = DEFAULT_PICKLE_FILE_NAME) -> 'AbstractPolynomial':
 class AbstractPolynomial(ABC):
     """
     an abstract class for representing a multivariate polynomial
+
+
+    Parameters
+    ----------
+
+    :param coefficients: ndarray of floats with shape (N,1)
+        representing the coefficients of the monomials
+        NOTE: coefficients with value 0 and 1 are allowed and will not affect the internal representation,
+            because coefficients must be replaceable
+
+    :param exponents: ndarray of unsigned integers with shape (N,m)
+        representing the exponents of the monomials
+        where m is the number of dimensions (self.dim),
+        the ordering corresponds to the ordering of the coefficients, every exponent row has to be unique!
+
+    :param rectify_input: bool, default=False
+        whether to convert coefficients and exponents into compatible numpy arrays
+        with this set to True, coefficients and exponents can be given in standard python arrays
+    :param validate_input: bool, default=False
+        whether to check if coefficients and exponents fulfill the requirements (shape, data type etc.)
+
+    :param compute_representation: bool, default=False
+        whether to compute a string representation of the polynomial
+
+
+    Attributes
+    ----------
+
+    :ivar num_monomials: the amount of coefficients/monomials N of the polynomial
+
+    :ivar dim: the dimensionality m of the polynomial
+        NOTE: the polynomial needs not to actually depend on all m dimensions
+
+    :ivar unused_variables: the dimensions the polynomial does not depend on
+
+    :ivar num_ops: the amount of mathematical operations required to evaluate the polynomial in this representation
+
+    :ivar representation: a human readable string visualising the polynomial representation
+
+
+    polynomial degrees:
+
+    following the naming in [1] L. Trefethen, “Multivariate polynomial approximation in the hypercube”, Proceedings
+    of the American Mathematical Society, vol. 145, no. 11, pp. 4837–4844, 2017.
+
+    :ivar total_degree: the usual notion of degree for a polynomial.
+        = the maximum sum of exponents in any of its monomials
+        = the maximum l_1-norm of the exponent vectors of all monomials
+
+    :ivar euclidean_degree: the maximum l_2-norm of the exponent vectors of all monomials.
+        NOTE: this is not in general an integer
+
+    :ivar maximal_degree: the largest exponent in any of its monomials
+        = the maximum l_infinity-norm of the exponent vectors of all monomials
+
     """
 
     # prevent dynamic attribute assignment (-> safe memory)
-    __slots__ = ['compute_representation', 'coefficients', 'exponents', 'lp_degree', 'num_monomials', 'num_ops',
-                 'dim', 'order', 'max_degree', 'unused_variables', 'representation']
+    __slots__ = ['compute_representation', 'coefficients', 'euclidean_degree', 'exponents', 'num_monomials', 'num_ops',
+                 'lp_degree',  # TODO
+                 'dim', 'maximal_degree', 'total_degree', 'unused_variables', 'representation']
 
     def __init__(self, coefficients: TYPE_1D_FLOAT, exponents: TYPE_2D_INT, rectify_input: bool = False,
                  validate_input: bool = False, compute_representation: bool = False):
@@ -52,10 +103,10 @@ class AbstractPolynomial(ABC):
 
         self.num_monomials: int = self.exponents.shape[0]
         self.dim: int = self.exponents.shape[1]
-        self.max_degree: int = np.max(self.exponents)
-        self.lp_degree: float = np.max(np.linalg.norm(self.exponents, axis=0))
-        self.order: int = np.max(np.sum(self.exponents, axis=0))
         self.unused_variables = np.where(~np.any(self.exponents, axis=1))[0]
+        self.total_degree: int = np.max(np.sum(self.exponents, axis=0))
+        self.euclidean_degree: float = np.max(np.linalg.norm(self.exponents, ord=2, axis=0))
+        self.maximal_degree: int = np.max(self.exponents)
 
         self.num_ops: int = 0
         self.representation: str = 'p(x)'
@@ -85,14 +136,16 @@ class AbstractPolynomial(ABC):
     def get_partial_derivative(self, i: int, *args, **kwargs) -> 'AbstractPolynomial':
         """
         TODO test
-        :param i: dimension to derive with respect to
+
         all given additional arguments will be passed to the constructor of the derivative polynomial
 
+        :param i: dimension to derive with respect to
+            ATTENTION: dimension counting starts with 1 -> the first dimension is #1
+
         :return: the partial derivative of this polynomial wrt. the i-th dimension
-        # ATTENTION: dimension counting starts with 1 -> the first dimension is #1!
         """
 
-        assert (0 < i <= self.dim)
+        assert (0 < i <= self.dim), 'invalid dimension i given'
         coord_index = i - 1
         # IMPORTANT: do not modify the stored coefficient and exponent arrays of self!
         # set all the coefficients not depending on the i-th coordinate to 0
@@ -157,37 +210,6 @@ class AbstractPolynomial(ABC):
 class MultivarPolynomial(AbstractPolynomial):
     """
     a representation of a multivariate polynomial in 'canonical form' (without any factorisation)
-
-
-    Parameters
-    ----------
-
-    :param coefficients: ndarray of floats with shape (n,1)
-        representing the coefficients of the monomials
-        NOTE: coefficients with value 0 and 1 are allowed and will not affect the internal representation,
-            because coefficients must be replaceable
-    :param exponents: ndarray of unsigned integers with shape (n,m)
-        representing the exponents of the monomials
-        where m is the number of dimensions,
-        the ordering corresponds to the ordering of the coefficients, every exponent row has to be unique!
-    :param rectify_input: bool, default=False
-        whether to convert coefficients and exponents into compatible numpy arrays
-        with this set to True, coefficients and exponents can be given in standard python arrays
-    :param validate_input: bool, default=False
-        whether to check if coefficients and exponents fulfill the requirements (shape, data type etc.)
-    :param compute_representation: bool, default=False
-        whether to compute a string representation of the polynomial
-
-
-    Attributes
-    ----------
-
-    :ivar dim: the dimensionality of the polynomial
-            NOTE: the polynomial needs not to actually depend on all dimensions
-    :ivar unused_variables: the dimensions the polynomial does not depend on
-    :ivar order: the maximum sum of exponents in any of its monomials
-    :ivar lp_degree: the maximum l2-norm of the exponents vectors of all monomials. cf
-    :ivar max_degree: the largest exponent in any of its monomials (= l1-degree)
 
 
     TODO: IMPROVEMENTS:
@@ -259,44 +281,28 @@ class HornerMultivarPolynomial(AbstractPolynomial):
     Parameters
     ----------
 
-    :param coefficients: ndarray of floats with shape (n,1)
-        representing the coefficients of the monomials
-        NOTE: coefficients with value 0 and 1 are allowed and will not affect the internal representation,
-            because coefficients must be replaceable
-    :param exponents: ndarray of unsigned integers with shape (n,m) representing the exponents of the monomials
-        where m is the number of dimensions.
-        the ordering corresponds to the ordering of the coefficients, every exponent row has to be unique!
-    :param rectify_input: bool, default=False
-        whether to convert coefficients and exponents into compatible numpy arrays
-        with this set to True, coefficients and exponents can be given in standard python arrays
-    :param validate_input: bool, default=False
-        whether to check if coefficients and exponents fulfill the requirements (shape, data type etc.)
-    :param compute_representation: bool, default=False
-        whether to compute a string representation of the polynomial
-
-
     :param keep_tree: whether the factorisation tree object should be kept in memory after finishing factorisation
-    :param find_optimal: whether a search over all possible factorisations should be done in order to find
+
+    :param find_optimal: whether a search over all possible factorisations should be done in total_degree to find
         an optimal factorisation in the sense of a minimal amount required operations for evaluation
 
 
     Attributes
     ----------
 
-    :ivar dim: the dimensionality of the polynomial
-            NOTE: the polynomial needs not to actually depend on all dimensions
-    :ivar unused_variables: the dimensions the polynomial does not depend on
-    :ivar order: the maximum sum of exponents in any of its monomials
-    :ivar lp_degree: the maximum l2-norm of the exponents vectors of all monomials. cf
-    :ivar max_degree: the largest exponent in any of its monomials (= l1-degree)
-
     :ivar factorisation_tree: the object oriented representation of the factorisation tree (only if keep_tree=True)
+
     :ivar factor_container: the object containing all factors of the factorisation  (only if keep_tree=True)
+
     :ivar copy_recipe: ndarray encoding the operations required to evaluate all scalar factors with exponent 1
+
     :ivar scalar_recipe: ndarray encoding the operations required to evaluate all remaining scalar factors
+
     :ivar monomial_recipe: ndarray encoding the operations required to evaluate all monomial factors
+
     :ivar tree_recipe: ndarray encoding the addresses required to evaluate
         the polynomial values of the factorisation_tree
+
     :ivar tree_ops: ndarray encoding the type of operation required to evaluate
         the polynomial values of the factorisation_tree
         encoded as a boolean ndarray separate from tree_recipe,
@@ -304,6 +310,7 @@ class HornerMultivarPolynomial(AbstractPolynomial):
 
     :ivar root_value_idx: the index in the value array where the value of this polynomial
         (= root of the factorisation_tree) will be stored
+
     :ivar value_array_length: the amount of addresses (storage) required to evaluate the polynomial
 
 
@@ -313,7 +320,7 @@ class HornerMultivarPolynomial(AbstractPolynomial):
     a monomial factor consists of scalar factors and in turn some monomial factors consist of other monomial factors
     -> the result of evaluating a factor can be reused for evaluating other factors containing it
     -> find the optimal 'factorisation' of the factors themselves
-    -> set the factorisation_idxs of each factor in order to link the evaluation appropriately
+    -> set the factorisation_idxs of each factor in total_degree to link the evaluation appropriately
     idea:
         choose  'Goedel IDs' as the monomial factor ids
         then the id of a monomial is the product of the ids of its scalar factors
