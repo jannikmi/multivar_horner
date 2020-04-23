@@ -1,10 +1,13 @@
 MANIFEST
 scrapyard.py
-.DS_Store
 tmp.py
-.pytest_cache
-.idea/
+
+*.DS_Store
+*.profraw
+*.pytest_cache
 *.pickle
+
+.idea/
 
 
 # GITIGNORE DEFAULTS

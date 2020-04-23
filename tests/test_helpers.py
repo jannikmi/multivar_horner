@@ -76,6 +76,7 @@ def get_rnd_poly_properties(all_exponents, degree, max_abs_coeff=1.0, integer_co
 def all_possible_exponents(dim, deg):
     """
     generate a fully occupied exponent matrix for a polynomial of lp_degree = infinity
+    -> the given degree is the total degree of the polynomials
     :param dim:
     :param deg:
     :return:

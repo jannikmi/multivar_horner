@@ -2,7 +2,6 @@ import os
 import pickle
 import time
 import timeit
-from math import log10
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,20 +13,12 @@ import pandas as pd
 
 from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 from tests.test_helpers import rnd_settings_list, rnd_input_list
-from tests.test_settings import TEST_RESULTS_PICKLE, DIM_RANGE, DEGREE_RANGE, MAX_DIMENSION
+from tests.test_settings import TEST_RESULTS_PICKLE, DIM_RANGE, DEGREE_RANGE, MAX_DIMENSION, EXPORT_RESOLUTION, \
+    SHOW_PLOTS, PLOTTING_DIR, NR_SAMPLES_SPEED_TEST, SPEED_RUN_PICKLE
+
 
 # SPEED TESTS
 # TODO allow other setting ranges
-
-NR_SAMPLES = 100
-
-EXPORT_RESOLUTION = 300  # dpi
-EXPORT_SIZE_X = 19.0  # inch
-EXPORT_SIZE_Y = 11.0  # inch
-SHOW_PLOTS = False
-PLOTTING_DIR = os.path.abspath(os.path.join(os.path.pardir, 'plots'))
-# plt.rcParams.update({'font.size': 35})
-SPEED_RUN_PICKLE = 'speed_results.pickle'
 
 
 def get_plot_name(file_name='plot'):
@@ -116,24 +107,24 @@ def speed_test_run(dim, degree, nr_samples, template):
     input_list = rnd_input_list(nr_samples, dim, max_abs_val=1.0)
 
     setup_time_naive = timeit.timeit("test_setup_time_naive()", globals=globals(), number=1)
-    setup_time_naive = setup_time_naive / NR_SAMPLES  # = avg. per sample
+    setup_time_naive = setup_time_naive / NR_SAMPLES_SPEED_TEST  # = avg. per sample
 
     # poly_class_instances is not populated with the naive polynomial class instances
     # print(poly_class_instances[0])
     num_ops_naive = get_avg_num_ops()
 
     eval_time_naive = timeit.timeit("eval_time_fct()", globals=globals(), number=1)
-    eval_time_naive = eval_time_naive / NR_SAMPLES  # = avg. per sample
+    eval_time_naive = eval_time_naive / NR_SAMPLES_SPEED_TEST  # = avg. per sample
 
     setup_time_horner = timeit.timeit("test_setup_time_horner()", globals=globals(), number=1)
-    setup_time_horner = setup_time_horner / NR_SAMPLES  # = avg. per sample
+    setup_time_horner = setup_time_horner / NR_SAMPLES_SPEED_TEST  # = avg. per sample
 
     # poly_class_instances is not populated with the horner polynomial class instances
     # print(poly_class_instances[0])
     num_ops_horner = get_avg_num_ops()
 
     eval_time_horner = timeit.timeit("eval_time_fct()", globals=globals(), number=1)
-    eval_time_horner = eval_time_horner / NR_SAMPLES  # = avg. per sample
+    eval_time_horner = eval_time_horner / NR_SAMPLES_SPEED_TEST  # = avg. per sample
 
     setup_delta = difference(setup_time_naive, setup_time_horner)
     eval_delta = difference(eval_time_naive, eval_time_horner)
@@ -167,7 +158,7 @@ def run_speed_benchmark():
     # TODO make num tested polynomials dependent on parameters (size, time)
 
     print('\nSpeed test:')
-    print('testing {} evenly distributed random polynomials'.format(NR_SAMPLES))
+    print('testing {} evenly distributed random polynomials'.format(NR_SAMPLES_SPEED_TEST))
     print('average timings per polynomial:\n')
 
     print(' {0:11s}  |  {1:38s} |  {2:35s} |  {3:35s} | {4:20s}'.format('parameters', 'setup time (/s)',
@@ -184,8 +175,8 @@ def run_speed_benchmark():
 
     for dim in DIM_RANGE:
         dim_run_results = []
-        for max_degree in DEGREE_RANGE:
-            degree_run_results = speed_test_run(dim, max_degree, NR_SAMPLES, template)
+        for maximal_degree in DEGREE_RANGE:
+            degree_run_results = speed_test_run(dim, maximal_degree, NR_SAMPLES_SPEED_TEST, template)
             dim_run_results.append(degree_run_results)
 
         print()  # empty line
@@ -415,7 +406,7 @@ def make_relative(a, b):
 def plot_num_err_heatmap(results):
     dims = list(map(extract_dimensionality, results))
     # degs = list(map(extract_total_degree, results))
-    degs = list(map(extract_maximal_degree, results))
+    maximal_degs = list(map(extract_maximal_degree, results))
     numerical_err_naive = list(map(extract_numerical_error_naive, results))
     numerical_err_horner = list(map(extract_numerical_error_horner, results))
 
@@ -423,12 +414,12 @@ def plot_num_err_heatmap(results):
     attr_name_numerical_err_horner = 'numerical error horner'
     attr_name_numerical_err_rel = 'relative numerical error'
     attr_name_dim = 'dimension'
-    attr_name_deg = 'degree'
+    attr_name_deg = 'maximal degree'
 
     df = pd.DataFrame({
         attr_name_numerical_err_naive: numerical_err_naive,
         attr_name_numerical_err_horner: numerical_err_horner,
-        attr_name_deg: degs,
+        attr_name_deg: maximal_degs,
         attr_name_dim: dims,
     })
 
@@ -436,8 +427,8 @@ def plot_num_err_heatmap(results):
 
     # average for dim and degree
     for dim in DIM_RANGE:
-        for deg in DEGREE_RANGE:
-            selection_idxs = (df[attr_name_dim] == dim) & (df[attr_name_deg] == deg)
+        for maximal_deg in DEGREE_RANGE:
+            selection_idxs = (df[attr_name_dim] == dim) & (df[attr_name_deg] == maximal_deg)
             if not selection_idxs.any():
                 continue
             df_selected = df[selection_idxs]
@@ -452,10 +443,13 @@ def plot_num_err_heatmap(results):
                 attr_name_numerical_err_rel: avg_num_err_naive_rel,
                 attr_name_numerical_err_naive: avg_num_err_naive,
                 attr_name_numerical_err_horner: avg_num_err_horner,
-                attr_name_deg: deg,
+                attr_name_deg: maximal_deg,
                 attr_name_dim: dim,
             })
             df_avg = df_avg.append(entry, ignore_index=True)
+
+    df_avg[attr_name_deg] = df_avg[attr_name_deg].astype(int, copy=False)
+    df_avg[attr_name_dim] = df_avg[attr_name_dim].astype(int, copy=False)
 
     # sns.relplot(x=attr_name_dim, y=attr_name_deg, data=df_avg,
     #             hue=attr_name_numerical_err_rel,
@@ -467,12 +461,16 @@ def plot_num_err_heatmap(results):
 
     ax = sns.heatmap(heatmap_data, annot=True,
                      # fmt="d",
-                     linewidths=.5,
-                     cmap="YlGnBu",
+                     linewidths=3,
+                     # cmap="YlGnBu",
                      )
+    plot_title = 'avg. numerical error with canonical form relative to Horner factorisation'
+    plt.title(plot_title)
     # plt.xlabel()
-    title = 'numerical error heatmap'
+    # locs, labels = plt.xticks()  # Get locations and labels
+    # plt.xticks(locs, labels=[int(x) for x in labels])  # Set locations and labels
     fig = plt.gcf()
+    title = 'numerical error heatmap'
     export_plot(fig, plot_title=title)
 
 
@@ -525,50 +523,94 @@ def plot_num_error_growth_comparison(results):
     fig = plt.gcf()
     export_plot(fig, plot_title=title)
 
+
+def filter_results(filter_fct, results):
+    results_filtered = list(filter(filter_fct, results))
+    print(f'filtering data: out of {len(results)} entries {len(results_filtered)} remain')
+    return results_filtered
+
+
 def plot_num_coeffs2num_ops(results):
+    attr_name_num_coeff = 'number of coefficients'
+    attr_name_num_ops = 'number of operations'
+    attr_name_representation = 'representation'
+    attr_name_dimensionality = 'dimensionality'
+
+    repr_name_horner = 'Horner factorisation'
+    repr_name_naive = 'canonical form'
+
+    results = filter_results(has_nonzero_num_ops_horner, results)
 
     # compare the number of operations to the number of coefficients
     # color by dimensions
-    dim = list(map(extract_dimensionality, results))
+    dims = list(map(extract_dimensionality, results))
     num_ops_naive = list(map(extract_num_ops_naive, results))
     num_ops_horner = list(map(extract_num_ops_horner, results))
     num_coeffs = list(map(extract_nr_coeffs, results))
 
+    df = pd.DataFrame()
+
+    df_naive = pd.DataFrame({
+        attr_name_num_coeff: num_coeffs,
+        attr_name_num_ops: num_ops_naive,
+        attr_name_dimensionality: dims,
+    })
+    df_naive[attr_name_representation] = repr_name_naive
+
+    df_horner = pd.DataFrame({
+        attr_name_num_coeff: num_coeffs,
+        attr_name_num_ops: num_ops_horner,
+        attr_name_dimensionality: dims,
+    })
+    df_horner[attr_name_representation] = repr_name_horner
+
+    df = df.append(df_naive, ignore_index=True)
+    df = df.append(df_horner, ignore_index=True)
+
+    # color by dimensions
     # TODO rainbow
     # equally "spaced" colors
     color_idx = np.linspace(0, 1, MAX_DIMENSION)
     cm = plt.cm.gist_rainbow
+
+    # compare the number of operations to the number of coefficients
+    # num_ops_horner, num_coeffs1, dim1 = rmv_zeros(num_ops_horner, num_coeffs, dim)
+    plot = sns.scatterplot(x=attr_name_num_coeff, y=attr_name_num_ops, data=df,
+                           # hue=attr_name_dimensionality,
+                           hue=attr_name_representation,
+                           )
+    title = 'opsVS coeffs'
+    # plot.set_title(title)
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.grid(True)
+    fig = plt.gcf()
+    export_plot(fig, plot_title=title)
+
     # c = cm(color_idx[dim - 1])
-    plot = sns.scatterplot(x=num_ops_naive, y=num_coeffs, hue=dim, data=None)
+    plot = sns.scatterplot(x=attr_name_num_coeff, y=attr_name_num_ops, hue=attr_name_dimensionality, data=df_naive)
     title = 'ops naive VS coeffs'
     # plot.set_title(title)
     plt.xscale('log')
     plt.yscale('log')
-    plt.xlabel('number of operations (canonical form)')
-    plt.ylabel('number of coefficients')
     plt.grid(True)
     # TODO ticks
     # r'$\mu=100,\ \sigma=15$'
     fig = plt.gcf()
     export_plot(fig, plot_title=title)
 
-    # compare the number of operations to the number of coefficients
-    # color by dimensions
-    num_ops_horner, num_coeffs1, dim1 = rmv_zeros(num_ops_horner, num_coeffs, dim)
-    plot = sns.scatterplot(x=num_ops_horner, y=num_coeffs1, hue=dim1, data=None)
+    # num_ops_horner, num_coeffs1, dim1 = rmv_zeros(num_ops_horner, num_coeffs, dim)
+    plot = sns.scatterplot(x=attr_name_num_coeff, y=attr_name_num_ops, hue=attr_name_dimensionality, data=df_horner)
     title = 'ops horner VS coeffs'
     # plot.set_title(title)
     plt.xscale('log')
     plt.yscale('log')
-    plt.xlabel('number of operations (Horner factorisation)')
-    plt.ylabel('number of coefficients')
     plt.grid(True)
     fig = plt.gcf()
     export_plot(fig, plot_title=title)
 
-def plot_numerical_error():
-    sns.set_context("paper")
 
+def plot_numerical_error():
     try:
         with open(TEST_RESULTS_PICKLE, 'rb') as f:
             results = pickle.load(f)
@@ -576,28 +618,23 @@ def plot_numerical_error():
         print('no data of numerical errors found. run the numerical tests in test_it.py first')
         return
 
-    def filter_results(filter_fct, results):
-        results_filtered = list(filter(filter_fct, results))
-        print(f'filtering data: out of {len(results)} entries {len(results_filtered)} remain')
-        return results_filtered
-
-
     # results_filtered_naive = filter_results(has_nonzero_err_naive, results)
     # results_filtered_horner = filter_results(has_nonzero_err_horner, results)
 
     plot_num_err_heatmap(results)
-    plot_num_error_growth_comparison(results)
-    plot_num_coeffs2num_ops(results)
-    
-
-
-# TODO evaluate saved num ops
-# TODO plot "lucrative after"
+    # plot_num_error_growth_comparison(results)
+    # plot_num_coeffs2num_ops(results)
 
 
 if __name__ == '__main__':
-    # TODO
-    # run_speed_benchmark()  # generate data
-    # generate_plots()  # create plots with data
+    # TODO plot "lucrative after"
 
-    plot_numerical_error()
+    sns.set_context("paper")
+    # plt.rcParams.update({'font.size': 35})
+
+    # TODO integrate into numerical tests. add setup and evaluation time to pickle file
+    #  plot with seaborn in the same fassion
+    run_speed_benchmark()  # generate speed test data
+    # generate_plots()  # create plots with speed test data
+
+    # plot_numerical_error() create plots with numerical test data

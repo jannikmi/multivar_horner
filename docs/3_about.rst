@@ -5,12 +5,12 @@ About
 
 A python package implementing a multivariate `horner scheme ("Horner's method", "Horner's rule") <https://en.wikipedia.org/wiki/Horner%27s_method>`__  for efficiently evaluating multivariate polynomials.
 
-A polynomial in normal form is being factorised according to the greedy heuristic described in [1] with some additional computational tweaks.
+A polynomial in canonical form (or normal form) is being factorised according to the greedy heuristic described in [1] with some additional computational tweaks.
 The resulting Horner factorisation requires less operations for evaluation and is being computed by growing a "Horner Factorisation Tree".
 When the polynomial is fully factorized (= all leaves cannot be factorised any more), a computational "recipe" for evaluating the polynomial is being compiled.
 This "recipe" (stored internally as numpy arrays) enables fast evaluation with minimal memory requirement, because of the lack of additional overhead of recursive function calls (traversing the tree) and functions precompiled by ``numba`` operating on numpy arrays.
 
-All factors in use in the factorisation are being computed only once and factorized themselves (=reusing computed values) to save computations.
+All factors in use in the factorisation are being computed only once (-> reusing computed values) to save computations.
 
 **Pros:**
  * near to minimal representation of a multivariate polynomial (in the sense of memory and time complexity of the evaluation)
@@ -27,10 +27,12 @@ For an exact evaluation of the impact of computing Horner factorisations see the
 .. TODO link
 
 
-It is also possible to search for an optimal factorisation
+It is also possible to search for an optimal Horner factorisation
+.. TODO link (cf. section "Optimal Horner Factorisation")
+
+and to represent polynomials in canonical form
 .. TODO link
 
-(cf. section "Optimal Horner Factorisation")
 
 
 Also see:

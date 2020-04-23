@@ -68,6 +68,7 @@ class AbstractPolynomial(ABC):
 
     polynomial degrees:
 
+    in contrast to 1D polynomials, different concepts of degrees exist for polynomials in multiple dimensions.
     following the naming in [1] L. Trefethen, “Multivariate polynomial approximation in the hypercube”, Proceedings
     of the American Mathematical Society, vol. 145, no. 11, pp. 4837–4844, 2017.
 
@@ -85,7 +86,6 @@ class AbstractPolynomial(ABC):
 
     # prevent dynamic attribute assignment (-> safe memory)
     __slots__ = ['compute_representation', 'coefficients', 'euclidean_degree', 'exponents', 'num_monomials', 'num_ops',
-                 'lp_degree',  # TODO
                  'dim', 'maximal_degree', 'total_degree', 'unused_variables', 'representation']
 
     def __init__(self, coefficients: TYPE_1D_FLOAT, exponents: TYPE_2D_INT, rectify_input: bool = False,
