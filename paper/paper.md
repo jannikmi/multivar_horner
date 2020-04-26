@@ -55,7 +55,7 @@ Functions just in time compiled by Numba [@numba] enable computationally efficie
 
 
 It is important to note that in contrast to the one dimensional case, several concepts of degree exist for polynomials in multiple dimensions.
-Following the notation of [@trefethen2017multivariate] the usual notion of degree of a polynomial, the total degree, is the maximal sum of exponents of all monomials.
+Following the notation of [@trefethen2017multivariate] the usual notion of degree of a polynomial, the maximal degree, is the maximal sum of exponents of all monomials.
 This is equal to the maximal $l_1$-norm of all exponent vectors of the monomials.
 Accordingly the euclidean degree is the maximal $l_2$-norm and the maximal degree is the maximal $l_{\infty}$-norm of all exponent vectors.
 Refer to [@trefethen2017multivariate] for precise mathematical definitions.
@@ -76,10 +76,10 @@ This effect intensifies as the dimensionality grows.
      
 To obtain meaningful results the benchmarks presented here use polynomials sampled randomly with the following procedure:
 In order to draw polynomials with uniformly random occupancy, the probability of monomials being present is picked randomly.
-For a fixed total degree $n$ in $m$ dimensions there are $(n+1)^m$ possible exponent vectors corresponding to monomials.
+For a fixed maximal degree $n$ in $m$ dimensions there are $(n+1)^m$ possible exponent vectors corresponding to monomials.
 Each of these monomials is being activated with the chosen probability.
 
-For each total degree up to 7 and until dimensionality 7, 5 polynomials were drawn randomly.
+For each maximal degree up to 7 and until dimensionality 7, 5 polynomials were drawn randomly.
 In order to compute the numerical error, each polynomial has been evaluated at the point of all ones.
 The true result in this case should always be the sum of all coefficients.
 The resulting numerical error is being averaged over 100 tries with uniformly random coefficients in the range $[-1; 1]$.
@@ -115,7 +115,7 @@ One possibility to avoid computing each factorisation is to employ a version of 
 This approach, which is similar to the branch-and-bound method suggested in [@kojima2008efficient, ch. 3.1], has been implemented by `multivar_horner`.
 
 
-[@carnicer1990evaluation] shows how factorisation trees can be used to evaluate a multivariate polynomials and its derivatives.
+[@carnicer1990evaluation] shows how factorisation trees can be used to evaluate multivariate polynomials and their derivatives.
 
 In [@kuipers2013improving] Monte Carlo tree search has been used to find more performant factorisations than with greedy heuristics.
 
@@ -134,5 +134,7 @@ The [contribution guidelines](https://github.com/MrMinimal64/multivar_horner/blo
 
 Thanks to Michael Hecht and Steve Schmerler for valuable input enabling this publication.
 
+
+TODO Reviewer and editor contributions, like any other contributions, should be acknowledged in the repository.
 
 # References

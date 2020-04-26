@@ -1,11 +1,10 @@
 
 
 ============================
-timezonefinder
+multivar_horner
 ============================
 
-a fast and lightweight python package for looking up the corresponding timezone for given coordinates on earth entirely offline.
-
+a python package implementing a multivariate `Horner scheme ("Horner's method", "Horner's rule") <https://en.wikipedia.org/wiki/Horner%27s_method>`__:cite:`horner1819xxi` for efficiently evaluating multivariate polynomials.
 
 .. toctree::
    :maxdepth: 2
@@ -13,16 +12,14 @@ a fast and lightweight python package for looking up the corresponding timezone 
 
     Getting Started <0_getting_started>
     Usage <1_usage>
-    Use Cases  <2_use_cases>
-    About <3_about>
-    Contributing <4_contributing>
-    Changelog <5_changelog>
+    About <2_about>
+    Optimal Horner Factorisations <3_optimal_factorisation>
+    API  <4_api>
+    Contributing <5_contributing>
+    Changelog <6_changelog>
+    References <7_references>
 
-
-
-.. TODO api
-.. TODO auto docstring documentation. with auto doc http://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#module-sphinx.ext.autodoc
-
+.. reference file must be loaded last for the bibtex citations to work (-> alphanumeric "last" name)!
 
 
 

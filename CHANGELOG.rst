@@ -3,24 +3,27 @@ Changelog
 
 
 2.0.0 (2020-x-x)
-__________________
+________________
 
 * ATTENTION: changed polynomial degree class attribute names to comply with naming conventions of the scientific literature
 * added __call__ method for evaluating a polynomial in a simplified notation v=p(x)
-* factor evaluation is not being optimised any more, simplifies polynomial construction,
-    the concept of Goedel ID not required any more
+* factor evaluation is not being optimised any more, simplifies polynomial construction, the concept of Goedel ID not required any more
+* clarified docstrings
+* more verbose error messages during input verification
+* split up requirements.txt (into basic dependencies and test dependencies)
+* added sphinx documentation
+* updated benchmark results
+
+tests:
+
 * added test for numerical stability
 * added plotting features for evaluation the numerical stability
 * added tests comparing functionality to 1D numpy polynomials
 * added tests comparing functionality to naive polynomial evaluation
 * added basic API functionality test
-* clarified docstrings
-* more verbose error messages during input verification
-* split up requirements.txt (into basic dependencies and test dependencies)
-* added class AbstractPolynomial
-* TODO added sphinx documentation
-* TODO updated benchmark results
 
+internal:
+* added class AbstractPolynomial
 * added typing
 
 
@@ -79,7 +82,7 @@ __________________
 
 
 0.0.1 (2018-10-05)
-------------------
+__________________
 
 * birth of this package
 

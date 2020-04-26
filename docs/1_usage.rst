@@ -8,14 +8,12 @@ Usage
 
 .. note::
 
-    For a more detailed documentation of all the features please confer to the API documentation or the code directly.
-
-.. TODO link
+    For a more detailed documentation of all the features please confer to the :ref:`API documentation <api>` or the `code <https://github.com/MrMinimal64/multivar_horner>`__ directly.
 
 
 
-Horner factorisation polynomial representations
---------------------------
+Horner factorisation
+-----------------------------------------------
 
 
 to create a representation of a multivariate polynomial in Horner factorisation:
@@ -70,10 +68,25 @@ pass ``validate_input=True`` to check if input data is valid (e.g. only non nega
 
 
 
-canonical form polynomial representation
+.. _canonical_usage:
+
+canonical form
 ----------------------------------------
 
-to represent a polynomial without any factorisation:
+if ...
+
+* the Horner factorisation takes too long
+* the polynomial is going to be evaluated only a few times
+* fast polynomial evaluation is not required or
+* the numerical stability of the evaluation is not important
+
+it is possible to represent the polynomial without any factorisation (in 'canonical form' or 'normal form'):
+
+.. note::
+
+    in the case of unfactorised polynomials many unnecessary operations are being done
+    (internally numpy matrix operations are being used)
+
 
 .. code-block:: python
 
@@ -82,11 +95,17 @@ to represent a polynomial without any factorisation:
 
 
 
+
 string representation
 ---------------------
 
 
 in order to compile a string representation of a polynomial pass ``compute_representation=True`` during construction
+
+.. note::
+
+    the number in square brackets indicates the number of operations required
+    to evaluate the polynomial (ADD, MUL, POW).
 
 
 .. code-block:: python
@@ -97,10 +116,7 @@ in order to compile a string representation of a polynomial pass ``compute_repre
     polynomial = MultivarPolynomial(coefficients, exponents, compute_representation=True)
     print(polynomial)
     # [#ops=27] p(x) = 5.0 x_1^0 x_2^0 x_3^0 + 1.0 x_1^3 x_2^1 x_3^0 + 2.0 x_1^2 x_2^0 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
-    # NOTE: the number in square brackets indicates the number of operations required
-    #   to evaluate the polynomial (ADD, MUL, POW).
-    # NOTE: in the case of unfactorised polynomials many unnecessary operations are being done
-    # (internally uses numpy matrix operations)
+
 
 
 the formatting of the string representation can be changed with the parameters ``coeff_fmt_str`` and ``factor_fmt_str``:
@@ -149,19 +165,16 @@ with ``in_place=False`` a new polygon object is being generated
 
 
 
+.. _optimal_usage:
 
-optimal Horner factorisation
-----------------------------
-
-
-cf. Readme: "Optimal Horner Factorisation"
-
-.. TODO link!
+optimal Horner factorisations
+-----------------------------
 
 
 pass ``find_optimal=True`` during construction of a Horner factorised polynomial
-to start an adapted A* search through all possible factorisations:
+to start an adapted A* search through all possible factorisations.
 
+See :ref:`this chapter <optimal>` for further information.
 
 
 .. note::
@@ -174,6 +187,7 @@ to start an adapted A* search through all possible factorisations:
     time and memory consumption is MUCH higher!
 
 .. code-block:: python
+
     horner_polynomial_optimal = HornerMultivarPolynomial(coefficients, exponents, find_optimal=True,
                                                          compute_representation=True, rectify_input=True,
                                                          validate_input=True)
@@ -196,6 +210,7 @@ export
 import
 
 .. code-block:: python
+
     from multivar_horner.multivar_horner import load_pickle
     horner_polynomial = load_pickle(path)
 
@@ -209,6 +224,7 @@ in order to evaluate a polynomial at a point ``x``:
 
 
 .. code-block:: python
+
     # define a query point and evaluate the polynomial
     x = np.array([-2.0, 3.0, 1.0], dtype=np.float64)  # numpy (1,N) ndarray
     p_x = polynomial(x) # -29.0

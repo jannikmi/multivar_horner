@@ -15,15 +15,6 @@ Installation with pip:
     pip install multivar_horner
 
 
-Dependencies
-------------
-
-
-(``python3.6+``),
-``numpy``,
-``numba``
-
-
 
 Basics
 ------
@@ -49,14 +40,13 @@ Basics
     # [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0
     horner_polynomial = HornerMultivarPolynomial(coefficients, exponents)
 
-     # define a query point
+    # define a query point
     x = np.array([-2.0, 3.0, 1.0], dtype=np.float64)  # numpy (1,N) ndarray
     # evaluate the polynomial
     p_x = horner_polynomial(x) # -29.0
 
 
 The available functionalities of this package are explained :ref:`HERE <usage>`.
+
 The API documentation can be fround :ref:`HERE <api>`.
 
-
-.. TODO API link

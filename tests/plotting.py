@@ -100,8 +100,19 @@ def compute_lucrativity(setup_horner, setup_naive, eval_horner, eval_naive):
     return round(loss_setup / benefit_eval)
 
 
+attr_name_setup_time_naive = 'setup_time_naive'
+attr_name_eval_time_naive = 'eval_time_naive'
+attr_name_num_ops_naive = 'num_ops_naive'
+attr_name_setup_time_horner = 'setup_time_horner'
+attr_name_eval_time_horner = 'eval_time_horner'
+attr_name_num_ops_horner = 'num_ops_horner'
+attr_name_num_coeff = 'num_coeffs'
+
+
 def speed_test_run(dim, degree, nr_samples, template):
     global poly_settings_list, input_list, poly_class_instances
+
+    # TODO take times
 
     poly_settings_list = rnd_settings_list(nr_samples, dim, degree)
     input_list = rnd_input_list(nr_samples, dim, max_abs_val=1.0)
@@ -139,7 +150,16 @@ def speed_test_run(dim, degree, nr_samples, template):
                str(eval_delta), str(num_ops_naive), str(num_ops_horner), ops_delta, str(lucrative_after)]
     print(template.format(*entries))
 
-    return (setup_time_naive, eval_time_naive, num_ops_naive), (setup_time_horner, eval_time_horner, num_ops_horner)
+    result = {
+        attr_name_setup_time_naive: setup_time_naive,
+        attr_name_eval_time_naive: eval_time_naive,
+        attr_name_num_ops_naive: num_ops_naive,
+        attr_name_setup_time_horner: setup_time_horner,
+        attr_name_eval_time_horner: eval_time_horner,
+        attr_name_num_ops_horner: num_ops_horner,
+        # attr_name_num_coeff: num_coeffs, # TODO
+    }
+    return result
 
 
 # TODO
@@ -150,12 +170,6 @@ def run_speed_benchmark():
 
     # this also fulfills the purpose of testing the robustness of the code
     # (many random polygons are being created and evaluated)
-
-    # TODO test for larger dimensions
-    # TODO compare & plot the performance wrt. the "density" of the polynomials. sparse <-> fully occupied
-    # naive should stay constant, horner should get slower
-
-    # TODO make num tested polynomials dependent on parameters (size, time)
 
     print('\nSpeed test:')
     print('testing {} evenly distributed random polynomials'.format(NR_SAMPLES_SPEED_TEST))
@@ -176,8 +190,8 @@ def run_speed_benchmark():
     for dim in DIM_RANGE:
         dim_run_results = []
         for maximal_degree in DEGREE_RANGE:
-            degree_run_results = speed_test_run(dim, maximal_degree, NR_SAMPLES_SPEED_TEST, template)
-            dim_run_results.append(degree_run_results)
+            result_single_run = speed_test_run(dim, maximal_degree, NR_SAMPLES_SPEED_TEST, template)
+            dim_run_results.append(result_single_run)
 
         print()  # empty line
         # dim_run_results = list(zip(dim_run_results))
@@ -189,7 +203,7 @@ def run_speed_benchmark():
     print('...done.\n')
 
 
-def generate_plots():
+def plot_speed_results():
     def extract_data(results, data_idx):
         data = []
         for dim_run_res in results:
@@ -239,8 +253,8 @@ def generate_plots():
     file_names = ['setup_time_increase', 'eval_time_decrease', 'num_ops_decrease']
 
     # equal "spaced" colors
-    color_idx = np.linspace(0, 1, MAX_DIMENSION)
-    cm = plt.cm.gist_rainbow
+    # color_idx = np.linspace(0, 1, MAX_DIMENSION)
+    # cm = plt.cm.gist_rainbow
     # use_logarithmic = [True, True, False]
 
     for run_idx in range(3):
@@ -261,9 +275,11 @@ def generate_plots():
             # y_naive, y_horner = dim_run_data
 
             # plt.plot(x, y, color=c, alpha=alpha, **kwargs)
-            c = cm(color_idx[dim - 1])
+            # c = cm(color_idx[dim - 1])
             # TODO own plot setting for each, operations save log...
-            plt.plot(DEGREE_RANGE, dim_run_data, 'x:', color=c, label=str(dim), linewidth=3, markersize=15,
+            plt.plot(DEGREE_RANGE, dim_run_data, 'x:',
+                     # color=c,
+                     label=str(dim), linewidth=3, markersize=15,
                      markeredgewidth=2.5)
             # plt.semilogy(DEGREE_RANGE, dim_run_data, 'x:', color=c, label=str(dim), linewidth=3, markersize=15,
             #              markeredgewidth=2.5)
@@ -632,9 +648,12 @@ if __name__ == '__main__':
     sns.set_context("paper")
     # plt.rcParams.update({'font.size': 35})
 
-    # TODO integrate into numerical tests. add setup and evaluation time to pickle file
-    #  plot with seaborn in the same fassion
+    # TODO do not average results. measure time of a single polynomial.
+    # TODO plot with seaborn in the same fashion as numerical test
+    # TODO compare & plot the performance wrt. the "density" of the polynomials. sparse <-> fully occupied
+    # TODO make num tested polynomials dependent on parameters (size, time) (faster runs are more noisy)
     run_speed_benchmark()  # generate speed test data
-    # generate_plots()  # create plots with speed test data
+    # TODO include plots in documentation
+    plot_speed_results()  # create plots with speed test data
 
     # plot_numerical_error() create plots with numerical test data
