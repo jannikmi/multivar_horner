@@ -5,6 +5,8 @@ tmp.py
 .pytest_cache
 .idea/
 *.pickle
+*.profraw
+playground.py
 
 
 # GITIGNORE DEFAULTS
