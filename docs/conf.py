@@ -24,7 +24,7 @@ project_root = os.path.dirname(cwd)
 # Insert the project root dir as the first element in the PYTHONPATH.
 # This lets us ensure that the source package is imported, and that its
 # version is used.
-sys.path.insert(0, os.path.join(project_root, 'src'))
+sys.path.insert(0, os.path.join(project_root))
 
 import multivar_horner  # needed for auto document, ATTENTION: must then be installed during online build!
 
@@ -35,7 +35,6 @@ copyright = '2018-2020, Jannik Michelfeit'
 author = 'Jannik Michelfeit'
 
 
-# TODO
 def get_version():
     return open(os.path.join(project_root, 'VERSION')).read()
 
@@ -54,7 +53,32 @@ extensions = [
     # 'sphinx.ext.pngmath', # math rendering
     # 'sphinx.ext.intersphinx', # to auto  link to other online documentations
     'sphinxcontrib.bibtex',  # https://sphinxcontrib-bibtex.readthedocs.io/en/latest
+    'sphinx.ext.napoleon',  # Numpy style docstring rendering
 ]
+
+autodoc_default_options = {
+    'members': '__all__',
+    'member-order': 'bysource',
+    'special-members': '__init__',
+    'undoc-members': True,
+    'exclude-members': '__weakref__',
+    'show-inheritance': True,
+    'inherited-members': True,
+}
+
+# Napoleon settings
+napoleon_google_docstring = True
+napoleon_numpy_docstring = False
+napoleon_include_init_with_doc = False
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = False
+napoleon_use_admonition_for_examples = False
+napoleon_use_admonition_for_notes = False
+napoleon_use_admonition_for_references = False
+napoleon_use_ivar = False
+napoleon_use_param = True
+napoleon_use_rtype = True
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

@@ -2,8 +2,8 @@
 # will be pinned by pip-compile in 'requirements_tests.txt'
 # python3.6+
 
-numpy
-numba
+numpy>=1.16
+numba>=0.48
 
 pytest
 pytest-cov

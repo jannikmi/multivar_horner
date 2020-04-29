@@ -3,22 +3,19 @@ import pickle
 import time
 import timeit
 
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.patches import Rectangle
 
-import seaborn as sns
-from scipy.special import binom
+import matplotlib.pyplot as plt
 import pandas as pd
-
+import seaborn as sns
+from matplotlib.patches import Rectangle
 from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
-from tests.test_helpers import rnd_settings_list, rnd_input_list
-from tests.test_settings import TEST_RESULTS_PICKLE, DIM_RANGE, DEGREE_RANGE, MAX_DIMENSION, EXPORT_RESOLUTION, \
-    SHOW_PLOTS, PLOTTING_DIR, NR_SAMPLES_SPEED_TEST, SPEED_RUN_PICKLE
-
-
-# SPEED TESTS
-# TODO allow other setting ranges
+from scipy.special import binom
+from tests.test_helpers import rnd_input_list, rnd_settings_list
+from tests.test_settings import (
+    DEGREE_RANGE, DIM_RANGE, EXPORT_RESOLUTION, NR_SAMPLES_SPEED_TEST,
+    PLOTTING_DIR, SHOW_PLOTS, SPEED_RUN_PICKLE, TEST_RESULTS_PICKLE,
+)
 
 
 def get_plot_name(file_name='plot'):
@@ -386,7 +383,7 @@ def remove_zeros(l):
 def rmv_zeros(*args):
     out = []
     for entries in zip(*args):
-        if not 0.0 in entries:
+        if 0.0 not in entries:
             out.append(entries)
 
     return list(zip(*out))
@@ -475,11 +472,11 @@ def plot_num_err_heatmap(results):
     heatmap_data = df_avg.pivot(attr_name_deg, attr_name_dim, attr_name_numerical_err_rel)
     heatmap_data = heatmap_data.iloc[::-1]  # reverse
 
-    ax = sns.heatmap(heatmap_data, annot=True,
-                     # fmt="d",
-                     linewidths=3,
-                     # cmap="YlGnBu",
-                     )
+    sns.heatmap(heatmap_data, annot=True,
+                # fmt="d",
+                linewidths=3,
+                # cmap="YlGnBu",
+                )
     plot_title = 'avg. numerical error with canonical form relative to Horner factorisation'
     plt.title(plot_title)
     # plt.xlabel()
@@ -502,9 +499,6 @@ def plot_num_error_growth_comparison(results):
     numerical_err_naive_avg, num_coeffs_unique_naive = rmv_zeros(numerical_err_naive_avg, num_coeffs_unique_naive)
     numerical_err_horner_avg, num_coeffs_unique_horner = rmv_zeros(numerical_err_horner_avg, num_coeffs_unique_horner)
 
-    category = len(num_coeffs_unique_naive) * ['canonical form'] + \
-               len(num_coeffs_unique_horner) * ['Horner factorisation']
-
     attr_name_representation = 'representation'
     attr_name_num_coeff = 'number of coefficients'
     attr_name_numerical_err = 'average numerical error'
@@ -525,8 +519,8 @@ def plot_num_error_growth_comparison(results):
     df = df.append(df_naive, ignore_index=True)
     df = df.append(df_horner, ignore_index=True)
 
-    plot = sns.scatterplot(x=attr_name_num_coeff, y=attr_name_numerical_err, hue=attr_name_representation, data=df,
-                           alpha=0.8)
+    sns.scatterplot(x=attr_name_num_coeff, y=attr_name_numerical_err, hue=attr_name_representation, data=df,
+                    alpha=0.8)
     # plot = sns.relplot(x=attr_name_num_coeff, y=attr_name_numerical_err, hue=attr_name_representation,
     #                    style=attr_name_representation,
     #                    kind="line", data=df,)
@@ -583,18 +577,12 @@ def plot_num_coeffs2num_ops(results):
     df = df.append(df_naive, ignore_index=True)
     df = df.append(df_horner, ignore_index=True)
 
-    # color by dimensions
-    # TODO rainbow
-    # equally "spaced" colors
-    color_idx = np.linspace(0, 1, MAX_DIMENSION)
-    cm = plt.cm.gist_rainbow
-
     # compare the number of operations to the number of coefficients
     # num_ops_horner, num_coeffs1, dim1 = rmv_zeros(num_ops_horner, num_coeffs, dim)
-    plot = sns.scatterplot(x=attr_name_num_coeff, y=attr_name_num_ops, data=df,
-                           # hue=attr_name_dimensionality,
-                           hue=attr_name_representation,
-                           )
+    sns.scatterplot(x=attr_name_num_coeff, y=attr_name_num_ops, data=df,
+                    # hue=attr_name_dimensionality,
+                    hue=attr_name_representation,
+                    )
     title = 'opsVS coeffs'
     # plot.set_title(title)
     plt.xscale('log')
@@ -604,7 +592,7 @@ def plot_num_coeffs2num_ops(results):
     export_plot(fig, plot_title=title)
 
     # c = cm(color_idx[dim - 1])
-    plot = sns.scatterplot(x=attr_name_num_coeff, y=attr_name_num_ops, hue=attr_name_dimensionality, data=df_naive)
+    sns.scatterplot(x=attr_name_num_coeff, y=attr_name_num_ops, hue=attr_name_dimensionality, data=df_naive)
     title = 'ops naive VS coeffs'
     # plot.set_title(title)
     plt.xscale('log')
@@ -616,9 +604,8 @@ def plot_num_coeffs2num_ops(results):
     export_plot(fig, plot_title=title)
 
     # num_ops_horner, num_coeffs1, dim1 = rmv_zeros(num_ops_horner, num_coeffs, dim)
-    plot = sns.scatterplot(x=attr_name_num_coeff, y=attr_name_num_ops, hue=attr_name_dimensionality, data=df_horner)
+    sns.scatterplot(x=attr_name_num_coeff, y=attr_name_num_ops, hue=attr_name_dimensionality, data=df_horner)
     title = 'ops horner VS coeffs'
-    # plot.set_title(title)
     plt.xscale('log')
     plt.yscale('log')
     plt.grid(True)
@@ -638,8 +625,8 @@ def plot_numerical_error():
     # results_filtered_horner = filter_results(has_nonzero_err_horner, results)
 
     plot_num_err_heatmap(results)
-    # plot_num_error_growth_comparison(results)
-    # plot_num_coeffs2num_ops(results)
+    plot_num_error_growth_comparison(results)
+    plot_num_coeffs2num_ops(results)
 
 
 if __name__ == '__main__':

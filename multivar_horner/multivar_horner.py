@@ -1,16 +1,16 @@
 # -*- coding:utf-8 -*-
 
-
 import pickle
-from copy import deepcopy
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from typing import List
 
 import numpy as np
 
 from multivar_horner.factorisation_classes import HeuristicFactorisationRoot, OptimalFactorisationRoot
-from multivar_horner.global_settings import DEBUG, DEFAULT_PICKLE_FILE_NAME, FLOAT_DTYPE, UINT_DTYPE, TYPE_1D_FLOAT, \
-    TYPE_2D_INT, BOOL_DTYPE
+from multivar_horner.global_settings import (
+    BOOL_DTYPE, DEBUG, DEFAULT_PICKLE_FILE_NAME, FLOAT_DTYPE, TYPE_1D_FLOAT, TYPE_2D_INT, UINT_DTYPE,
+)
 from multivar_horner.helper_classes import FactorContainer
 from multivar_horner.helper_fcts import rectify, rectify_coefficients, validate, validate_coefficients
 from multivar_horner.helpers_fcts_numba import eval_recipe, naive_eval
@@ -23,68 +23,71 @@ def load_pickle(path: str = DEFAULT_PICKLE_FILE_NAME) -> 'AbstractPolynomial':
         return pickle.load(f)
 
 
-class AbstractPolynomial(ABC):
+'''
+    TODO
+    POSSIBLE IMPROVEMENTS:
+
+    MultivarPoly:
+
+    - also make use of the concept of 'recipes' for efficiently evaluating the polynomial
+        skipping the most unnecessary operations
+    - add option to skip this optimisation
+
+    HornerMultivarPoly:
+
+
+    - optimise factor evaluation (save instructions, 'factor factorisation'):
+    a monomial factor consists of scalar factors and in turn some monomial factors consist of other monomial factors
+    -> the result of evaluating a factor can be reused for evaluating other factors containing it
+    -> find the optimal 'factorisation' of the factors themselves
+    -> set the factorisation_idxs of each factor in total_degree to link the evaluation appropriately
+    idea:
+        choose  'Goedel IDs' as the monomial factor ids
+        then the id of a monomial is the product of the ids of its scalar factors
+        find the highest possible divisor among all factor ids
+        (corresponds to the 'largest' factor included in the monomial)
+        this leads to a minimal factorisation for evaluating the monomial values quickly
+
+    - add option to skip this optimisation to save build time
+
+    - optimise space requirement:
+     after building a factorisation tree for the factors themselves,
+     then use its structure to cleverly reuse storage space
+     -> use compiler construction theory: minimal assembler register assignment, 'graph coloring'...
+
+    - optimise 'copy recipe': avoid copy operations for accessing values of x
+        problem: inserting x into the value array causes operations as well and
+            complicates address assigment and recipe compilation
+
+    -  when the polynomial does not depend on all variables, build a wrapper to maintain the same "interface"
+        but internally reduce the dimensionality, this reduced the size of the numpy arrays -> speed, storage benefit
+
+    - the evaluation of subtrees is independent and could theoretically be done in parallel
+        probably not worth the effort. more reasonable to just evaluate multiple polynomials in parallel
+'''
+
+
+# TODO properties: num ops...
+
+class DummyClass:
+    """ a class
+
+    Attributes:
+        a: test attribute
     """
-    an abstract class for representing a multivariate polynomial
+
+    # FIXME: creates duplicate entries in Sphinx autodoc
+    __slots__ = ['a']
 
 
-    Parameters
-    ----------
-
-    :param coefficients: ndarray of floats with shape (N,1)
-        representing the coefficients of the monomials
-        NOTE: coefficients with value 0 and 1 are allowed and will not affect the internal representation,
-            because coefficients must be replaceable
-
-    :param exponents: ndarray of unsigned integers with shape (N,m)
-        representing the exponents of the monomials
-        where m is the number of dimensions (self.dim),
-        the ordering corresponds to the ordering of the coefficients, every exponent row has to be unique!
-
-    :param rectify_input: bool, default=False
-        whether to convert coefficients and exponents into compatible numpy arrays
-        with this set to True, coefficients and exponents can be given in standard python arrays
-    :param validate_input: bool, default=False
-        whether to check if coefficients and exponents fulfill the requirements (shape, data type etc.)
-
-    :param compute_representation: bool, default=False
-        whether to compute a string representation of the polynomial
-
-
-    Attributes
-    ----------
-
-    :ivar num_monomials: the amount of coefficients/monomials N of the polynomial
-
-    :ivar dim: the dimensionality m of the polynomial
-        NOTE: the polynomial needs not to actually depend on all m dimensions
-
-    :ivar unused_variables: the dimensions the polynomial does not depend on
-
-    :ivar num_ops: the amount of mathematical operations required to evaluate the polynomial in this representation
-
-    :ivar representation: a human readable string visualising the polynomial representation
-
-
-    polynomial degrees:
-
-    in contrast to 1D polynomials, different concepts of degrees exist for polynomials in multiple dimensions.
-    following the naming in [1] L. Trefethen, “Multivariate polynomial approximation in the hypercube”, Proceedings
-    of the American Mathematical Society, vol. 145, no. 11, pp. 4837–4844, 2017.
-
-    :ivar total_degree: the usual notion of degree for a polynomial.
-        = the maximum sum of exponents in any of its monomials
-        = the maximum l_1-norm of the exponent vectors of all monomials
-
-    :ivar euclidean_degree: the maximum l_2-norm of the exponent vectors of all monomials.
-        NOTE: this is not in general an integer
-
-    :ivar maximal_degree: the largest exponent in any of its monomials
-        = the maximum l_infinity-norm of the exponent vectors of all monomials
-
+# TODO docstring attributes in parent class, automatic inheritance in sphinx autodoc api docu
+#   -> prevent duplicate docstring in MultivarPolynomial
+class AbstractPolynomial(ABC):
+    """ an abstract class for representing a multivariate polynomial
     """
 
     # prevent dynamic attribute assignment (-> safe memory)
+    # FIXME: creates duplicate entries in Sphinx autodoc
     __slots__ = ['compute_representation', 'coefficients', 'euclidean_degree', 'exponents', 'num_monomials', 'num_ops',
                  'dim', 'maximal_degree', 'total_degree', 'unused_variables', 'representation']
 
@@ -124,6 +127,11 @@ class AbstractPolynomial(ABC):
         return self.num_ops
 
     def compute_string_representation(self, *args, **kwargs) -> str:
+        """ computes a string representation of the polynomial and sets self.representation
+
+        Returns:
+            a string representing this polynomial instance
+        """
         # self.representation has already been set during construction
         return self.representation
 
@@ -133,16 +141,19 @@ class AbstractPolynomial(ABC):
             pickle.dump(self, f)
         print('...done.\n')
 
+    # TODO test
     def get_partial_derivative(self, i: int, *args, **kwargs) -> 'AbstractPolynomial':
-        """
-        TODO test
+        """ retrieves a partial derivative
 
-        all given additional arguments will be passed to the constructor of the derivative polynomial
+        Note:
+            all given additional arguments will be passed to the constructor of the derivative polynomial
 
-        :param i: dimension to derive with respect to
-            ATTENTION: dimension counting starts with 1 -> the first dimension is #1
+        Args:
+            i: dimension to derive with respect to.
+                ATTENTION: dimension counting starts with 1 (i >= 1)
 
-        :return: the partial derivative of this polynomial wrt. the i-th dimension
+        Returns:
+            the partial derivative of this polynomial wrt. the i-th dimension
         """
 
         assert (0 < i <= self.dim), 'invalid dimension i given'
@@ -174,8 +185,11 @@ class AbstractPolynomial(ABC):
 
     def get_gradient(self, *args, **kwargs) -> List['AbstractPolynomial']:
         """
-        all arguments will be passed to the constructor of the derivative polynomials
-        :return: the list of all partial derivatives
+        Note:
+            all arguments will be passed to the constructor of the derivative polynomials
+
+        Returns:
+             the list of all partial derivatives
         """
         return [self.get_partial_derivative(i, *args, **kwargs) for i in range(1, self.dim + 1)]
 
@@ -208,15 +222,32 @@ class AbstractPolynomial(ABC):
 
 
 class MultivarPolynomial(AbstractPolynomial):
-    """
-    a representation of a multivariate polynomial in 'canonical form' (without any factorisation)
+    """ a representation of a multivariate polynomial in 'canonical form' (without any factorisation)
 
+    Args:
+        coefficients: ndarray of floats with shape (N,1)
+            representing the coefficients of the monomials
+            NOTE: coefficients with value 0 and 1 are allowed and will not affect the internal representation,
+            because coefficients must be replaceable
+        exponents: ndarray of unsigned integers with shape (N,m)
+            representing the exponents of the monomials
+            where m is the number of dimensions (self.dim),
+            the ordering corresponds to the ordering of the coefficients, every exponent row has to be unique!
+        rectify_input: bool, default=False
+            whether to convert coefficients and exponents into compatible numpy arrays
+            with this set to True, coefficients and exponents can be given in standard python arrays
+        validate_input: bool, default=False
+            whether to check if coefficients and exponents fulfill the requirements (shape, data type etc.)
+        compute_representation: bool, default=False
+            whether to compute a string representation of the polynomial
 
-    TODO: IMPROVEMENTS:
-
-    - also make use of the concept of 'recipes' for efficiently evaluating the polynomial
-        skipping the most unnecessary operations
-    - add option to skip this optimisation
+    Attributes:
+        num_monomials: the amount of coefficients/monomials N of the polynomial
+        dim: the dimensionality m of the polynomial
+            NOTE: the polynomial needs not to actually depend on all m dimensions
+        unused_variables: the dimensions the polynomial does not depend on
+        num_ops: the amount of mathematical operations required to evaluate the polynomial in this representation
+        representation: a human readable string visualising the polynomial representation
     """
 
     def __init__(self, coefficients, exponents, rectify_input=False, validate_input=False,
@@ -225,9 +256,9 @@ class MultivarPolynomial(AbstractPolynomial):
         super(MultivarPolynomial, self).__init__(coefficients, exponents, rectify_input, validate_input,
                                                  compute_representation)
 
-        # count the number of instructions done when evaluating polynomial:
+        # the number of instructions required for processing the ndarrays:
         # exponentiation: dim*num_monomials
-        # multiplication coefficient and scalar factors (monomials): x*num_monomials
+        # multiplication: coefficient and scalar factors (monomials): x*num_monomials
         # sum: num_monomials-1
         self.num_ops = 2 * self.dim * self.num_monomials + self.num_monomials - 1
         self.compute_string_representation(*args, **kwargs)
@@ -252,14 +283,17 @@ class MultivarPolynomial(AbstractPolynomial):
         return self.representation
 
     def eval(self, x: TYPE_1D_FLOAT, validate_input: bool = True) -> float:
-        """
-        computes the value of the polynomial at point x
+        """ computes the value of the polynomial at point x
+
         makes use of Numba just in time compiled functions to speed things up
 
-        :param x: ndarray of floats with shape = [m]
-        :param validate_input: whether to convert the x into a ndarray and to
-            check if it fulfills the requirements
-        :return: the value of the polynomial at point x
+        Args:
+            x: ndarray of floats with shape = [m]
+            validate_input: whether to convert the x into a ndarray and to
+                check if it fulfills the requirements
+
+        Returns:
+            the value of the polynomial at point x
         """
 
         if validate_input:
@@ -272,82 +306,75 @@ class MultivarPolynomial(AbstractPolynomial):
 
 
 class HornerMultivarPolynomial(AbstractPolynomial):
+    """ a representation of a multivariate polynomial using Horner factorisation
+
+    the polynomial is being evaluated by fast just in time compiled functions
+    using precompiled "recipes" of instructions.
+
+    Args:
+        coefficients: ndarray of floats with shape (N,1)
+            representing the coefficients of the monomials
+            NOTE: coefficients with value 0 and 1 are allowed and will not affect the internal representation,
+            because coefficients must be replaceable
+        exponents: ndarray of unsigned integers with shape (N,m)
+            representing the exponents of the monomials
+            where m is the number of dimensions (self.dim),
+            the ordering corresponds to the ordering of the coefficients, every exponent row has to be unique!
+        rectify_input: bool, default=False
+            whether to convert coefficients and exponents into compatible numpy arrays
+            with this set to True, coefficients and exponents can be given in standard python arrays
+        validate_input: bool, default=False
+            whether to check if coefficients and exponents fulfill the requirements (shape, data type etc.)
+        compute_representation: bool, default=False
+            whether to compute a string representation of the polynomial
+
+        keep_tree: whether the factorisation tree object should be kept in memory after finishing factorisation
+        find_optimal: whether a search over all possible factorisations should be done in total_degree to find
+            an optimal factorisation in the sense of a minimal amount required operations for evaluation
+
+
+    Attributes:
+        num_monomials: the amount of coefficients/monomials N of the polynomial
+        dim: the dimensionality m of the polynomial
+            NOTE: the polynomial needs not to actually depend on all m dimensions
+        unused_variables: the dimensions the polynomial does not depend on
+        num_ops: the amount of mathematical operations required to evaluate the polynomial in this representation
+        representation: a human readable string visualising the polynomial representation
+
+        total_degree: the usual notion of degree for a polynomial.
+            = the maximum sum of exponents in any of its monomials
+            = the maximum l_1-norm of the exponent vectors of all monomials
+            in contrast to 1D polynomials, different concepts of degrees exist for polynomials in multiple dimensions.
+            following the naming in [1] L. Trefethen, “Multivariate polynomial approximation in the hypercube”,
+            Proceedings of the American Mathematical Society, vol. 145, no. 11, pp. 4837–4844, 2017.
+        euclidean_degree: the maximum l_2-norm of the exponent vectors of all monomials.
+            NOTE: this is not in general an integer
+        maximal_degree: the largest exponent in any of its monomials
+            = the maximum l_infinity-norm of the exponent vectors of all monomials
+
+        factorisation_tree: the object oriented, recursive data structure representing the factorisation
+            (only if keep_tree=True)
+        factor_container: the object containing all (unique) factors of the factorisation (only if keep_tree=True)
+        root_value_idx: the index in the value array where the value of this polynomial
+            (= root of the factorisation_tree) will be stored
+        value_array_length: the amount of addresses (storage) required to evaluate the polynomial.
+            for evaluating the polynomial in tree form intermediary results have to be stored in a value array.
+            the value array begins with the coefficients of the polynomial.
+            (without further optimisation) every factor requires its own address.
+
+        copy_recipe: ndarray encoding the operations required to evaluate all scalar factors with exponent 1
+        scalar_recipe: ndarray encoding the operations required to evaluate all remaining scalar factors
+        monomial_recipe: ndarray encoding the operations required to evaluate all monomial factors
+        tree_recipe: ndarray encoding the addresses required to evaluate
+            the polynomial values of the factorisation_tree.
+        tree_ops: ndarray encoding the type of operation required to evaluate
+            the polynomial values of the factorisation_tree.
+            encoded as a boolean ndarray separate from tree_recipe,
+            since only the two operations ADD & MUL need to be encoded.
     """
-    a representation of a multivariate polynomial using Horner factorisation
-    the polynomial can be evaluated by fast just in time compiled functions
-     using precompiled "recipes" of instructions
-
-
-    Parameters
-    ----------
-
-    :param keep_tree: whether the factorisation tree object should be kept in memory after finishing factorisation
-
-    :param find_optimal: whether a search over all possible factorisations should be done in total_degree to find
-        an optimal factorisation in the sense of a minimal amount required operations for evaluation
-
-
-    Attributes
-    ----------
-
-    :ivar factorisation_tree: the object oriented representation of the factorisation tree (only if keep_tree=True)
-
-    :ivar factor_container: the object containing all factors of the factorisation  (only if keep_tree=True)
-
-    :ivar copy_recipe: ndarray encoding the operations required to evaluate all scalar factors with exponent 1
-
-    :ivar scalar_recipe: ndarray encoding the operations required to evaluate all remaining scalar factors
-
-    :ivar monomial_recipe: ndarray encoding the operations required to evaluate all monomial factors
-
-    :ivar tree_recipe: ndarray encoding the addresses required to evaluate
-        the polynomial values of the factorisation_tree
-
-    :ivar tree_ops: ndarray encoding the type of operation required to evaluate
-        the polynomial values of the factorisation_tree
-        encoded as a boolean ndarray separate from tree_recipe,
-        since only the two operations ADD & MUL need to be encoded
-
-    :ivar root_value_idx: the index in the value array where the value of this polynomial
-        (= root of the factorisation_tree) will be stored
-
-    :ivar value_array_length: the amount of addresses (storage) required to evaluate the polynomial
-
-
-    TODO POSSIBLE IMPROVEMENTS:
-
-    - optimise factor evaluation (save instructions, 'factor factorisation'):
-    a monomial factor consists of scalar factors and in turn some monomial factors consist of other monomial factors
-    -> the result of evaluating a factor can be reused for evaluating other factors containing it
-    -> find the optimal 'factorisation' of the factors themselves
-    -> set the factorisation_idxs of each factor in total_degree to link the evaluation appropriately
-    idea:
-        choose  'Goedel IDs' as the monomial factor ids
-        then the id of a monomial is the product of the ids of its scalar factors
-        find the highest possible divisor among all factor ids
-        (corresponds to the 'largest' factor included in the monomial)
-        this leads to a minimal factorisation for evaluating the monomial values quickly
-
-    - add option to skip this optimisation to save build time
-
-    - optimise space requirement:
-     after building a factorisation tree for the factors themselves,
-     then use its structure to cleverly reuse storage space
-     -> use compiler construction theory: minimal assembler register assignment, 'graph coloring'...
-
-    - optimise 'copy recipe': avoid copy operations for accessing values of x
-        problem: inserting x into the value array causes operations as well and
-            complicates address assigment and recipe compilation
-
-    -  when the polynomial does not depend on all variables, build a wrapper to maintain the same "interface"
-        but internally reduce the dimensionality, this reduced the size of the numpy arrays -> speed, storage benefit
-
-    - the evaluation of subtrees is independent and could theoretically be done in parallel
-        probably not worth the effort. more reasonable to just evaluate multiple polynomials in parallel
-    """
-
     # __slots__ declared in parents are available in child classes. However, child subclasses will get a __dict__
     # and __weakref__ unless they also define __slots__ (which should only contain names of any additional slots).
+    # FIXME: creates duplicate entries in Sphinx autodoc
     __slots__ = ['copy_recipe', 'factorisation_tree', 'factor_container', 'monomial_recipe', 'root_value_idx',
                  'tree_recipe', 'tree_ops', 'scalar_recipe', 'value_array_length']
 
@@ -360,36 +387,24 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         self.value_array_length = None
         self.representation = None
 
-        # all unique factors of the Horner factorisation need to be stored
         # NOTE: do NOT automatically create all scalar factors with exponent 1
         # (they might be unused, since the polynomial must not actually depend on all variables)
         self.factor_container = FactorContainer()
-
-        # find a desired factorisation of the polynomial by building a factorisation tree
-        # (= recursive object oriented data structure)
 
         if find_optimal:
             self.factorisation_tree = OptimalFactorisationRoot(self.exponents, self.factor_container)
         else:
             self.factorisation_tree = HeuristicFactorisationRoot(self.exponents, self.factor_container)
 
-        # compile and store a "recipe" for evaluating the polynomial with just numpy arrays
         self.copy_recipe, self.scalar_recipe, self.monomial_recipe, self.tree_recipe, self.tree_ops = \
-            self.compile_recipes()
+            self._compile_recipes()
 
-        # count the number of instructions done during evaluation
-        # (computing all factors + evaluating the factorisation subtrees)
         # for every entry in each recipe one operation is being done
         self.num_ops = self.scalar_recipe.shape[0] + self.monomial_recipe.shape[0] + self.tree_ops.shape[0]
 
-        # for evaluating the polynomial in tree form intermediary results have to be stored in a value array
-        # the value array begins with the coefficients of the polynomial
-        # (without further optimisation) every factor requires its own address
         self.value_array_length = self.num_monomials + len(self.factor_container.scalar_factors) + len(
             self.factor_container.monomial_factors)
 
-        # remember the address of the root polynomial
-        # after the evaluation computations the value of the polynomial will be stored at this address!
         self.root_value_idx = self.factorisation_tree.value_idxs[0]
 
         self.compute_string_representation(*args, **kwargs)  # uses num_ops!
@@ -416,10 +431,10 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         self.representation = representation
         return self.representation
 
-    def compile_recipes(self):
-        """
-        encode all instructions needed for evaluating the polynomial in numpy ndarrays ('recipes')
-        (cf. assembler instructions)
+    def _compile_recipes(self):
+        """ encode all instructions needed for evaluating the polynomial in 'recipes'
+
+        recipes are represented as numpy ndarrays (cf. assembler instructions)
 
         -> acquire a data structure representing the factorisation tree
         -> avoid recursion and function call overhead during evaluation
@@ -435,7 +450,9 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         (scalar factors can be 'standalone' factors as well)
         -> values must not be overwritten (reusing addresses), because they might be needed again by another factor
         -> (without further optimisation) each factor requires its own space in the value array
-        :return: the compiled recipes (numpy ndarrays)
+
+        Returns:
+            the compiled recipes (numpy ndarrays)
         """
         # the values of the factors are being stored after the coefficients
         # start the address assignment with the correct offset
@@ -472,14 +489,17 @@ class HornerMultivarPolynomial(AbstractPolynomial):
                 np.array(tree_ops, dtype=BOOL_DTYPE))
 
     def eval(self, x: TYPE_1D_FLOAT, validate_input: bool = False) -> float:
-        """
-        computes the value of the polynomial at point x
-        makes use of fast Numba just in time compiled functions
+        """ computes the value of the polynomial at point x
 
-        :param x: ndarray of floats with shape = [m]
-        :param validate_input: whether to convert the x into a ndarray and to
+        makes use of fast ``Numba`` just in time compiled functions
+
+        Args:
+            x: ndarray of floats with shape = [m]
+            validate_input: whether to convert the x into a ndarray and to
             check if it fulfills the requirements
-        :return: the value of the polynomial at point x
+
+        Returns:
+             the value of the polynomial at point x
         """
 
         if validate_input:

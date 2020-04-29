@@ -12,7 +12,7 @@ MAX_COEFF_MAGNITUDE = 1e0
 MAX_INP_MAGNITUDE = MAX_COEFF_MAGNITUDE  # max magnitude of evaluation points x
 MAX_DIMENSION = 3
 DIM_RANGE = list(range(1, MAX_DIMENSION + 1))
-MAX_DEGREE = 5
+MAX_DEGREE = 4
 DEGREE_RANGE = list(range(1, MAX_DEGREE + 1))
 
 # speed tests

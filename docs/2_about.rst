@@ -1,9 +1,8 @@
-
 =====
 About
 =====
 
-``multivar_horner`` is a python package implementing a multivariate `Horner scheme ("Horner's method", "Horner's rule") <https://en.wikipedia.org/wiki/Horner%27s_method>`__ :cite:`horner1819xxi`  for efficiently evaluating multivariate polynomials.
+``multivar_horner`` is a python package implementing a multivariate `Horner scheme ("Horner's method", "Horner's rule") <https://en.wikipedia.org/wiki/Horner%27s_method>`__:cite:`horner1819xxi`  for efficiently evaluating multivariate polynomials.
 
 A given input polynomial in canonical form (or normal form) is being factorised according to the greedy heuristic described in :cite:`ceberio2004greedy` with some additional computational tweaks.
 The resulting Horner factorisation requires less operations for evaluation and is being computed by growing a "Horner Factorisation Tree".
@@ -67,37 +66,47 @@ Refer to :cite:`trefethen2017multivariate` for an exact definition of the maxima
 For each maximal degree up to 7 and until dimensionality 7, 5 polynomials were drawn randomly.
 Note that even though the original monomials are not actually present in a Horner factorisation, the amount of coefficients however is identical to the amount of coefficients of its canonical form.
 
-.. TODO
 
-![amount of operations required to evaluate randomly generated polynomials.\label{fig:num_ops_growth}](num_ops_growth.png)
+Even though the amount of operations required for evaluating the polynomials grow exponentially with their size irrespective of the representation, the rate of growth is lower for the Horner factorisation.
 
-Even though the amount of operations required for evaluating the polynomials grow exponentially with their size irrespective of the representation, the rate of growth is lower for the Horner factorisation (cf. \autoref{fig:num_ops_growth}).
-Due to this the bigger the polynomial the more compact the Horner factorisation representation is relative to the canonical form.
+
+.. figure:: _static/num_ops_growth.png
+
+    amount of operations required to evaluate randomly generated polynomials.
+
+
+
+Due to this, the bigger the polynomial the more compact the Horner factorisation representation is relative to the canonical form.
 As a result the Horner factorisations are computationally easier to evaluate.
 
 
 Numerical error
-```````````````
+^^^^^^^^^^^^^^^
 
 In order to compute the numerical error, each polynomial has been evaluated at the point of all ones.
 The true result in this case should always be the sum of all coefficients.
 The resulting numerical error is being averaged over 100 tries with uniformly random coefficients in the range [-1; 1].
 
-.. TODO
 
-![numerical error of evaluating randomly generated polynomials of varying sizes.\label{fig:num_err_growth}](num_err_growth.png)
-
-With increasing size in terms of the amount of included coefficients the numerical error of both the canonical form and the Horner factorisation found by `multivar_horner` grow exponentially (cf. \autoref{fig:num_err_growth})
+With increasing size in terms of the amount of included coefficients the numerical error of both the canonical form and the Horner factorisation found by ``multivar_horner`` grow exponentially.
 
 
-![numerical error of evaluating randomly generated polynomials in canonical form relative to the Horner factorisation.\label{fig:num_err_heatmap}](num_err_heatmap.png)
+.. figure:: _static/num_err_growth.png
 
-In comparison to the canonical form however the Horner factorisation is much more numerically stable as it has also been visualised in \autoref{fig:num_err_heatmap}.
+    numerical error of evaluating randomly generated polynomials of varying sizes.
 
+
+In comparison to the canonical form however the Horner factorisation is much more numerically stable.
+This has also been visualised in the following figure:
+
+
+.. figure:: _static/num_err_heatmap.png
+
+    numerical error of evaluating randomly generated polynomials in canonical form relative to the Horner factorisation.
 
 
 Speed tests
-```````````
+^^^^^^^^^^^
 
 The following speed benchmarks have been performed on a 15-inch MacBook Pro from 2017 with a 4 core 2,8 GHz Intel Core i7 processor, 16 GB 2133 MHz LPDDR3 RAM and macOS 10.13 High Sierra.
 The software versions in use were: ``multivar_horner 2.0.0``, ``python 3.8.2``, ``numpy 1.18.1`` and ``numba 0.48.0``
@@ -160,8 +169,24 @@ Both evaluation algorithms (with and without Horner factorisation) make use of `
 
 
 
+
+Related work
+------------
+
+This package has been created due to the recent advances in multivariate polynomial interpolation :cite:`Hecht1,Hecht2`.
+High dimensional interpolants of large degrees create the demand for evaluating multivariate polynomials computationally efficient and numerically stable.
+
+:cite:`carnicer1990evaluation` shows how factorisation trees can be used to evaluate multivariate polynomials and their derivatives.
+
+In :cite:`kuipers2013improving` Monte Carlo tree search has been used to find more performant factorisations than with greedy heuristics.
+
+Other representations of polynomials are being presented, among others, in :cite:`LeeFactorization2013,leiserson2010efficient`.
+
+
+
+
 Contact
-=======
+--------
 
 
 Tell me if and how your are using this package. This encourages me to develop and test it further.

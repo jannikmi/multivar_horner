@@ -19,16 +19,14 @@ from itertools import product
 import numpy as np
 import pytest
 
-# import sys
-# sys.path.insert(0, "../multivar_horner")
 from multivar_horner.global_settings import UINT_DTYPE
 from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
-
 # settings for numerical stability tests
-from tests.test_helpers import vectorize, naive_eval_reference, \
-    proto_test_case, evaluate_numerical_error
-from tests.test_settings import NR_TEST_POLYNOMIALS, MAX_INP_MAGNITUDE, DIM_RANGE, DEGREE_RANGE, TEST_RESULTS_PICKLE, \
-    INVALID_INPUT_DATA, VALID_TEST_DATA, COEFF_CHANGE_DATA
+from tests.test_helpers import evaluate_numerical_error, naive_eval_reference, proto_test_case, vectorize
+from tests.test_settings import (
+    COEFF_CHANGE_DATA, DEGREE_RANGE, DIM_RANGE, INVALID_INPUT_DATA,
+    MAX_INP_MAGNITUDE, NR_TEST_POLYNOMIALS, TEST_RESULTS_PICKLE, VALID_TEST_DATA,
+)
 
 
 class MainTest(unittest.TestCase):
@@ -149,7 +147,7 @@ class MainTest(unittest.TestCase):
         print('TEST COMPARISON TO VANDERMONDE POLYNOMIAL EVALUATION...')
         degree_range = range(1, 4)
         dim_range = range(1, 4)
-        for dim, deg in itertools.product(dim_range, degree_range ):
+        for dim, deg in itertools.product(dim_range, degree_range):
             exponents = np.array(list(itertools.product(range(deg), repeat=dim)), dtype=UINT_DTYPE)
             coeffs = np.random.rand(exponents.shape[0])
             X = np.random.rand(NR_TEST_POLYNOMIALS, dim)
@@ -165,7 +163,7 @@ class MainTest(unittest.TestCase):
         keys = ['rectify_input', 'validate_input']
         vals = [True, False]
         max_dim = 3
-        degree_range = range(1,4)
+        degree_range = range(1, 4)
         exponents = np.array(list(itertools.product(degree_range, repeat=max_dim)), dtype=UINT_DTYPE)
         coeffs = np.random.rand(exponents.shape[0])
         X = np.random.rand(NR_TEST_POLYNOMIALS, max_dim)
@@ -183,7 +181,7 @@ class MainTest(unittest.TestCase):
         for ncoeff in range(1, 8):
             exponents = np.arange(ncoeff, dtype=UINT_DTYPE).reshape(ncoeff, 1)
             coeffs = np.random.rand(ncoeff)
-            ##p_np = lambda x: np.polyval(coeffs[::-1], x)
+            # p_np = lambda x: np.polyval(coeffs[::-1], x)
             p_np = np.polynomial.Polynomial(coeffs)
             for cls in [MultivarPolynomial, HornerMultivarPolynomial]:
                 p_mv = vectorize(cls(coeffs[:, None], exponents))

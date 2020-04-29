@@ -1,10 +1,9 @@
 import heapq  # implementation of the heap queue algorithm, also known as the priority queue algorithm (binary tree)
-
-# modified sample code from https://www.redblobgames.com/pathfinding/a-star/
 from abc import ABC, abstractmethod
 from typing import List
 
 
+# modified sample code from https://www.redblobgames.com/pathfinding/a-star/
 class PriorityQueue:
     def __init__(self):
         self.elements = []

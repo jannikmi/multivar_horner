@@ -1,25 +1,25 @@
 ---
 title: 'multivar_horner: A Python package for computing Horner factorisations of multivariate polynomials'
 tags:
-- python
-- mathematics
-- polynomial
-- evaluation
-- multivariate
-- horner
-- factorisation
-- factorization
+    - python
+    - mathematics
+    - polynomial
+    - evaluation
+    - multivariate
+    - horner
+    - factorisation
+    - factorization
 
 
 authors:
-- name: Jannik Michelfeit
-orcid: 0000-0002-1819-6975
-affiliation: "1, 2" # (Multiple affiliations must be quoted)
+    - name: Jannik Michelfeit
+        orcid: 0000-0002-1819-6975
+        affiliation: "1, 2" # (Multiple affiliations must be quoted)
 affiliations:
-- name: Technische Universität Dresden
-index: 1
-- name: Max Planck Institute of Molecular Cell Biology and Genetics
-index: 2
+    - name: Technische Universität Dresden
+        index: 1
+    - name: Max Planck Institute of Molecular Cell Biology and Genetics
+        index: 2
 date: 20 April 2020
 bibliography: paper.bib
 
@@ -73,7 +73,7 @@ This effect intensifies as the dimensionality grows.
 
 
 # Benchmarks
-     
+
 To obtain meaningful results the benchmarks presented here use polynomials sampled randomly with the following procedure:
 In order to draw polynomials with uniformly random occupancy, the probability of monomials being present is picked randomly.
 For a fixed maximal degree $n$ in $m$ dimensions there are $(n+1)^m$ possible exponent vectors corresponding to monomials.
@@ -86,28 +86,28 @@ The resulting numerical error is being averaged over 100 tries with uniformly ra
 
 Note that even though the original monomials are not actually present in a Horner factorisation, the amount of coefficients however is identical to the amount of coefficients of its canonical form.
 
-![numerical error of evaluating randomly generated polynomials of varying sizes.\label{fig:num_err_growth}](num_err_growth.png)
+![numerical error of evaluating randomly generated polynomials of varying sizes.\label{fig:num_err_growth}](../docs/_static/num_err_growth.png)
 
-With increasing size in terms of the amount of included coefficients the numerical error of both the canonical form and the Horner factorisation found by `multivar_horner` grow exponentially (cf. \autoref{fig:num_err_growth})
+With increasing size in terms of the amount of included coefficients the numerical error of both the canonical form and the Horner factorisation found by `multivar_horner` grow exponentially (cf. \autoref{fig:num_err_growth}).
 
 
-![numerical error of evaluating randomly generated polynomials in canonical form relative to the Horner factorisation.\label{fig:num_err_heatmap}](num_err_heatmap.png)
+![numerical error of evaluating randomly generated polynomials in canonical form relative to the Horner factorisation.\label{fig:num_err_heatmap}](../docs/_static/num_err_heatmap.png)
 
 In comparison to the canonical form however the Horner factorisation is much more numerically stable as it has also been visualised in \autoref{fig:num_err_heatmap}.
 
 
-![amount of operations required to evaluate randomly generated polynomials.\label{fig:num_ops_growth}](num_ops_growth.png)
+![amount of operations required to evaluate randomly generated polynomials.\label{fig:num_ops_growth}](../docs/_static/num_ops_growth.png)
 
 Even though the amount of operations required for evaluating the polynomials grow exponentially with their size irrespective of the representation, the rate of growth is lower for the Horner factorisation (cf. \autoref{fig:num_ops_growth}).
-Due to this the bigger the polynomial the more compact the Horner factorisation representation is relative to the canonical form.
-As a result the Horner factorisations are computationally easier to evaluate.
+Due to this, the bigger the polynomial the more compact the Horner factorisation representation is relative to the canonical form.
+As a result, the Horner factorisations are computationally easier to evaluate.
 
 These results demonstrate the advantages of multivariate Horner factorisations and show their relevance for numerous applications handling large polynomials.
 
 # Related work
 
 The package has been created due to the recent advances in multivariate polynomial interpolation [@Hecht1; @Hecht2].
-High dimensional interpolants of large degrees created the demand for evaluating multivariate polynomials computationally efficient and numerically stable.
+High dimensional interpolants of large degrees create the demand for evaluating multivariate polynomials computationally efficient and numerically stable.
 
 Instead of using a heuristic to choose the next factor, one can allow a search over all possible Horner factorisations in order to arrive at a minimal factorisation.
 The amount of possible factorisations, however, is increasing exponentially with the degree and dimensionality of a polynomial (the amount of monomials).
@@ -119,6 +119,7 @@ This approach, which is similar to the branch-and-bound method suggested in [@ko
 
 In [@kuipers2013improving] Monte Carlo tree search has been used to find more performant factorisations than with greedy heuristics.
 
+Other representations of polynomials are being specified in [@LeeFactorization2013] and [@leiserson2010efficient].
 
 
 # Further reading

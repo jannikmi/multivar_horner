@@ -14,11 +14,11 @@ these packages have to be installed in virtual environment in use:
 right python version! (will influence the tox environments!)
 for testing:
 conda install pytest
-conda install isort 
-conda install twine 
+conda install isort
+conda install twine
 conda install tox
 
-pip install rstcheck pip-tools 
+pip install rstcheck pip-tools
 
 rstcheck>=3.3.1
 twine for uploading securely
@@ -181,18 +181,13 @@ if __name__ == "__main__":
     print('=====================')
 
     # TODO data could contain errors, test before upload
-    routine(None, 'Remember to list all relevant importable objects in __all__ variable in __init__.py!',
-            'OK. Continue', 'Exit')
+    routine(None, 'Remember to list all relevant importable objects in __all__ variable in __init__.py!')
     routine(None,
             'Maybe re-pin the test dependencies (requirements.txt) with pip-compile!'
-            ' Commands are written in the beginning of this script',
-            'Done. Run tests', 'Exit')
-    routine(None,
-            'Are all pinned dependencies written in setup.py and the Documentation?',
-            'OK. Continue',
-            'Exit')
-    routine(None, 'Are all (new) features documented? (documentation, example.py)', 'OK. Continue', 'Exit')
-    routine(None, 'Remember to write a changelog now for version %s' % version, 'Done. Continue', 'Exit')
+            ' Commands are written in the beginning of this script')
+    routine(None, 'Are all pinned dependencies written in setup.py and the Documentation?')
+    routine(None, 'Are all (new) features documented? (documentation, example.py)')
+    routine(None, 'Remember to write a changelog now for version %s' % version)
 
     print('___________')
     print('Running TESTS:')
@@ -200,7 +195,7 @@ if __name__ == "__main__":
     # routine(VIRT_ENV_COMMAND + "pip-compile requirements_numba.in;pip-sync",
     #      'pinning the requirements.txt and bringing virtualEnv to exactly the specified state:', 'next: build check')
 
-    routine(VIRT_ENV_COMMAND + "rstcheck *.rst", 'checking syntax of all .rst files:', 'next: build check')
+    routine(VIRT_ENV_COMMAND + "rstcheck *.rst", 'checking syntax of all .rst files:', 'test codestyle')
 
     # IMPORTANT: -r flag to rebuild tox virtual env
     # only when dependencies have changed!
@@ -215,15 +210,15 @@ if __name__ == "__main__":
 
     # routine(VIRT_ENV_COMMAND + "tox" + rebuild_flag, 'checking syntax, codestyle and imports', 'continue')
     routine(f'{VIRT_ENV_COMMAND} tox {rebuild_flag} -e codestyle', 'checking syntax, codestyle and imports',
-            'continue')
-    routine(f'{VIRT_ENV_COMMAND} tox {rebuild_flag}  -e py37', 'build tests py3', 'continue')
+            'run tests')
+    routine(f'{VIRT_ENV_COMMAND} tox {rebuild_flag}  -e py37', 'build tests py3')
 
     print('Tests finished.')
 
     routine(None,
             'Please commit your changes, push and wait if Travis tests build successfully. '
             'Only then merge them into the master.',
-            'Build successful. Publish and upload now.', 'Exit.')
+            'Build successful. Publish and upload now.')
 
     # TODO do this automatically, problem are the commit messages <- often the same as changelog!
     # git commit --message
@@ -258,6 +253,7 @@ if __name__ == "__main__":
     routine(VIRT_ENV_COMMAND + command, 'real upload to PyPI.')
 
     # tag erstellen
+    # TODO add option to skip
     routine(None, 'Do you want to create a git release tag?', 'Yes', 'No')
 
     routine(f"git tag -a v{version} -m 'Version {version}'", 'Creating tag', 'Continue')
@@ -268,6 +264,4 @@ if __name__ == "__main__":
 
     print('______________')
     print('Publishing Done.')
-    print('now run:')
-    print("only when the upload didn't work: python3 setup.py bdist_wheel upload")
-    print(f'sudo -H pip install {PACKAGE} --upgrade')
+    print("when the upload didn't work run: python3 setup.py bdist_wheel upload")

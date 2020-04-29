@@ -6,8 +6,7 @@ import numpy as np
 
 from multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 from multivar_horner.global_settings import UINT_DTYPE
-
-from tests.test_settings import NR_TEST_POLYNOMIALS, MAX_COEFF_MAGNITUDE, NR_COEFF_CHANGES, MAX_NUMERICAL_ERROR
+from tests.test_settings import MAX_COEFF_MAGNITUDE, MAX_NUMERICAL_ERROR, NR_COEFF_CHANGES, NR_TEST_POLYNOMIALS
 
 
 def proto_test_case(data, fct):
