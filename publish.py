@@ -239,7 +239,7 @@ if __name__ == "__main__":
     # routine("python3 setup.py sdist bdist_wheel upload", 'Uploading the package now.') # deprecated
     # new twine publishing routine:
     # https://packaging.python.org/tutorials/packaging-projects/
-    routine("python3 setup.py sdist bdist_wheel", 'building the package now.')
+    routine("python setup.py sdist bdist_wheel", 'building the package now.')
 
     path = abspath(join(__file__, pardir, 'dist'))
     all_archives_this_version = [f for f in os.listdir(path) if isfile(join(path, f)) and version_str in f]

@@ -41,7 +41,7 @@ setup(
     ],
     long_description='python package implementing a multivariate horner scheme '
                      'for efficiently evaluating multivariate polynomials \n\n'
-                     'for more refer to the `documentation: https://multivar_horner.readthedocs.io/en/latest/',
+                     'for more refer to the documentation: https://multivar_horner.readthedocs.io/en/latest/',
     install_requires=[
         'numpy>=1.16',
         'numba>=0.48',
