@@ -52,5 +52,5 @@ Quick Guide:
     p_x = horner_polynomial(x)
 
 
-For more refer to the `Documentation <https://multivar_horner.readthedocs.io/en/latest/>`__.
+For more refer to the `documentation <https://multivar_horner.readthedocs.io/en/latest/>`__.
 
