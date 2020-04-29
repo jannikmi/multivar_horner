@@ -1,298 +1,100 @@
 # -*- coding:utf-8 -*-
 
-# TODO compare difference in computed values (=numerical error)
-# TODO test consecutive evaluations of the same polynomial
-# TODO 0 coefficients should be ignored
-# TODO test all conversions, and data rectifications
-# TODO debug wrong reprensentation
+# NOTE: if this raises SIGSEGV, update your Numba dependency
+
+# TODO compare difference in computed values of other methods (=numerical error)
+# TODO test all input parameter conversions, and data rectifications
+# TODO test derivative correctness
+# TODO test factorisation for 1D polynomials! should always find optimum = unique 1D Horner factorisation
+# TODO test: addresses of factors must never be target addresses
+#  (value would be overwritten, but might need to be reused)
+#   might not be relevant in the future any more with other computation procedures reusing addresses
 
 
+import itertools
+import pickle
 import unittest
+from itertools import product
 
 import numpy as np
 import pytest
 
+from multivar_horner.global_settings import UINT_DTYPE
 from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
-
-
-def proto_test_case(data, fct):
-    all_good = True
-    for input, expected_output in data:
-        print('\n')
-        actual_output = fct(input)
-        print(f'p({input[2]}) == {expected_output}')
-        if actual_output != expected_output:
-            print(f'ERROR: p(x) == {actual_output}')
-            all_good = False
-        else:
-            print('OK.')
-
-    assert all_good
-
-
-# def id2exponent_vect(prime_list, monomial_id):
-#     # find the exponent vector corresponding to a monomial id
-#     # = prime decomposition
-#     exponent_vect = np.zeros(prime_list.shape, dtype=UINT_DTYPE)
-#     current_id = monomial_id
-#     for i, prime in enumerate(prime_list):
-#         while 1:
-#             quotient, remainder = divmod(current_id, prime)
-#             if remainder == 0:
-#                 exponent_vect[i] += 1
-#                 current_id = quotient
-#             else:
-#                 break
-#
-#         if current_id == 0:
-#             break
-#
-#     if current_id != 0:
-#         raise ValueError('no factorisation found')
-#
-#     return exponent_vect
-#
-#
-# def _sparse_range_generator(max_value, density):
-#     for i in range(max_value):
-#         if random.random() < density:
-#             yield i
-
-
-INVALID_INPUT_DATA = [
-    # calling with x of another dimension
-    (([1.0, 2.0, 3.0],
-      [[3, 1, 0], [2, 0, 1], [1, 1, 1]],
-      [-2.0, 3.0]),
-     29.0),
-
-    (([1.0, 2.0, 3.0],
-      [[3, 1, 0], [2, 0, 1], [1, 1, 1]],
-      [-2.0, 3.0, 1.0, 4.0]),
-     29.0),
-
-    # negative exponents are not allowed
-    (([1.0, 2.0, 3.0],
-      [[3, -1, 0], [2, 0, 1], [1, 1, 1]],
-      [-2.0, 3.0, 1.0, 4.0]),
-     29.0),
-
-    # duplicate exponent entries are not allowed
-    (([1.0, 2.0, 3.0],
-      [[3, 1, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]],
-      [-2.0, 3.0, 1.0, 4.0]),
-     29.0),
-
-]
-
-VALID_TEST_DATA = [
-    #
-    # p(x) =  5.0
-    (([5.0],  # coefficients
-      [0],  # exponents
-      [0.0]),  # x
-     5.0),  # p(x)
-
-    # p(1.0) = 1.0
-    (([5.0],
-      [0],
-      [1.0]),
-     5.0),
-
-    # p(-1.0) = -1.0
-    (([5.0],
-      [0],
-      [-1.0]),
-     5.0),
-
-    # p(33.5) =33.5
-    (([5.0],
-      [0],
-      [33.5]),
-     5.0),
-
-    # p(x) =  1.0* x_1^1
-    # p(0.0) = 0.0
-    (([1.0],  # coefficients
-      [1],  # exponents
-      [0.0]),  # x
-     0.0),  # p(x)
-
-    # p(1.0) = 1.0
-    (([1.0],
-      [1],
-      [1.0]),
-     1.0),
-
-    # p(-1.0) = -1.0
-    (([1.0],
-      [1],
-      [-1.0]),
-     -1.0),
-
-    # p(33.5) =33.5
-    (([1.0],
-      [1],
-      [33.5]),
-     33.5),
-
-    # p(x) =  1.0* x_1^1 + 1.0 * x_2^1
-    # TODO verify the length of the value arrat
-    # TODO actually no computations needed for coefficients of 1.0
-    (([1.0, 1.0],
-      [[1, 0], [0, 1]],
-      [0.0, 0.0]),
-     0.0),
-
-    (([1.0, 1.0],
-      [[1, 0], [0, 1]],
-      [1.0, 0.0]),
-     1.0),
-
-    (([1.0, 1.0],
-      [[1, 0], [0, 1]],
-      [-1.0, 0.0]),
-     -1.0),
-
-    (([1.0, 1.0],
-      [[1, 0], [0, 1]],
-      [-1.0, 1.0]),
-     0.0),
-
-    (([1.0, 1.0],
-      [[1, 0], [0, 1]],
-      [-1.0, -2.0]),
-     -3.0),
-
-    (([1.0, 1.0],
-      [[1, 0], [0, 1]],
-      [33.5, 0.0]),
-     33.5),
-
-    # p(x) =  5.0 +  1.0* x_1^1
-    (([5.0, 1.0],
-      [[0, 0], [1, 0]],
-      [0.0, 0.0]),
-     5.0),
-
-    (([5.0, 1.0],
-      [[0, 0], [1, 0]],
-      [1.0, 0.0]),
-     6.0),
-
-    (([5.0, 1.0],
-      [[0, 0], [1, 0]],
-      [-1.0, 0.0]),
-     4.0),
-
-    (([5.0, 1.0],
-      [[0, 0], [1, 0]],
-      [33.5, 0.0]),
-     38.5),
-
-    # p(x) =  5.0 + 2.0* x_1^1 + 1.0* x_1^2
-    (([5.0, 2.0, 1.0],
-      [[0, 0], [1, 0], [2, 0]],
-      [0.0, 0.0]),
-     5.0),
-
-    (([5.0, 2.0, 1.0],
-      [[0, 0], [1, 0], [2, 0]],
-      [1.0, 0.0]),
-     8.0),  # p(x) =  5.0 + 2.0 + 1.0
-
-    (([5.0, 2.0, 1.0],
-      [[0, 0], [1, 0], [2, 0]],
-      [-1.0, 0.0]),
-     4.0),  # p(x) =  5.0 - 2.0 + 1.0
-
-    (([5.0, 2.0, 1.0],
-      [[0, 0], [1, 0], [2, 0]],
-      [2.0, 0.0]),
-     13.0),  # p(x) =  5.0 + 2.0* 2.0^1 + 1.0* 2.0^2
-
-    # p(x) =  5.0 + 2.0* x_1^1 + 1.0* x_1^2 + 2.0* x_1^2 *x_2^1
-    (([5.0, 2.0, 1.0, 2.0],
-      [[0, 0], [1, 0], [2, 0], [2, 1]],
-      [0.0, 0.0]),
-     5.0),
-
-    (([5.0, 2.0, 1.0, 2.0],
-      [[0, 0], [1, 0], [2, 0], [2, 1]],
-      [1.0, 0.0]),
-     8.0),  # p(x) =  5.0 + 2.0* 1^1 + 1.0* 1^2 + 2.0* 1^2 *0^1
-
-    (([5.0, 2.0, 1.0, 2.0],
-      [[0, 0], [1, 0], [2, 0], [2, 1]],
-      [1.0, 1.0]),
-     10.0),  # p(x) =  5.0 + 2.0* 1^1 + 1.0* 1^2 + 2.0* 1^2 *1^1
-
-    (([5.0, 2.0, 1.0, 2.0],
-      [[0, 0], [1, 0], [2, 0], [2, 1]],
-      [-1.0, 0.0]),
-     4.0),  # p(x) =  5.0 + 2.0* (-1)^1 + 1.0* (-1)^2 + 2.0* (-1)^2 *0^1
-
-    (([5.0, 2.0, 1.0, 2.0],
-      [[0, 0], [1, 0], [2, 0], [2, 1]],
-      [-1.0, 1.0]),
-     6.0),  # p(x) =  5.0 + 2.0* (-1)^1 + 1.0* (-1)^2 + 2.0* (-1)^2 *1^1
-
-    (([5.0, 2.0, 1.0, 2.0],
-      [[0, 0], [1, 0], [2, 0], [2, 1]],
-      [-1.0, 2.0]),
-     8.0),  # p(x) =  5.0 + 2.0* (-1)^1 + 1.0* (-1)^2 + 2.0* (-1)^2 *2^1
-
-    (([5.0, 2.0, 1.0, 2.0],
-      [[0, 0], [1, 0], [2, 0], [2, 1]],
-      [-1.0, 3.0]),
-     10.0),  # p(x) =  5.0 + 2.0* (-1)^1 + 1.0* (-1)^2 + 2.0* (-1)^2 *3^1
-
-    (([5.0, 2.0, 1.0, 2.0],
-      [[0, 0], [1, 0], [2, 0], [2, 1]],
-      [-2.0, 3.0]),
-     # p(x) = 5.0 + 2.0* (-2)^1 + 1.0* (-2)^2 + 2.0* (-2)^2 *3^1 = 5.0 + 2.0* (-2) + 1.0* 4 + 2.0* 4 *3
-     29.0),
-
-    # as in paper: "Greedy Algorithms for Optimizing Multivariate Horner Schemes"
-    # [20] p(x) = 1.0 x_1^3 x_2^1 + 1.0 x_1^2 x_3^1 + 1.0 x_1^2 x_2^1 x_3^1
-    # [17] p(x) = x_2^1 [ x_1^3 [ 1.0 ] + x_1^1 x_3^1 [ 1.0 ] ] + x_1^2 x_3^1 [ 1.0 ]
-    (([1.0, 1.0, 1.0],
-      [[3, 1, 0], [2, 0, 1], [2, 1, 1]],
-      [1.0, 1.0, 1.0]),
-     3.0),
-
-    # [20] p(x) = 1.0 x_1^3 x_2^1 + 2.0 x_1^2 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
-    # [17] p(x) = x_2^1 [ x_1^3 [ 1.0 ] + x_1^1 x_3^1 [ 3.0 ] ] + x_1^2 x_3^1 [ 2.0 ]
-    (([1.0, 2.0, 3.0],
-      [[3, 1, 0], [2, 0, 1], [1, 1, 1]],
-      [-2.0, 3.0, 1.0]),
-     -34.0),
-
-    # [27] p(x) = 1.0 x_3^1 + 2.0 x_1^3 x_2^3 + 3.0 x_1^2 x_2^3 x_3^1 + 4.0 x_1^1 x_2^5 x_3^1
-    (([1.0, 2.0, 3.0, 4.0],
-      [[0, 0, 1], [3, 3, 0], [2, 3, 1], [1, 5, 1]],
-      [-2.0, 3.0, 1.0]),
-     -2051.0),
-]
-
-COEFF_CHANGE_DATA = [
-
-    # [20] p(x) = 1.0 x_1^3 x_2^1 + 2.0 x_1^2 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
-    # [17] p(x) = x_2^1 [ x_1^3 [ 1.0 ] + x_1^1 x_3^1 [ 3.0 ] ] + x_1^2 x_3^1 [ 2.0 ]
-    (([1.0, 1.0, 1.0],  # coeffs1
-      [[3, 1, 0], [2, 0, 1], [2, 1, 1]],
-      [1.0, 1.0, 1.0],
-      [1.0, 2.0, 3.0],  # coeffs2
-      ),
-     6.0),
-]
+# settings for numerical stability tests
+from tests.test_helpers import evaluate_numerical_error, naive_eval_reference, proto_test_case, vectorize
+from tests.test_settings import (
+    COEFF_CHANGE_DATA, DEGREE_RANGE, DIM_RANGE, INVALID_INPUT_DATA,
+    MAX_INP_MAGNITUDE, NR_TEST_POLYNOMIALS, TEST_RESULTS_PICKLE, VALID_TEST_DATA,
+)
 
 
 class MainTest(unittest.TestCase):
 
+    # TODO split up tests into cross class test cases and single class test cases,
+    #  then use inheritance to change test class
+    def test_construction_basic(self):
+        """
+        test the basic construction API functionalities
+        :return:
+        """
+        print('\nTESTING COSNTRUCTION API...')
+        coefficients = np.array([[5.0], [1.0], [2.0], [3.0]], dtype=np.float64)
+        exponents = np.array([[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=np.uint32)
+
+        polynomial1 = MultivarPolynomial(coefficients, exponents, compute_representation=False)
+        polynomial2 = MultivarPolynomial(coefficients, exponents, compute_representation=True)
+        # both must have a string representation
+        # [#ops=27] p(x)
+        # [#ops=27] p(x) = 5.0 x_1^0 x_2^0 x_3^0 + 1.0 x_1^3 x_2^1 x_3^0 + 2.0 x_1^2 x_2^0 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
+        assert len(str(polynomial1)) < len(str(polynomial2))
+        assert str(polynomial1) == polynomial1.representation
+        assert polynomial1.num_ops == 27
+
+        return_str_repr = polynomial1.compute_string_representation(coeff_fmt_str='{:1.1e}',
+                                                                    factor_fmt_str='(x{dim} ** {exp})')
+        # the representation should get updated
+        assert return_str_repr == polynomial1.representation
+
+        polynomial1 = HornerMultivarPolynomial(coefficients, exponents, compute_representation=False)
+        polynomial2 = HornerMultivarPolynomial(coefficients, exponents, compute_representation=True)
+        # [#ops=10]
+        # [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0
+        assert len(str(polynomial1)) < len(str(polynomial2))
+        assert str(polynomial1) == polynomial1.representation
+        assert polynomial1.num_ops == 10
+
+        return_str_repr = polynomial1.compute_string_representation(coeff_fmt_str='{:1.1e}',
+                                                                    factor_fmt_str='(x{dim} ** {exp})')
+        # the representation should get updated
+        assert return_str_repr == polynomial1.representation
+
+        # converting the input to the required numpy data structures
+        coefficients = [5.0, 1.0, 2.0, 3.0]
+        exponents = [[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]]
+        horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True, validate_input=True,
+                                                     compute_representation=True, keep_tree=True)
+
+        # search for an optimal factorisation
+        horner_polynomial_optimal = HornerMultivarPolynomial(coefficients, exponents, find_optimal=True,
+                                                             compute_representation=True, rectify_input=True,
+                                                             validate_input=True)
+        assert horner_polynomial_optimal.num_ops <= horner_polynomial.num_ops
+
+        # partial derivative:
+        deriv_2 = horner_polynomial.get_partial_derivative(2, compute_representation=True)
+
+        # NOTE: partial derivatives themselves will be instances of the same parent class
+        assert deriv_2.__class__ is horner_polynomial.__class__
+
+        grad = horner_polynomial.get_gradient(compute_representation=True)
+        # partial derivative for every dimension
+        assert len(grad) == horner_polynomial.dim
+        print('OK.\n')
+
     def test_invalid_input_detection(self):
 
-        print('\n\nTEST INVALID INPUT DETECTION')
+        print('\n\nTEST INVALID INPUT DETECTION...')
         for inp, expected_output in INVALID_INPUT_DATA:
             coeff, exp, x = inp
             with pytest.raises(AssertionError):
@@ -308,7 +110,7 @@ class MainTest(unittest.TestCase):
 
         print('OK.')
 
-    def test_eval(self):
+    def test_eval_cases(self):
         def cmp_value_fct(inp):
             coeff, exp, x = inp
             x = np.array(x).T
@@ -329,19 +131,67 @@ class MainTest(unittest.TestCase):
             # print('x=',x.tolist())
 
             if res1 != res2 or res2 != res3:
-                print('results differ:', res1, res2, res3)
+                print(f'x = {x}')
+                print(f'results differ:\n{res1} (canonical)\n{res2} (horner)\n{res3} (horner optimal)\n')
                 assert False
 
             assert horner_poly.num_ops >= horner_poly_opt.num_ops
 
-            return poly.eval(x, validate_input=True)
+            return res1
 
-        print('TEST EVALUATION')
+        print('\nTESTING EVALUATION CASES...')
         proto_test_case(VALID_TEST_DATA, cmp_value_fct)
+        print('OK.\n')
+
+    def test_eval_compare_vandermonde_nd(self):
+        print('TEST COMPARISON TO VANDERMONDE POLYNOMIAL EVALUATION...')
+        degree_range = range(1, 4)
+        dim_range = range(1, 4)
+        for dim, deg in itertools.product(dim_range, degree_range):
+            exponents = np.array(list(itertools.product(range(deg), repeat=dim)), dtype=UINT_DTYPE)
+            coeffs = np.random.rand(exponents.shape[0])
+            X = np.random.rand(NR_TEST_POLYNOMIALS, dim)
+            p_ref = naive_eval_reference(X, exponents, coeffs)
+            for cls in [MultivarPolynomial, HornerMultivarPolynomial]:
+                p_mv = vectorize(cls(coeffs[:, None], exponents))
+                assert np.allclose(p_ref, p_mv(X))
+
+        print('OK.\n')
+
+    def test_eval_api(self):
+        print('\nTESTING EVALUATION API...')
+        keys = ['rectify_input', 'validate_input']
+        vals = [True, False]
+        max_dim = 3
+        degree_range = range(1, 4)
+        exponents = np.array(list(itertools.product(degree_range, repeat=max_dim)), dtype=UINT_DTYPE)
+        coeffs = np.random.rand(exponents.shape[0])
+        X = np.random.rand(NR_TEST_POLYNOMIALS, max_dim)
+        p_ref = naive_eval_reference(X, exponents, coeffs)
+        for kwargs in [dict(zip(keys, tf)) for tf in itertools.product(*[vals] * len(keys))]:
+            for cls in [MultivarPolynomial, HornerMultivarPolynomial]:
+                p_mv = vectorize(cls(coeffs[:, None], exponents, **kwargs))
+                assert np.allclose(p_ref, p_mv(X))
+
+        print('OK.\n')
+
+    def test_eval_compare_numpy_1d(self):
+        print('TEST COMPARISON TO NUMPY 1D POLYNOMIAL EVALUATION...')
+        x = MAX_INP_MAGNITUDE * ((np.random.rand(NR_TEST_POLYNOMIALS) * 2) - 1)
+        for ncoeff in range(1, 8):
+            exponents = np.arange(ncoeff, dtype=UINT_DTYPE).reshape(ncoeff, 1)
+            coeffs = np.random.rand(ncoeff)
+            # p_np = lambda x: np.polyval(coeffs[::-1], x)
+            p_np = np.polynomial.Polynomial(coeffs)
+            for cls in [MultivarPolynomial, HornerMultivarPolynomial]:
+                p_mv = vectorize(cls(coeffs[:, None], exponents))
+                assert np.allclose(p_np(x), p_mv(x))
+
+        print('OK.\n')
 
     def test_change_coefficients(self):
 
-        print('TEST CHANGING COEFFICIENTS')
+        print('\nTEST CHANGING COEFFICIENTS...')
 
         # Test if coefficients can actually be changed, representation should change accordingly
 
@@ -381,12 +231,12 @@ class MainTest(unittest.TestCase):
             # print('x=',x.tolist())
 
             if res1 != res2 or res2 != res3:
-                print('results differ:', res1, res2, res3)
-                assert False
+                print(f'x = {x}')
+                print(f'results differ:\n{res1} (canonical)\n{res2} (horner)\n{res3} (horner optimal)\n')
 
             assert horner_poly.num_ops >= horner_poly_opt.num_ops
 
-            return poly.eval(x, validate_input=True)
+            return res1
 
         # this also tests if the factorisation tree, can still be accessed after changing the coefficients
         # representation would otherwise be empty
@@ -422,14 +272,29 @@ class MainTest(unittest.TestCase):
             # print('x=',x.tolist())
 
             if res1 != res2 or res2 != res3:
-                print('results differ:', res1, res2, res3)
+                print(f'x = {x}')
+                print(f'results differ:\n{res1} (canonical)\n{res2} (horner)\n{res3} (horner optimal)\n')
                 assert False
 
             assert horner_poly.num_ops >= horner_poly_opt.num_ops
 
-            return poly.eval(x, validate_input=True)
+            return res1
 
         proto_test_case(VALID_TEST_DATA, cmp_value_changed_coeffs_fct)
+        print('OK.\n')
+
+    def test_numerical_stability(self):
+
+        print('\nevaluating the numerical error:')
+        results = []
+        for dim, max_degree in product(DIM_RANGE, DEGREE_RANGE):
+            results += evaluate_numerical_error(dim, max_degree)  # do not append list as entry
+
+        with open(TEST_RESULTS_PICKLE, 'wb') as f:
+            print(f'exporting numerical test results in {TEST_RESULTS_PICKLE}')
+            pickle.dump(results, f)
+
+        print('done.\n')
 
 
 if __name__ == '__main__':

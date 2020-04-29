@@ -1,6 +1,6 @@
 import heapq  # implementation of the heap queue algorithm, also known as the priority queue algorithm (binary tree)
-
-from .helper_fcts import get_goedel_id_of
+from abc import ABC, abstractmethod
+from typing import List
 
 
 # modified sample code from https://www.redblobgames.com/pathfinding/a-star/
@@ -73,13 +73,10 @@ class PriorityQueue2D:
         return item
 
     def get(self):
-        # try:
         cost1, heap_id = self.lvl1_heap.get()
         lvl2_heap = self.id2heap[heap_id]
         cost2, item = lvl2_heap.get()
         return item  # return only the item without the costs
-        # except IndexError:
-        #     return None
 
     def get_all(self):
         all_items = []
@@ -89,35 +86,53 @@ class PriorityQueue2D:
         return all_items
 
 
-class AbstractFactor:
-    __slots__ = ['monomial_id', 'value_idx']
+class AbstractFactor(ABC):
+    __slots__ = ['value_idx']
 
+    @abstractmethod
     def __str__(self, *args, **kwargs):
-        raise NotImplementedError()
+        pass
 
+    @abstractmethod
     def __repr__(self):
-        raise NotImplementedError()
+        pass
 
-    def eval(self, factor_values):
-        # the value of all used factors has already been computed
-        return factor_values[self.value_idx]
+    @abstractmethod
+    def compute(self, x, value_array):
+        pass
 
-    def compute(self, x, factor_values):
-        raise NotImplementedError()
+    @abstractmethod
+    def num_ops(self):
+        pass
+
+    @abstractmethod
+    def get_recipe(self):
+        pass
+
+    def eval(self, value_array):
+        """
+        looks up the computed value in the value array
+        self.compute() has to be called before!
+        then the value is stored at the value index in the value array
+        :param value_array:
+        :return: the computed value of self
+        """
+        return value_array[self.value_idx]
 
 
 class ScalarFactor(AbstractFactor):
-    # a monomial with just one variable: x_i^n
+    """
+    a factor depending on just one variable: :math:`f(x) = x_d^e`
+    """
     __slots__ = ['dimension', 'exponent']
 
-    def __init__(self, factor_dimension, factor_exponent, factor_id):
+    def __init__(self, factor_dimension, factor_exponent):
         self.dimension = factor_dimension
         self.exponent = factor_exponent
-        self.monomial_id = factor_id
         self.value_idx = None  # initialize the idx with None to catch faulty evaluation tries
 
     def __str__(self, factor_fmt_str='x_{dim}^{exp}', *args, **kwargs):
-        # variable numbering starts with 1: x_1, x_2, ...
+        # NOTE: variable numbering starts with 1: x_1, x_2, ...
         # if self.exponent == 1:
         #     return 'x_{}'.format(self.dimension + 1)
 
@@ -126,55 +141,50 @@ class ScalarFactor(AbstractFactor):
     def __repr__(self, *args, **kwargs):
         return self.__str__(*args, **kwargs)
 
-    @staticmethod
     def num_ops(self):
-        # count the number of instructions done during compute (during eval() only looks up the computed value)
-        return 1
+        return 1  # the number of instructions required for computing the value
 
-    def compute(self, x, factor_values):
-        factor_values[self.value_idx] = x[self.dimension] ** self.exponent
+    def compute(self, x, value_array):
+        value_array[self.value_idx] = x[self.dimension] ** self.exponent
 
     def get_recipe(self):
         """
         for evaluation the input value has to be either copied or exponentiated
-        :return: copy_recipe, scalar_recipe, monomial_recipe
+        :return: copy_recipe, scalar_recipe
         """
         if self.exponent == 1:
             # just copy x[dim] value
             # values[target] = x[source]
-            return [(self.value_idx, self.dimension)], [], []
+            return [(self.value_idx, self.dimension)], []
         else:
             # instruction encoding: target, source, exponent
             # values[target] = x[source] ** exponent
-            return [], [(self.value_idx, self.dimension, self.exponent)], []
+            return [], [(self.value_idx, self.dimension, self.exponent)]
 
 
 class MonomialFactor(AbstractFactor):
     """
-    factorisation_idxs: the indices of the values of all factors.
-        cannot be set at construction time, because the list of all factors is sorted
-        at the end of building the horner factorisation tree (when all factors are known)
+    a factor ('monomial') consisting of a product of scalar factors:
+    :math:`m(x) = x_i^j * ... * x_k^l`
+
+    Parameters
+    ----------
+
+    :param scalar_factors: a list of scalar factors the monomial consists of
+
+    Attributes
+    ----------
+
+    factorisation_idxs: the indices of the values of all scalar 'sub' factors in the value array of the polynomial.
+        cannot be set at construction time, because all scalar factors need to receive their index first,
+        but not all required scalar factors might exist
     """
-    # a monomial consisting of a product of scalar factors: x_i^j * x_k^l * ...
     __slots__ = ['scalar_factors', 'factorisation_idxs']
 
-    def __init__(self, scalar_factors):
+    def __init__(self, scalar_factors: List['ScalarFactor']):
+
+        # assert len(scalar_factors) > 1, 'a monomial must consist of at least two scalar factors' # DEBUG
         self.scalar_factors = scalar_factors
-
-        # the id of a monomial is the Goedel number of their exponent vector
-        # https://en.wikipedia.org/wiki/G%C3%B6del_numbering
-        # this is a unique id for every monomial
-        # the id of a monomial the product of the ids of its scalar factors
-        self.monomial_id = 1
-        for f in self.scalar_factors:
-            self.monomial_id *= f.monomial_id
-
-        if len(self.scalar_factors) == 1:
-            raise ValueError('There is only one factor. Use ScalarFactor instead')
-
-        if len(self.scalar_factors) == 0:
-            raise ValueError()
-
         self.value_idx = None  # initialize the idx with None to catch faulty evaluation tries
 
     def __str__(self):
@@ -185,20 +195,20 @@ class MonomialFactor(AbstractFactor):
 
     def num_ops(self):
         # count the number of instructions done during compute (during eval() only looks up the computed value)
-        return len(self.factorisation_idxs) - 1
+        return len(self.scalar_factors) - 1  # product of all scalar factors
 
-    def compute(self, x, factor_values):
+    def compute(self, x, value_array):
         # IMPORTANT: compute() of all the sub factors has had to be called before!
-        value = factor_values[self.factorisation_idxs[0]]
+        value = value_array[self.factorisation_idxs[0]]
         for idx in self.factorisation_idxs[1:]:
-            value *= factor_values[idx]
+            value *= value_array[idx]
 
-        factor_values[self.value_idx] = value
+        value_array[self.value_idx] = value
 
     def get_recipe(self):
         """
         for evaluation all scalar factors have to be multiplied (= monomial_recipe)
-        :return: copy_recipe, scalar_recipe, monomial_recipe
+        :return: monomial_recipe
         """
         # target = source1 * source2
         # instruction encoding: target, source1, source2
@@ -210,19 +220,19 @@ class MonomialFactor(AbstractFactor):
             # and multiply it with the remaining factor values
             monomial_recipe += [(target, source1, source2)]
 
-        return [], [], monomial_recipe
+        return monomial_recipe
 
 
 class FactorContainer:
     """
     a class for storing and reusing all factors appearing in a factorisation
-    TODO: find a way to use this concept across factorisations, globally
     """
 
-    def __init__(self, prime_array):
-        self.factors = []
-        self.id2idx = {}
-        self.prime_array = prime_array
+    def __init__(self):
+        self.scalar_factors = []
+        self.monomial_factors = []
+        self.property2idx_scalar = {}
+        self.property2idx_monomial = {}
 
     def get_factor(self, property_list):
         """
@@ -232,36 +242,38 @@ class FactorContainer:
         :return: the object representing the factor with the given properties
         """
 
+        assert len(property_list) > 0  # TODO DEBUG
         # create all required scalar factors
         scalar_factors = []
         monomial_id = 1
-        for d, e in property_list:
-            scalar_id = get_goedel_id_of(d, e, self.prime_array)
+        for prop in property_list:
+            d, e = prop
             try:
-                scalar_idx = self.id2idx[scalar_id]
-                scalar_factor = self.factors[scalar_idx]
+                scalar_idx = self.property2idx_scalar[prop]
+                scalar_factor = self.scalar_factors[scalar_idx]
             except KeyError:
-                scalar_factor = ScalarFactor(d, e, scalar_id)
-                self.id2idx[scalar_id] = len(self.factors)
-                self.factors.append(scalar_factor)
+                scalar_factor = ScalarFactor(d, e)
+                self.property2idx_scalar[prop] = len(self.scalar_factors)
+                self.scalar_factors.append(scalar_factor)
 
             scalar_factors.append(scalar_factor)
-            monomial_id *= scalar_id
 
-        assert len(scalar_factors) > 0  # TODO
+        assert len(scalar_factors) == len(property_list)  # TODO DEBUG
 
         if len(scalar_factors) == 1:
-            # the requested factor is scalar factor
+            # the requested factor is a scalar factor
             return scalar_factors[0]
 
         # the requested factor is a monomial consisting of multiple factors
+        monomial_id = tuple(property_list)
         try:
-            monomial_idx = self.id2idx[monomial_id]
-            monomial_factor = self.factors[monomial_idx]
+            monomial_idx = self.property2idx_monomial[monomial_id]
+            monomial_factor = self.monomial_factors[monomial_idx]
         except KeyError:
             monomial_factor = MonomialFactor(scalar_factors)
-            self.id2idx[monomial_id] = len(self.factors)
-            self.factors.append(monomial_factor)
+            self.property2idx_monomial[monomial_id] = len(self.monomial_factors)
+            self.monomial_factors.append(monomial_factor)
+
         return monomial_factor
 
     def get_factors(self, exponent_matrix):

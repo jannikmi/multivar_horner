@@ -1,12 +1,15 @@
 MANIFEST
 scrapyard.py
-.DS_Store
 tmp.py
-.pytest_cache
-.idea/
+
+*.DS_Store
+*.profraw
+*.pytest_cache
 *.pickle
 *.profraw
 playground.py
+
+.idea/
 
 
 # GITIGNORE DEFAULTS
@@ -121,3 +124,5 @@ venv.bak/
 # mypy
 .mypy_cache/
 publish_old.py
+playground.py
+tests/debug.py

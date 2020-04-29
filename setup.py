@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+
 from setuptools import setup
 
 setup(
@@ -6,13 +7,16 @@ setup(
     packages=['multivar_horner'],
     description='python package implementing a multivariate Horner scheme for efficiently '
                 'evaluating multivariate polynomials',
+    # version: in VERSION file https://packaging.python.org/guides/single-sourcing-package-version/
+    # With this approach you must make sure that the VERSION file is included in all your source
+    # and binary distributions (e.g. add include VERSION to your MANIFEST.in).
     author='J. Michelfeit',
     author_email='python@michelfe.it',
     license='MIT licence',
-    license_file='LICENSE',
     url='https://github.com/MrMinimal64/multivar_horner',  # use the URL to the github repo
     project_urls={
         "Source Code": "https://github.com/MrMinimal64/multivar_horner",
+        "Documentation": "https://multivar_horner.readthedocs.io/en/latest/",
         "Changelog": "https://github.com/MrMinimal64/multivar_horner/blob/master/CHANGELOG.rst",
     },
     keywords='math mathematics polynomial polynomials polynomial-evaluation multivariate multivariate-polynomials'
@@ -40,11 +44,10 @@ setup(
                      'Please check GitHub for the documentation with plots: \n'
                      'https://github.com/MrMinimal64/multivar-horner',
     install_requires=[
-        'numpy',
-        'numba',
+        'numpy>=1.16',
+        'numba>=0.48',
     ],
     python_requires='>=3.6',
-    zip_safe=False,
     # TODO
-    # extras_require={'pytorch': ["numba>=0.42"]},
+    # extras_require={'pytorch': [...]},
 )

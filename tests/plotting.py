@@ -1,121 +1,37 @@
+import os
 import pickle
-import random
 import time
 import timeit
-from math import log10
-from os.path import abspath, join, pardir
 
 import numpy as np
 
 import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 from matplotlib.patches import Rectangle
-from multivar_horner.global_settings import UINT_DTYPE
 from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
-
-# SPEED TESTS
-# TODO allow other setting ranges
-MAX_DIM = 4
-MAX_DEGREE = 10
-DIM_RANGE = list(range(1, MAX_DIM + 1))
-DEGREE_RANGE = list(range(1, MAX_DEGREE + 1))
-
-NR_SAMPLES = 100
-
-EXPORT_RESOLUTION = 300  # dpi
-EXPORT_SIZE_X = 19.0  # inch
-EXPORT_SIZE_Y = 11.0  # inch
-SHOW_PLOTS = False
-PLOTTING_DIR = abspath(join(pardir, 'plots'))
-plt.rcParams.update({'font.size': 40})
-PATH2DATA = 'results.pickle'
+from scipy.special import binom
+from tests.test_helpers import rnd_input_list, rnd_settings_list
+from tests.test_settings import (
+    DEGREE_RANGE, DIM_RANGE, EXPORT_RESOLUTION, NR_SAMPLES_SPEED_TEST,
+    PLOTTING_DIR, SHOW_PLOTS, SPEED_RUN_PICKLE, TEST_RESULTS_PICKLE,
+)
 
 
 def get_plot_name(file_name='plot'):
-    return abspath(join(PLOTTING_DIR, file_name + '_' + str(time.time())[:-7] + '.png'))
+    file_name = file_name.replace(' ', '_')
+    return os.path.abspath(os.path.join(PLOTTING_DIR, file_name + '_' + str(time.time())[:-7] + '.png'))
 
 
-def export_plot(fig, file_name):
-    fig.set_size_inches(EXPORT_SIZE_X, EXPORT_SIZE_Y, forward=True)
-    plt.savefig(get_plot_name(file_name), dpi=EXPORT_RESOLUTION)
+def export_plot(fig, plot_title):
+    # fig.set_size_inches(EXPORT_SIZE_X, EXPORT_SIZE_Y, forward=True)
+    plt.savefig(get_plot_name(plot_title), dpi=EXPORT_RESOLUTION)
+    plt.clf()  # clear last figure
 
 
 poly_settings_list = []
 input_list = []
 poly_class_instances = []
-
-
-def random_polynomial_settings(degree, all_exponents, max_abs_coeff=1.0):
-    # every exponent can take the values in the range [0; max_degree]
-    max_nr_exponent_vects = all_exponents.shape[0]
-
-    # decide how many entries the polynomial should have
-    # desired for meaningful speed test results:
-    # every possible polynomial should appear with equal probability
-    # there must be at least 1 entry
-    nr_exponent_vects = random.randint(1, max_nr_exponent_vects)
-
-    row_idxs = list(range(max_nr_exponent_vects))
-    assert max_nr_exponent_vects >= nr_exponent_vects
-    for length in range(max_nr_exponent_vects, nr_exponent_vects, -1):
-        # delete random entry from list
-        row_idxs.pop(random.randint(0, length - 1))
-
-    assert len(row_idxs) == nr_exponent_vects
-
-    exponents = all_exponents[row_idxs, :]
-
-    # ensure that the polynomial also has exactly the requested degree
-    if np.max(np.sum(exponents, axis=1)) < degree:
-        # add one monomials with that degree
-        max_degr_mon_idxs = np.sum(all_exponents, axis=1) == degree
-        length = max_degr_mon_idxs.shape[0]
-        row_idxs.append(random.randint(0, length - 1))
-        exponents = all_exponents[row_idxs, :]
-        nr_exponent_vects += 1
-
-    # the magnitude of the coefficients is arbitrary
-    coefficients = (np.random.rand(nr_exponent_vects, 1) - 0.5) * (2 * max_abs_coeff)
-    assert (coefficients.shape[0] == exponents.shape[0])
-    return coefficients, exponents
-
-
-def all_possible_exponents(dim, deg):
-    def cntr2exp_vect(cntr):
-        exp_vect = np.empty((dim), dtype=UINT_DTYPE)
-        for d in range(dim - 1, -1, -1):
-            divisor = (deg + 1) ** d
-            # cntr = quotient*divisor + remainder
-            quotient, remainder = divmod(cntr, divisor)
-            exp_vect[d] = quotient
-            cntr = remainder
-        return exp_vect
-
-    max_nr_exponent_vects = (deg + 1) ** dim
-    all_possible = np.empty((max_nr_exponent_vects, dim), dtype=UINT_DTYPE)
-    for i in range(max_nr_exponent_vects):
-        # print(i, cntr2exp_vect(i))
-        all_possible[i] = cntr2exp_vect(i)
-
-    return all_possible
-
-
-def rnd_settings_list(length, dim, degree):
-    all_exponent_vect = all_possible_exponents(dim, degree)
-    settings_list = [random_polynomial_settings(degree, all_exponent_vect) for i in range(length)]
-
-    # # random settings should have approx. half the amount of maximal entries on average
-    # num_monomial_entries = 0
-    # for settings in settings_list:
-    #     num_monomial_entries += settings[0].shape[0]
-    #
-    # avg_monomial_entries = num_monomial_entries / length
-    # max_monomial_entries = int((max_degree + 1) ** dim)
-    # print(avg_monomial_entries, max_monomial_entries)
-    return settings_list
-
-
-def rnd_input_list(length, dim, max_abs_val):
-    return [(np.random.rand(dim) - 0.5) * (2 * max_abs_val) for i in range(length)]
 
 
 def setup_time_fct(poly_class):
@@ -153,11 +69,11 @@ def get_avg_num_ops():
     return avg_num_ops
 
 
-def time_preprocess(time):
-    valid_digits = 4
-    zero_digits = abs(min(0, int(log10(time))))
-    digits_to_print = zero_digits + valid_digits
-    return str(round(time, digits_to_print))
+def time_preprocess(time, time_fmt='{:.2e}'):
+    # valid_digits = 4
+    # zero_digits = abs(min(0, int(log10(time))))
+    # digits_to_print = zero_digits + valid_digits
+    return time_fmt.format(time)
 
 
 def difference(quantity1, quantity):
@@ -181,57 +97,79 @@ def compute_lucrativity(setup_horner, setup_naive, eval_horner, eval_naive):
     return round(loss_setup / benefit_eval)
 
 
+attr_name_setup_time_naive = 'setup_time_naive'
+attr_name_eval_time_naive = 'eval_time_naive'
+attr_name_num_ops_naive = 'num_ops_naive'
+attr_name_setup_time_horner = 'setup_time_horner'
+attr_name_eval_time_horner = 'eval_time_horner'
+attr_name_num_ops_horner = 'num_ops_horner'
+attr_name_num_coeff = 'num_coeffs'
+
+
 def speed_test_run(dim, degree, nr_samples, template):
     global poly_settings_list, input_list, poly_class_instances
+
+    # TODO take times
 
     poly_settings_list = rnd_settings_list(nr_samples, dim, degree)
     input_list = rnd_input_list(nr_samples, dim, max_abs_val=1.0)
 
     setup_time_naive = timeit.timeit("test_setup_time_naive()", globals=globals(), number=1)
-    setup_time_naive = setup_time_naive / NR_SAMPLES  # = avg. per sample
+    setup_time_naive = setup_time_naive / NR_SAMPLES_SPEED_TEST  # = avg. per sample
 
     # poly_class_instances is not populated with the naive polynomial class instances
     # print(poly_class_instances[0])
     num_ops_naive = get_avg_num_ops()
 
     eval_time_naive = timeit.timeit("eval_time_fct()", globals=globals(), number=1)
-    eval_time_naive = eval_time_naive / NR_SAMPLES  # = avg. per sample
+    eval_time_naive = eval_time_naive / NR_SAMPLES_SPEED_TEST  # = avg. per sample
 
     setup_time_horner = timeit.timeit("test_setup_time_horner()", globals=globals(), number=1)
-    setup_time_horner = setup_time_horner / NR_SAMPLES  # = avg. per sample
+    setup_time_horner = setup_time_horner / NR_SAMPLES_SPEED_TEST  # = avg. per sample
 
     # poly_class_instances is not populated with the horner polynomial class instances
     # print(poly_class_instances[0])
     num_ops_horner = get_avg_num_ops()
 
     eval_time_horner = timeit.timeit("eval_time_fct()", globals=globals(), number=1)
-    eval_time_horner = eval_time_horner / NR_SAMPLES  # = avg. per sample
+    eval_time_horner = eval_time_horner / NR_SAMPLES_SPEED_TEST  # = avg. per sample
 
     setup_delta = difference(setup_time_naive, setup_time_horner)
     eval_delta = difference(eval_time_naive, eval_time_horner)
     ops_delta = difference(num_ops_naive, num_ops_horner)
     lucrative_after = compute_lucrativity(setup_time_horner, setup_time_naive, eval_time_horner, eval_time_naive)
+    if lucrative_after < 0:
+        lucrative_after = '-'  # never lucrative
 
-    print(template.format(str(dim), str(degree), time_preprocess(setup_time_naive),
-                          time_preprocess(setup_time_horner), str(setup_delta),
-                          time_preprocess(eval_time_naive), time_preprocess(eval_time_horner),
-                          str(eval_delta), str(num_ops_naive), str(num_ops_horner), ops_delta, str(lucrative_after)))
+    entries = [str(dim), str(degree), time_preprocess(setup_time_naive),
+               time_preprocess(setup_time_horner), str(setup_delta),
+               time_preprocess(eval_time_naive), time_preprocess(eval_time_horner),
+               str(eval_delta), str(num_ops_naive), str(num_ops_horner), ops_delta, str(lucrative_after)]
+    print(template.format(*entries))
 
-    return (setup_time_naive, eval_time_naive, num_ops_naive), (setup_time_horner, eval_time_horner, num_ops_horner)
+    result = {
+        attr_name_setup_time_naive: setup_time_naive,
+        attr_name_eval_time_naive: eval_time_naive,
+        attr_name_num_ops_naive: num_ops_naive,
+        attr_name_setup_time_horner: setup_time_horner,
+        attr_name_eval_time_horner: eval_time_horner,
+        attr_name_num_ops_horner: num_ops_horner,
+        # attr_name_num_coeff: num_coeffs, # TODO
+    }
+    return result
 
 
-def test_speed():
+# TODO
+def run_speed_benchmark():
+    if os.path.isfile(SPEED_RUN_PICKLE):
+        print(f'result file {SPEED_RUN_PICKLE} is already present. skipping data generation.')
+        return
+
     # this also fulfills the purpose of testing the robustness of the code
     # (many random polygons are being created and evaluated)
 
-    # TODO test for larger dimensions
-    # TODO compare & plot the performance wrt. the "density" of the polynomials. sparse <-> fully occupied
-    # naive should stay constant, horner should get slower
-
-    # TODO make num tested polynomials dependent on parameters (size, time)
-
     print('\nSpeed test:')
-    print('testing {} evenly distributed random polynomials'.format(NR_SAMPLES))
+    print('testing {} evenly distributed random polynomials'.format(NR_SAMPLES_SPEED_TEST))
     print('average timings per polynomial:\n')
 
     print(' {0:11s}  |  {1:38s} |  {2:35s} |  {3:35s} | {4:20s}'.format('parameters', 'setup time (/s)',
@@ -248,21 +186,21 @@ def test_speed():
 
     for dim in DIM_RANGE:
         dim_run_results = []
-        for max_degree in DEGREE_RANGE:
-            degree_run_results = speed_test_run(dim, max_degree, NR_SAMPLES, template)
-            dim_run_results.append(degree_run_results)
+        for maximal_degree in DEGREE_RANGE:
+            result_single_run = speed_test_run(dim, maximal_degree, NR_SAMPLES_SPEED_TEST, template)
+            dim_run_results.append(result_single_run)
 
         print()  # empty line
         # dim_run_results = list(zip(dim_run_results))
         all_results.append(dim_run_results)
 
-    print('writing results to file:', PATH2DATA)
-    with open(PATH2DATA, 'wb') as f:
+    print('writing results to file:', SPEED_RUN_PICKLE)
+    with open(SPEED_RUN_PICKLE, 'wb') as f:
         pickle.dump(all_results, f)
     print('...done.\n')
 
 
-def generate_plots():
+def plot_speed_results():
     def extract_data(results, data_idx):
         data = []
         for dim_run_res in results:
@@ -283,7 +221,7 @@ def generate_plots():
             for degree_run_res in dim_run_res:
                 y1 = degree_run_res[0][data_idx]
                 y2 = degree_run_res[1][data_idx]
-                y_diff.append(abs(y1 - y2))
+                y_diff.append(y1 - y2)
 
             data.append(y_diff)
 
@@ -301,19 +239,19 @@ def generate_plots():
 
         return data
 
-    print('importing polynomial from file "{}"'.format(PATH2DATA))
-    with open(PATH2DATA, 'rb') as f:
+    print('importing polynomial from file "{}"'.format(SPEED_RUN_PICKLE))
+    with open(SPEED_RUN_PICKLE, 'rb') as f:
         all_results = pickle.load(f)
 
     print('plotting now...')
 
     # labels = ['avg. setup time increase / s', 'avg. evaluation time reduction / s', 'avg. #operations reduction']
-    labels = ['time / s', 'time / s', 'avg. #operations reduction']
+    labels = ['time [s]', 'time [s]', 'avg. #operations reduction']
     file_names = ['setup_time_increase', 'eval_time_decrease', 'num_ops_decrease']
 
     # equal "spaced" colors
-    color_idx = np.linspace(0, 1, MAX_DIM)
-    cm = plt.cm.gist_rainbow
+    # color_idx = np.linspace(0, 1, MAX_DIMENSION)
+    # cm = plt.cm.gist_rainbow
     # use_logarithmic = [True, True, False]
 
     for run_idx in range(3):
@@ -334,15 +272,20 @@ def generate_plots():
             # y_naive, y_horner = dim_run_data
 
             # plt.plot(x, y, color=c, alpha=alpha, **kwargs)
-            c = cm(color_idx[dim - 1])
-            plt.semilogy(DEGREE_RANGE, dim_run_data, 'x:', color=c, label=str(dim), linewidth=3, markersize=15,
-                         markeredgewidth=2.5)
+            # c = cm(color_idx[dim - 1])
+            # TODO own plot setting for each, operations save log...
+            plt.plot(DEGREE_RANGE, dim_run_data, 'x:',
+                     # color=c,
+                     label=str(dim), linewidth=3, markersize=15,
+                     markeredgewidth=2.5)
+            # plt.semilogy(DEGREE_RANGE, dim_run_data, 'x:', color=c, label=str(dim), linewidth=3, markersize=15,
+            #              markeredgewidth=2.5)
             # plt.semilogy(DEGREE_RANGE, y_horner, color=c)
             # plt.semilogy(DEGREE_RANGE, y_naive, 'o--', color=c)
 
         # plt.semilogy(t, np.exp(-t / 5.0))
         plt.xticks(DEGREE_RANGE)
-        plt.xlabel('polynomial degree')
+        plt.xlabel('polynomial maximal_degree')
         plt.ylabel(label)
         # plt.title(label)
         plt.legend()
@@ -357,11 +300,347 @@ def generate_plots():
     print('...done.')
 
 
-# TODO also plot degree over dim
-# TODO plot "lucrative after"
+def extract_numerical_error_horner(result):
+    poly, poly_horner, p_x_expected, p_x, p_x_horner = result
+    return abs(p_x_horner - p_x_expected)
+
+
+def extract_numerical_error_naive(result):
+    poly, poly_horner, p_x_expected, p_x, p_x_horner = result
+    return abs(p_x_horner - p_x)
+
+
+def has_nonzero_err_horner(result):
+    return extract_numerical_error_horner(result) != 0.0
+
+
+def has_nonzero_err_naive(result):
+    return extract_numerical_error_naive(result) != 0.0
+
+
+def extract_numerical_difference(result):
+    err_naive = extract_numerical_error_naive(result)
+    err_horner = extract_numerical_error_horner(result)
+    return err_horner - err_naive
+
+
+def extract_poly_properties(result):
+    poly, poly_horner, p_x_expected, p_x, p_x_horner = result
+    return poly.dim, poly.total_degree, poly.num_ops, poly_horner.num_ops
+
+
+def extract_dimensionality(result):
+    poly, poly_horner, p_x_expected, p_x, p_x_horner = result
+    return poly.dim
+
+
+def extract_total_degree(result):
+    poly, poly_horner, p_x_expected, p_x, p_x_horner = result
+    return poly.total_degree
+
+
+def extract_maximal_degree(result):
+    poly, poly_horner, p_x_expected, p_x, p_x_horner = result
+    return poly.maximal_degree
+
+
+def extract_num_ops_naive(result):
+    poly_dim, poly_degree, num_ops_naive, num_ops_horner = extract_poly_properties(result)
+    return num_ops_naive
+
+
+def extract_num_ops_horner(result):
+    poly_dim, poly_degree, num_ops_naive, num_ops_horner = extract_poly_properties(result)
+    return num_ops_horner
+
+
+def extract_num_ops_benefit(result):
+    poly_dim, poly_degree, num_ops_naive, num_ops_horner = extract_poly_properties(result)
+    return num_ops_horner - num_ops_naive
+
+
+def has_nonzero_num_ops_horner(result):
+    return extract_num_ops_horner(result) != 0
+
+
+def extract_nr_coeffs(result):  # identical in both polynomial representations!
+    poly, poly_horner, p_x_expected, p_x, p_x_horner = result
+    return poly_horner.num_monomials
+
+
+def extract_sparsity(result):
+    nr_coeffs = extract_nr_coeffs(result)
+    dim = extract_dimensionality(result)
+    deg = extract_total_degree(result)
+    nr_coeffs_max = binom(dim + deg, deg)
+    return nr_coeffs / nr_coeffs_max
+
+
+def remove_zeros(l):
+    return [x if x != 0.0 else None for x in l]
+
+
+def rmv_zeros(*args):
+    out = []
+    for entries in zip(*args):
+        if 0.0 not in entries:
+            out.append(entries)
+
+    return list(zip(*out))
+
+
+def average_discrete(l1, l2):
+    """
+    average the entries of l1 where l2 is identical
+    """
+    assert len(l1) == len(l2)
+    l1 = np.array(l1)
+    l2 = np.array(l2)
+    unique_entries = np.unique(l2)
+    avgs = np.array([np.average(l1[l2 == e]) for e in unique_entries])
+    assert len(avgs) == len(unique_entries)
+    return avgs, unique_entries
+
+
+def make_relative(a, b):
+    return b / a
+
+
+# def compute_log(entry):
+#     if entry is None:
+#         return None
+#     return log10(entry)
+#
+#
+# def convert2log(l):
+#     return list(map(compute_log, l))
+
+
+def plot_num_err_heatmap(results):
+    dims = list(map(extract_dimensionality, results))
+    # degs = list(map(extract_total_degree, results))
+    maximal_degs = list(map(extract_maximal_degree, results))
+    numerical_err_naive = list(map(extract_numerical_error_naive, results))
+    numerical_err_horner = list(map(extract_numerical_error_horner, results))
+
+    attr_name_numerical_err_naive = 'numerical error naive'
+    attr_name_numerical_err_horner = 'numerical error horner'
+    attr_name_numerical_err_rel = 'relative numerical error'
+    attr_name_dim = 'dimension'
+    attr_name_deg = 'maximal degree'
+
+    df = pd.DataFrame({
+        attr_name_numerical_err_naive: numerical_err_naive,
+        attr_name_numerical_err_horner: numerical_err_horner,
+        attr_name_deg: maximal_degs,
+        attr_name_dim: dims,
+    })
+
+    df_avg = pd.DataFrame()
+
+    # average for dim and degree
+    for dim in DIM_RANGE:
+        for maximal_deg in DEGREE_RANGE:
+            selection_idxs = (df[attr_name_dim] == dim) & (df[attr_name_deg] == maximal_deg)
+            if not selection_idxs.any():
+                continue
+            df_selected = df[selection_idxs]
+            avg_num_err_naive = df_selected[attr_name_numerical_err_naive].mean()
+            avg_num_err_horner = df_selected[attr_name_numerical_err_horner].mean()
+            if avg_num_err_naive == avg_num_err_horner:
+                avg_num_err_naive_rel = 1.0
+            else:
+                avg_num_err_naive_rel = avg_num_err_naive / avg_num_err_horner
+
+            entry = pd.Series({
+                attr_name_numerical_err_rel: avg_num_err_naive_rel,
+                attr_name_numerical_err_naive: avg_num_err_naive,
+                attr_name_numerical_err_horner: avg_num_err_horner,
+                attr_name_deg: maximal_deg,
+                attr_name_dim: dim,
+            })
+            df_avg = df_avg.append(entry, ignore_index=True)
+
+    df_avg[attr_name_deg] = df_avg[attr_name_deg].astype(int, copy=False)
+    df_avg[attr_name_dim] = df_avg[attr_name_dim].astype(int, copy=False)
+
+    # sns.relplot(x=attr_name_dim, y=attr_name_deg, data=df_avg,
+    #             hue=attr_name_numerical_err_rel,
+    #             size=attr_name_numerical_err_rel,
+    #             sizes=(100,300),
+    #             )
+    heatmap_data = df_avg.pivot(attr_name_deg, attr_name_dim, attr_name_numerical_err_rel)
+    heatmap_data = heatmap_data.iloc[::-1]  # reverse
+
+    sns.heatmap(heatmap_data, annot=True,
+                # fmt="d",
+                linewidths=3,
+                # cmap="YlGnBu",
+                )
+    plot_title = 'avg. numerical error with canonical form relative to Horner factorisation'
+    plt.title(plot_title)
+    # plt.xlabel()
+    # locs, labels = plt.xticks()  # Get locations and labels
+    # plt.xticks(locs, labels=[int(x) for x in labels])  # Set locations and labels
+    fig = plt.gcf()
+    title = 'numerical error heatmap'
+    export_plot(fig, plot_title=title)
+
+
+def plot_num_error_growth_comparison(results):
+    numerical_err_naive = list(map(extract_numerical_error_naive, results))
+    numerical_err_horner = list(map(extract_numerical_error_horner, results))
+    num_coeffs = list(map(extract_nr_coeffs, results))
+
+    # average first! before removing zeros
+    numerical_err_naive_avg, num_coeffs_unique_naive = average_discrete(numerical_err_naive, num_coeffs)
+    numerical_err_horner_avg, num_coeffs_unique_horner = average_discrete(numerical_err_horner, num_coeffs)
+
+    numerical_err_naive_avg, num_coeffs_unique_naive = rmv_zeros(numerical_err_naive_avg, num_coeffs_unique_naive)
+    numerical_err_horner_avg, num_coeffs_unique_horner = rmv_zeros(numerical_err_horner_avg, num_coeffs_unique_horner)
+
+    attr_name_representation = 'representation'
+    attr_name_num_coeff = 'number of coefficients'
+    attr_name_numerical_err = 'average numerical error'
+    repr_name_horner = 'Horner factorisation'
+    repr_name_naive = 'canonical form'
+
+    df = pd.DataFrame()
+
+    df_naive = pd.DataFrame({attr_name_num_coeff: num_coeffs_unique_naive,
+                             attr_name_numerical_err: numerical_err_naive_avg,
+                             attr_name_representation: repr_name_naive})
+    df_naive[attr_name_representation] = repr_name_naive
+
+    df_horner = pd.DataFrame({attr_name_num_coeff: num_coeffs_unique_horner,
+                              attr_name_numerical_err: numerical_err_horner_avg, })
+    df_horner[attr_name_representation] = repr_name_horner
+
+    df = df.append(df_naive, ignore_index=True)
+    df = df.append(df_horner, ignore_index=True)
+
+    sns.scatterplot(x=attr_name_num_coeff, y=attr_name_numerical_err, hue=attr_name_representation, data=df,
+                    alpha=0.8)
+    # plot = sns.relplot(x=attr_name_num_coeff, y=attr_name_numerical_err, hue=attr_name_representation,
+    #                    style=attr_name_representation,
+    #                    kind="line", data=df,)
+    # plt.legend()
+    # plot.add_legend(bbox_to_anchor=(1.05, 0), loc=2, borderaxespad=0.)
+    title = 'avg numerical error VS nr coeff'
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.grid(True)
+    fig = plt.gcf()
+    export_plot(fig, plot_title=title)
+
+
+def filter_results(filter_fct, results):
+    results_filtered = list(filter(filter_fct, results))
+    print(f'filtering data: out of {len(results)} entries {len(results_filtered)} remain')
+    return results_filtered
+
+
+def plot_num_coeffs2num_ops(results):
+    attr_name_num_coeff = 'number of coefficients'
+    attr_name_num_ops = 'number of operations'
+    attr_name_representation = 'representation'
+    attr_name_dimensionality = 'dimensionality'
+
+    repr_name_horner = 'Horner factorisation'
+    repr_name_naive = 'canonical form'
+
+    results = filter_results(has_nonzero_num_ops_horner, results)
+
+    # compare the number of operations to the number of coefficients
+    # color by dimensions
+    dims = list(map(extract_dimensionality, results))
+    num_ops_naive = list(map(extract_num_ops_naive, results))
+    num_ops_horner = list(map(extract_num_ops_horner, results))
+    num_coeffs = list(map(extract_nr_coeffs, results))
+
+    df = pd.DataFrame()
+
+    df_naive = pd.DataFrame({
+        attr_name_num_coeff: num_coeffs,
+        attr_name_num_ops: num_ops_naive,
+        attr_name_dimensionality: dims,
+    })
+    df_naive[attr_name_representation] = repr_name_naive
+
+    df_horner = pd.DataFrame({
+        attr_name_num_coeff: num_coeffs,
+        attr_name_num_ops: num_ops_horner,
+        attr_name_dimensionality: dims,
+    })
+    df_horner[attr_name_representation] = repr_name_horner
+
+    df = df.append(df_naive, ignore_index=True)
+    df = df.append(df_horner, ignore_index=True)
+
+    # compare the number of operations to the number of coefficients
+    # num_ops_horner, num_coeffs1, dim1 = rmv_zeros(num_ops_horner, num_coeffs, dim)
+    sns.scatterplot(x=attr_name_num_coeff, y=attr_name_num_ops, data=df,
+                    # hue=attr_name_dimensionality,
+                    hue=attr_name_representation,
+                    )
+    title = 'opsVS coeffs'
+    # plot.set_title(title)
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.grid(True)
+    fig = plt.gcf()
+    export_plot(fig, plot_title=title)
+
+    # c = cm(color_idx[dim - 1])
+    sns.scatterplot(x=attr_name_num_coeff, y=attr_name_num_ops, hue=attr_name_dimensionality, data=df_naive)
+    title = 'ops naive VS coeffs'
+    # plot.set_title(title)
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.grid(True)
+    # TODO ticks
+    # r'$\mu=100,\ \sigma=15$'
+    fig = plt.gcf()
+    export_plot(fig, plot_title=title)
+
+    # num_ops_horner, num_coeffs1, dim1 = rmv_zeros(num_ops_horner, num_coeffs, dim)
+    sns.scatterplot(x=attr_name_num_coeff, y=attr_name_num_ops, hue=attr_name_dimensionality, data=df_horner)
+    title = 'ops horner VS coeffs'
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.grid(True)
+    fig = plt.gcf()
+    export_plot(fig, plot_title=title)
+
+
+def plot_numerical_error():
+    try:
+        with open(TEST_RESULTS_PICKLE, 'rb') as f:
+            results = pickle.load(f)
+    except FileNotFoundError:
+        print('no data of numerical errors found. run the numerical tests in test_it.py first')
+        return
+
+    # results_filtered_naive = filter_results(has_nonzero_err_naive, results)
+    # results_filtered_horner = filter_results(has_nonzero_err_horner, results)
+
+    plot_num_err_heatmap(results)
+    plot_num_error_growth_comparison(results)
+    plot_num_coeffs2num_ops(results)
+
 
 if __name__ == '__main__':
-    # generate data
-    # test_speed()
+    # TODO plot "lucrative after"
 
-    generate_plots()
+    sns.set_context("paper")
+    # plt.rcParams.update({'font.size': 35})
+
+    # TODO do not average results. measure time of a single polynomial.
+    # TODO plot with seaborn in the same fashion as numerical test
+    # TODO compare & plot the performance wrt. the "density" of the polynomials. sparse <-> fully occupied
+    # TODO make num tested polynomials dependent on parameters (size, time) (faster runs are more noisy)
+    run_speed_benchmark()  # generate speed test data
+    # TODO include plots in documentation
+    plot_speed_results()  # create plots with speed test data
+
+    # plot_numerical_error() create plots with numerical test data
