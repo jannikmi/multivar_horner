@@ -40,7 +40,6 @@ These advantages come at the cost of initial computational effort required to fi
 
 Accordingly the package presented here can be helpful always when (multivariate) polynomials have to be evaluated efficiently, the numerical error has to be small or a compact representation of the polynomial is required.
 
-![numerical error of evaluating randomly generated polynomials of varying sizes.\label{fig:num_err_growth}](../docs/_static/num_err_growth.png)
 
 
 # Functionality
@@ -53,7 +52,8 @@ When no leaves of the resulting binary "Horner Factorisation Tree" can be factor
 This recipe encodes all operations required to evaluate the polynomial in numpy arrays [@numpy].
 Functions just in time compiled by Numba [@numba] enable computationally efficient polynomial evaluation.
 
-![numerical error of evaluating randomly generated polynomials in canonical form relative to the Horner factorisation.\label{fig:num_err_heatmap}](../docs/_static/num_err_heatmap.png)
+
+
 
 
 # Degrees of multivariate polynomials
@@ -79,6 +79,10 @@ This effect intensifies as the dimensionality grows.
 
 # Benchmarks
 
+![numerical error of evaluating randomly generated polynomials of varying sizes.\label{fig:num_err_growth}](../docs/_static/num_err_growth.png)
+
+
+
 To obtain meaningful results the benchmarks presented here use polynomials sampled randomly with the following procedure:
 In order to draw polynomials with uniformly random occupancy, the probability of monomials being present is picked randomly.
 For a fixed maximal degree $n$ in $m$ dimensions there are $(n+1)^m$ possible exponent vectors corresponding to monomials.
@@ -88,6 +92,8 @@ For each maximal degree up to 7 and until dimensionality 7, 5 polynomials were d
 In order to compute the numerical error, each polynomial has been evaluated at the point of all ones.
 The true result in this case should always be the sum of all coefficients.
 The resulting numerical error is being averaged over 100 tries with uniformly random coefficients in the range $[-1; 1]$.
+
+![numerical error of evaluating randomly generated polynomials in canonical form relative to the Horner factorisation.\label{fig:num_err_heatmap}](../docs/_static/num_err_heatmap.png)
 
 Note that even though the original monomials are not actually present in a Horner factorisation, the amount of coefficients however is identical to the amount of coefficients of its canonical form.
 With increasing size in terms of the amount of included coefficients the numerical error of both the canonical form and the Horner factorisation found by `multivar_horner` grow exponentially (cf. \autoref{fig:num_err_growth}).
