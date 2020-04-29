@@ -29,7 +29,8 @@ bibliography: paper.bib
 # Summary
 
 
-Polynomials are a central concept in math and find application a wide range of fields and representing as well as evaluating (multivariate) polynomials in a computationally efficient way is relevant in many applications [@LeeFactorization2013; @leiserson2010efficient]
+Polynomials are a central concept in math and find application a wide range of fields.
+Representing as well as evaluating (multivariate) polynomials in a computationally efficient way is relevant in many applications [@LeeFactorization2013; @leiserson2010efficient, @Hecht1; @Hecht2]
 
 The `multivar_horner` Python package implements a multivariate Horner scheme ("Horner's method", "Horner's rule") [@horner1819xxi] and thereby allows computing Horner factorisations of multivariate polynomials.
 Compared to the canonical form of polynomials this representation offers some important advantages.
@@ -39,6 +40,8 @@ These advantages come at the cost of initial computational effort required to fi
 
 Accordingly the package presented here can be helpful always when (multivariate) polynomials have to be evaluated efficiently, the numerical error has to be small or a compact representation of the polynomial is required.
 
+![numerical error of evaluating randomly generated polynomials of varying sizes.\label{fig:num_err_growth}](../docs/_static/num_err_growth.png)
+
 
 # Functionality
 
@@ -47,8 +50,10 @@ In the multivariate case however the factorisation is ambiguous as there are mul
 The key functionality of `multivar_horner` is finding a good instance among the many possible Horner factorisations of a multivariate polynomial.
 This is achieved by recursively factorising with respect to the most commonly used factor in all monomials (greedy heuristic described in [@greedyHorner]).
 When no leaves of the resulting binary "Horner Factorisation Tree" can be factorised any more, a computational "recipe" for evaluating the polynomial is being compiled.
-This "recipe" encodes all operations required to evaluate the polynomial in numpy arrays [@numpy].
+This recipe encodes all operations required to evaluate the polynomial in numpy arrays [@numpy].
 Functions just in time compiled by Numba [@numba] enable computationally efficient polynomial evaluation.
+
+![numerical error of evaluating randomly generated polynomials in canonical form relative to the Horner factorisation.\label{fig:num_err_heatmap}](../docs/_static/num_err_heatmap.png)
 
 
 # Degrees of multivariate polynomials
@@ -58,7 +63,7 @@ It is important to note that in contrast to the one dimensional case, several co
 Following the notation of [@trefethen2017multivariate] the usual notion of degree of a polynomial, the maximal degree, is the maximal sum of exponents of all monomials.
 This is equal to the maximal $l_1$-norm of all exponent vectors of the monomials.
 Accordingly the euclidean degree is the maximal $l_2$-norm and the maximal degree is the maximal $l_{\infty}$-norm of all exponent vectors.
-Refer to [@trefethen2017multivariate] for precise mathematical definitions.
+Refer to [@trefethen2017multivariate] for precise definitions.
 
 A polynomial is called fully occupied with respect to a certain degree if all possible monomials having a smaller or equal degree are present.
 The occupancy of a polynomial can then be defined as the amount of existing monomials relative to the fully occupied polynomial of this degree.
@@ -85,24 +90,16 @@ The true result in this case should always be the sum of all coefficients.
 The resulting numerical error is being averaged over 100 tries with uniformly random coefficients in the range $[-1; 1]$.
 
 Note that even though the original monomials are not actually present in a Horner factorisation, the amount of coefficients however is identical to the amount of coefficients of its canonical form.
-
-![numerical error of evaluating randomly generated polynomials of varying sizes.\label{fig:num_err_growth}](../docs/_static/num_err_growth.png)
-
 With increasing size in terms of the amount of included coefficients the numerical error of both the canonical form and the Horner factorisation found by `multivar_horner` grow exponentially (cf. \autoref{fig:num_err_growth}).
-
-
-![numerical error of evaluating randomly generated polynomials in canonical form relative to the Horner factorisation.\label{fig:num_err_heatmap}](../docs/_static/num_err_heatmap.png)
-
 In comparison to the canonical form however the Horner factorisation is much more numerically stable as it has also been visualised in \autoref{fig:num_err_heatmap}.
-
-
-![amount of operations required to evaluate randomly generated polynomials.\label{fig:num_ops_growth}](../docs/_static/num_ops_growth.png)
 
 Even though the amount of operations required for evaluating the polynomials grow exponentially with their size irrespective of the representation, the rate of growth is lower for the Horner factorisation (cf. \autoref{fig:num_ops_growth}).
 Due to this, the bigger the polynomial the more compact the Horner factorisation representation is relative to the canonical form.
 As a result, the Horner factorisations are computationally easier to evaluate.
 
 These results demonstrate the advantages of multivariate Horner factorisations and show their relevance for numerous applications handling large polynomials.
+
+![amount of operations required to evaluate randomly generated polynomials.\label{fig:num_ops_growth}](../docs/_static/num_ops_growth.png)
 
 # Related work
 
