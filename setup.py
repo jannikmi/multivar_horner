@@ -39,10 +39,9 @@ setup(
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Scientific/Engineering :: Physics',
     ],
-    long_description='Python package for computing Horner factorisations of multivariate polynomials '
-                     'for efficient evaluation.\n'
-                     'Please check GitHub for the documentation with plots: \n'
-                     'https://github.com/MrMinimal64/multivar-horner',
+    long_description='python package implementing a multivariate horner scheme '
+                     'for efficiently evaluating multivariate polynomials \n\n'
+                     'for more refer to the documentation: https://multivar_horner.readthedocs.io/en/latest/',
     install_requires=[
         'numpy>=1.16',
         'numba>=0.48',
