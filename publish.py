@@ -82,7 +82,8 @@ PACKAGE = 'multivar_horner'
 VERSION_FILE = 'VERSION'
 VIRT_ENV_NAME = 'py37Env'
 VIRT_ENV_COMMAND = f'. ~/miniconda3/etc/profile.d/conda.sh; conda activate {VIRT_ENV_NAME}; '
-
+PY_VERSION_IDS = ['36', '37', '38']  # the supported python versions to create wheels for
+PYTHON_TAG = '.'.join([f'py{v}'for v in PY_VERSION_IDS])
 
 # TODO not required, set version in version file
 def get_version():
@@ -197,6 +198,10 @@ if __name__ == "__main__":
 
     routine(VIRT_ENV_COMMAND + "rstcheck *.rst", 'checking syntax of all .rst files:', 'test codestyle')
 
+    print('generating documentation now...')
+    os.system('(cd ./docs && exec make html)')
+    print('done.')
+
     # IMPORTANT: -r flag to rebuild tox virtual env
     # only when dependencies have changed!
     rebuild_flag = ''
@@ -239,9 +244,10 @@ if __name__ == "__main__":
     # routine("python3 setup.py sdist bdist_wheel upload", 'Uploading the package now.') # deprecated
     # new twine publishing routine:
     # https://packaging.python.org/tutorials/packaging-projects/
-    routine("python3 setup.py sdist bdist_wheel", 'building the package now.')
+    routine(f"python setup.py sdist bdist_wheel --python-tag {PYTHON_TAG}", 'building the package now.')
 
-    path = abspath(join(__file__, pardir, 'dist'))
+    # path = abspath(join(__file__, pardir, 'dist')) # TODO
+    path = abspath(join(pardir, 'dist'))
     all_archives_this_version = [f for f in os.listdir(path) if isfile(join(path, f)) and version_str in f]
     paths2archives = [abspath(join(path, f)) for f in all_archives_this_version]
     command = "twine upload --repository-url https://test.pypi.org/legacy/ " + ' '.join(paths2archives)

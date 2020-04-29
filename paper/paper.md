@@ -30,13 +30,13 @@ bibliography: paper.bib
 
 
 Polynomials are a central concept in math and find application a wide range of fields.
-Representing as well as evaluating (multivariate) polynomials in a computationally efficient way is relevant in many applications [@LeeFactorization2013; @leiserson2010efficient, @Hecht1; @Hecht2]
+Thereby, one often asks for numerically stable and efficient evaluation schemes, which mostly rely on compact representations of (multivariate) polynomials [@LeeFactorization2013; @leiserson2010efficient; @Hecht1].
 
 The `multivar_horner` Python package implements a multivariate Horner scheme ("Horner's method", "Horner's rule") [@horner1819xxi] and thereby allows computing Horner factorisations of multivariate polynomials.
 Compared to the canonical form of polynomials this representation offers some important advantages.
 The Horner factorisation is more compact in the sense that it requires less mathematical operations in order to evaluate the polynomial (cf. \autoref{fig:num_ops_growth}).
-Because of this, evaluating a multivariate polynomial in Horner factorisation is faster and more numerically stable [@pena2000multivariate; @pena2000multivariate2; @greedyHorner] (cf. \autoref{fig:num_err_growth}).
-These advantages come at the cost of initial computational effort required to find the factorisation.
+Consequently, evaluating a multivariate polynomial in Horner factorisation is faster and numerically more stable [@pena2000multivariate; @pena2000multivariate2; @greedyHorner] (cf. \autoref{fig:num_err_growth}).
+These advantages come at the cost of an initial computational effort required to find the factorisation.
 
 Accordingly the package presented here can be helpful always when (multivariate) polynomials have to be evaluated efficiently, the numerical error has to be small or a compact representation of the polynomial is required.
 
@@ -82,8 +82,7 @@ This effect intensifies as the dimensionality grows.
 ![numerical error of evaluating randomly generated polynomials of varying sizes.\label{fig:num_err_growth}](../docs/_static/num_err_growth.png)
 
 
-
-To obtain meaningful results the benchmarks presented here use polynomials sampled randomly with the following procedure:
+For benchmarking our method the following procedure is used:
 In order to draw polynomials with uniformly random occupancy, the probability of monomials being present is picked randomly.
 For a fixed maximal degree $n$ in $m$ dimensions there are $(n+1)^m$ possible exponent vectors corresponding to monomials.
 Each of these monomials is being activated with the chosen probability.
@@ -97,13 +96,10 @@ The resulting numerical error is being averaged over 100 tries with uniformly ra
 
 Note that even though the original monomials are not actually present in a Horner factorisation, the amount of coefficients however is identical to the amount of coefficients of its canonical form.
 With increasing size in terms of the amount of included coefficients the numerical error of both the canonical form and the Horner factorisation found by `multivar_horner` grow exponentially (cf. \autoref{fig:num_err_growth}).
-In comparison to the canonical form however the Horner factorisation is much more numerically stable as it has also been visualised in \autoref{fig:num_err_heatmap}.
+However, in comparison to the canonical form, the Horner factorisation is more numerically stable as it has also been visualised in \autoref{fig:num_err_heatmap}.
 
 Even though the amount of operations required for evaluating the polynomials grow exponentially with their size irrespective of the representation, the rate of growth is lower for the Horner factorisation (cf. \autoref{fig:num_ops_growth}).
-Due to this, the bigger the polynomial the more compact the Horner factorisation representation is relative to the canonical form.
 As a result, the Horner factorisations are computationally easier to evaluate.
-
-These results demonstrate the advantages of multivariate Horner factorisations and show their relevance for numerous applications handling large polynomials.
 
 ![amount of operations required to evaluate randomly generated polynomials.\label{fig:num_ops_growth}](../docs/_static/num_ops_growth.png)
 
