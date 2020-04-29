@@ -52,7 +52,6 @@ extensions = [
     'sphinx.ext.viewcode',
     # 'sphinx.ext.pngmath', # math rendering
     # 'sphinx.ext.intersphinx', # to auto  link to other online documentations
-    'sphinxcontrib.bibtex',  # https://sphinxcontrib-bibtex.readthedocs.io/en/latest
     'sphinx.ext.napoleon',  # Numpy style docstring rendering
 ]
 
