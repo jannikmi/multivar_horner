@@ -3,7 +3,6 @@ scrapyard.py
 tmp.py
 
 *.DS_Store
-*.profraw
 *.pytest_cache
 *.pickle
 *.profraw
@@ -11,6 +10,8 @@ playground.py
 
 .idea/
 
+# Sphinx
+docs/_build
 
 # GITIGNORE DEFAULTS
 
