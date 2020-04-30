@@ -182,7 +182,6 @@ if __name__ == "__main__":
     print('the version number has been set to:', version)
     print('=====================')
 
-    # TODO data could contain errors, test before upload
     routine(None, 'Remember to properly specify all supported python versions in publish.py and setup.py')
     routine(None, 'Maybe re-pin the test dependencies (requirements.txt) with pip-compile!'
                   ' Commands are written in the beginning of this script')
@@ -193,6 +192,7 @@ if __name__ == "__main__":
     print('___________')
     print('Running TESTS:')
 
+    # TODO ask
     # routine(VIRT_ENV_COMMAND + "pip-compile requirements_numba.in;pip-sync",
     #      'pinning the requirements.txt and bringing virtualEnv to exactly the specified state:', 'next: build check')
 
@@ -216,7 +216,6 @@ if __name__ == "__main__":
     routine(f'{VIRT_ENV_COMMAND} tox {rebuild_flag} -e codestyle', 'checking syntax, codestyle and imports',
             'run tests')
     routine(f'{VIRT_ENV_COMMAND} tox {rebuild_flag} -e py37', 'run tests')
-
     print('Tests finished.')
 
     routine(None,
@@ -270,4 +269,3 @@ if __name__ == "__main__":
 
     print('______________')
     print('Publishing Done.')
-    print("when the upload didn't work run: python3 setup.py bdist_wheel upload")

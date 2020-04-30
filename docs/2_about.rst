@@ -4,6 +4,8 @@ About
 
 ``multivar_horner`` is a python package implementing a multivariate `Horner scheme ("Horner's method", "Horner's rule") <https://en.wikipedia.org/wiki/Horner%27s_method>`__:cite:`horner1819xxi`  for efficiently evaluating multivariate polynomials.
 
+For an explanation of multivariate Horner factorisations and the terminology used here refer to e.g. `Greedy algorithms for optimizing multivariate Horner schemes <https://dl.acm.org/doi/pdf/10.1145/980175.980179>`__ :cite:`ceberio2004greedy`
+
 A given input polynomial in canonical form (or normal form) is being factorised according to the greedy heuristic described in :cite:`ceberio2004greedy` with some additional computational tweaks.
 The resulting Horner factorisation requires less operations for evaluation and is being computed by growing a "Horner Factorisation Tree".
 When the polynomial is fully factorized (= all leaves cannot be factorised any more), a computational "recipe" for evaluating the polynomial is being compiled.
@@ -108,7 +110,7 @@ This has also been visualised in the following figure:
 Speed tests
 ^^^^^^^^^^^
 
-The following speed benchmarks have been performed on a 15-inch MacBook Pro from 2017 with a 4 core 2,8 GHz Intel Core i7 processor, 16 GB 2133 MHz LPDDR3 RAM and macOS 10.13 High Sierra.
+The following speed benchmarks have been performed on a 2017 MacBook Pro: 4x2,8 GHz Intel Core i7 CPU, 16 GB 2133 MHz LPDDR3 RAM, macOS 10.13 High Sierra.
 The software versions in use were: ``multivar_horner 2.0.0``, ``python 3.8.2``, ``numpy 1.18.1`` and ``numba 0.48.0``
 Both evaluation algorithms (with and without Horner factorisation) make use of ``Numba`` just in time compiled functions.
 
@@ -120,8 +122,8 @@ Both evaluation algorithms (with and without Horner factorisation) make use of `
     testing 100 evenly distributed random polynomials
     average timings per polynomial:
 
-     parameters   |  setup time (/s)                        |  eval time (/s)                      |  # operations                        | lucrative after
-    dim | max_deg | naive      | horner     | delta         | naive      | horner     | delta      | naive      | horner     | delta      |    # evals
+     parameters   |  setup time (s)                         |  eval time (s)                       |  # operations                        | lucrative after
+    dim | max_deg | canonical  | horner     | delta         | canonical  | horner     | delta      | canonical  | horner     | delta      |    # evals
     ================================================================================================================================================================
     1   | 1       | 4.90e-05   | 2.33e-04   | 3.8 x more    | 8.96e-06   | 1.28e-05   | 0.4 x more | 3          | 1          | 2.0 x less | -
     1   | 2       | 5.24e-05   | 1.95e-04   | 2.7 x more    | 3.42e-06   | 6.01e-06   | 0.8 x more | 4          | 2          | 1.0 x less | -

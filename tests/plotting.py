@@ -172,14 +172,14 @@ def run_speed_benchmark():
     print('testing {} evenly distributed random polynomials'.format(NR_SAMPLES_SPEED_TEST))
     print('average timings per polynomial:\n')
 
-    print(' {0:11s}  |  {1:38s} |  {2:35s} |  {3:35s} | {4:20s}'.format('parameters', 'setup time (/s)',
-                                                                        'eval time (/s)',
+    print(' {0:11s}  |  {1:38s} |  {2:35s} |  {3:35s} | {4:20s}'.format('parameters', 'setup time (s)',
+                                                                        'eval time (s)',
                                                                         '# operations', 'lucrative after '))
     template = '{0:3s} | {1:7s} | {2:10s} | {3:10s} | {4:13s} | {5:10s} | {6:10s} | {7:10s} | {8:10s} | ' \
                '{9:10s} | {10:10s} | {11:10s}'
 
-    print(template.format('dim', 'max_deg', 'naive', 'horner', 'delta', 'naive',
-                          'horner', 'delta', 'naive', 'horner', 'delta', '   # evals'))
+    print(template.format('dim', 'max_deg', 'canonical', 'horner', 'delta', 'canonical',
+                          'horner', 'delta', 'canonical', 'horner', 'delta', '   # evals'))
     print('=' * 160)
 
     all_results = []

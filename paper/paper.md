@@ -29,7 +29,7 @@ bibliography: paper.bib
 # Summary
 
 
-Polynomials are a central concept in math and find application a wide range of fields.
+Polynomials are a central concept in mathematics and find application in a wide range of fields.
 Thereby, one often asks for numerically stable and efficient evaluation schemes, which mostly rely on compact representations of (multivariate) polynomials [@LeeFactorization2013; @leiserson2010efficient; @Hecht1].
 
 The `multivar_horner` Python package implements a multivariate Horner scheme ("Horner's method", "Horner's rule") [@horner1819xxi] and thereby allows computing Horner factorisations of multivariate polynomials.
@@ -132,7 +132,7 @@ The [contribution guidelines](https://github.com/MrMinimal64/multivar_horner/blo
 
 # Acknowledgements
 
-Thanks to Michael Hecht and Steve Schmerler for valuable input enabling this publication.
+Thanks to Michael Hecht (Max Planck Institute of Molecular Cell Biology and Genetics) and Steve Schmerler (Helmholtz-Zentrum Dresden-Rossendorf) for valuable input enabling this publication.
 
 
 TODO Reviewer and editor contributions, like any other contributions, should be acknowledged in the repository.

@@ -3,3 +3,4 @@
 numpy>=1.16
 numba>=0.48
 sphinxcontrib-bibtex
+sphinx_rtd_theme

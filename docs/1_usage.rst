@@ -4,50 +4,64 @@
 Usage
 =====
 
-
-
 .. note::
 
-    For a more detailed documentation of all the features please confer to the :ref:`API documentation <api>` or the `code <https://github.com/MrMinimal64/multivar_horner>`__ directly.
+   Also check out the :ref:`API documentation <api>` or the `code <https://github.com/MrMinimal64/multivar_horner>`__.
 
 
+Let's look at the example multivariate polynomial:
 
-Horner factorisation
------------------------------------------------
+:math:`p(x) = 5 + 1 x_1^3 x_2^1 + 2 x_1^2 x_3^1 + 3 x_1^1 x_2^1 x_3^1`
 
 
-to create a representation of a multivariate polynomial in Horner factorisation:
+Which can also be written as:
+
+:math:`p(x) = 5 x_1^0 x_2^0 x_3^0 + 1 x_1^3 x_2^1 x_3^0 + 2 x_1^2 x_2^0 x_3^1 + 3 x_1^1 x_2^1 x_3^1`
+
+A polynomial is a sum of monomials.
+Our example polynomial has :math:`M = 4` monomials and dimensionality :math:`N = 3`.
+
+The coefficients of our example polynomial are: 5.0, 1.0, 2.0, 3.0
+
+The exponent vectors of the corresponding monomials are:
+
+* [0, 0, 0]
+* [3, 1, 0]
+* [2, 0, 1]
+* [1, 1, 1]
+
+To represent polynomials this package requires the coefficients and the exponent vectors as input.
+
 
 .. code-block:: python
 
     import numpy as np
 
-    # input parameters defining the polynomial
-    #   p(x) = 5.0 + 1.0 x_1^3 x_2^1 + 2.0 x_1^2 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
-    #   with...
-    #       dimension N = 3
-    #       amount of monomials M = 4
-    #       max_degree D = 3
-    # NOTE: these data types and shapes are required by the Numba jit compiled functions
     coefficients = np.array([[5.0], [1.0], [2.0], [3.0]], dtype=np.float64)  # numpy (M,1) ndarray
     exponents = np.array([[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=np.uint32)  # numpy (M,N) ndarray
 
-    from multivar_horner.multivar_horner import HornerMultivarPolynomial
 
-    # Horner factorisation:
-    # [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0
-    horner_polynomial = HornerMultivarPolynomial(coefficients, exponents)
+.. note::
 
+    by default the Numba jit compiled functions require these data types and shapes
 
 
 
-pass ``keep_tree=True`` during construction of a Horner factorised polynomial,
-when its factorisation tree should be kept after the factorisation process
+.. _horner_usage:
 
+Horner factorisation
+-----------------------------------------------
+
+
+to create a representation of the multivariate polynomial :math:`p` in Horner factorisation:
 
 .. code-block:: python
 
-    horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, keep_tree=True)
+
+    from multivar_horner.multivar_horner import HornerMultivarPolynomial
+
+    # [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0
+    horner_polynomial = HornerMultivarPolynomial(coefficients, exponents)
 
 
 
@@ -68,10 +82,21 @@ pass ``validate_input=True`` to check if input data is valid (e.g. only non nega
 
 
 
+pass ``keep_tree=True`` during construction of a Horner factorised polynomial,
+when its factorisation tree should be kept after the factorisation process
+(e.g. to be able to compute string representations of the polynomials later on)
+
+
+.. code-block:: python
+
+    horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, keep_tree=True)
+
+
+
 .. _canonical_usage:
 
 canonical form
-----------------------------------------
+--------------
 
 if ...
 
@@ -80,7 +105,7 @@ if ...
 * fast polynomial evaluation is not required or
 * the numerical stability of the evaluation is not important
 
-it is possible to represent the polynomial without any factorisation (in 'canonical form' or 'normal form'):
+it is possible to represent the polynomial without any factorisation (refered to as 'canonical form' or 'normal form'):
 
 .. note::
 
