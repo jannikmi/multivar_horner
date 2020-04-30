@@ -58,10 +58,10 @@ to create a representation of the multivariate polynomial :math:`p` in Horner fa
 .. code-block:: python
 
     from multivar_horner.multivar_horner import HornerMultivarPolynomial
-
-    # [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0
     horner_polynomial = HornerMultivarPolynomial(coefficients, exponents)
 
+
+the found factorisation is :math:`p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0`.
 
 
 pass ``rectify_input=True`` to automatically try converting the input to the required ``numpy`` data structures
@@ -131,7 +131,6 @@ in order to compile a string representation of a polynomial pass ``compute_repre
     the number in square brackets indicates the number of mathematical operations (ADD, MUL, POW) required
     to evaluate the polynomial.
 
-
 .. code-block:: python
 
     polynomial = MultivarPolynomial(coefficients, exponents)
@@ -140,7 +139,7 @@ in order to compile a string representation of a polynomial pass ``compute_repre
     polynomial = MultivarPolynomial(coefficients, exponents, compute_representation=True)
     print(polynomial)
     # [#ops=27] p(x) = 5.0 x_1^0 x_2^0 x_3^0 + 1.0 x_1^3 x_2^1 x_3^0 + 2.0 x_1^2 x_2^0 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
-    
+
     horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, compute_representation=True)
     print(horner_polynomial.representation)
     # [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0
