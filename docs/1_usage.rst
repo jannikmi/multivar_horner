@@ -128,8 +128,8 @@ in order to compile a string representation of a polynomial pass ``compute_repre
 
 .. note::
 
-    the number in square brackets indicates the number of operations required
-    to evaluate the polynomial (ADD, MUL, POW).
+    the number in square brackets indicates the number of mathematical operations (ADD, MUL, POW) required
+    to evaluate the polynomial.
 
 
 .. code-block:: python
@@ -140,7 +140,10 @@ in order to compile a string representation of a polynomial pass ``compute_repre
     polynomial = MultivarPolynomial(coefficients, exponents, compute_representation=True)
     print(polynomial)
     # [#ops=27] p(x) = 5.0 x_1^0 x_2^0 x_3^0 + 1.0 x_1^3 x_2^1 x_3^0 + 2.0 x_1^2 x_2^0 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
-
+    
+    horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, compute_representation=True)
+    print(horner_polynomial.representation)
+    # [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0
 
 
 the formatting of the string representation can be changed with the parameters ``coeff_fmt_str`` and ``factor_fmt_str``:

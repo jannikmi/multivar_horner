@@ -49,9 +49,8 @@ In the multivariate case however the factorisation is ambiguous as there are mul
 The key functionality of `multivar_horner` is finding a good instance among the many possible Horner factorisations of a multivariate polynomial.
 
 Let's consider the the example multivariate polynomial $p(x) = 5 + 1 x_1^3 x_2^1 + 2 x_1^2 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
-The polynomial $p$ is the sum of $5$ monomials and has dimensionality $3$.
-$p$ can also be written as $p(x) = 5 x_1^0 x_2^0 x_3^0 + 1 x_1^3 x_2^1 x_3^0 + 2 x_1^2 x_2^0 x_3^1 + 3 x_1^1 x_2^1 x_3^1$
-The coefficients of the monomials are 5, 1, 2 and 3.
+The polynomial $p$ is the sum of $5$ monomials, has dimensionality $3$ and can also be written as $p(x) = 5 x_1^0 x_2^0 x_3^0 + 1 x_1^3 x_2^1 x_3^0 + 2 x_1^2 x_2^0 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
+The coefficients of the monomials are 5, 1, 2 and 3 respectively.
 
 ``multivar_horner`` allows to find a Horner factorisation of $p$ and to evaluate $p$ at a point $x$:
 
