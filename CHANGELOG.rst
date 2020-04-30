@@ -29,6 +29,7 @@ internal:
 * added typing
 * adjusted publishing routine
 * testing multiple python versions
+* using the specific tags of the supported python version for the build wheels
 
 
 1.3.0 (2020-03-14)

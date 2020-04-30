@@ -83,7 +83,8 @@ VERSION_FILE = 'VERSION'
 VIRT_ENV_NAME = 'py37Env'
 VIRT_ENV_COMMAND = f'. ~/miniconda3/etc/profile.d/conda.sh; conda activate {VIRT_ENV_NAME}; '
 PY_VERSION_IDS = ['36', '37', '38']  # the supported python versions to create wheels for
-PYTHON_TAG = '.'.join([f'py{v}'for v in PY_VERSION_IDS])
+PYTHON_TAG = '.'.join([f'py{v}' for v in PY_VERSION_IDS])
+
 
 # TODO not required, set version in version file
 def get_version():
@@ -182,13 +183,12 @@ if __name__ == "__main__":
     print('=====================')
 
     # TODO data could contain errors, test before upload
-    routine(None, 'Remember to list all relevant importable objects in __all__ variable in __init__.py!')
-    routine(None,
-            'Maybe re-pin the test dependencies (requirements.txt) with pip-compile!'
-            ' Commands are written in the beginning of this script')
-    routine(None, 'Are all pinned dependencies written in setup.py and the Documentation?')
-    routine(None, 'Are all (new) features documented? (documentation, example.py)')
-    routine(None, 'Remember to write a changelog now for version %s' % version)
+    routine(None, 'Remember to properly specify all supported python versions in publish.py and setup.py')
+    routine(None, 'Maybe re-pin the test dependencies (requirements.txt) with pip-compile!'
+                  ' Commands are written in the beginning of this script')
+    routine(None, 'Have all pinned dependencies been listed in setup.py and the Documentation?', )
+    routine(None, 'Have all (new) features been documented?')
+    routine(None, f'Remember to write a changelog now for version {version}')
 
     print('___________')
     print('Running TESTS:')
@@ -196,7 +196,7 @@ if __name__ == "__main__":
     # routine(VIRT_ENV_COMMAND + "pip-compile requirements_numba.in;pip-sync",
     #      'pinning the requirements.txt and bringing virtualEnv to exactly the specified state:', 'next: build check')
 
-    routine(VIRT_ENV_COMMAND + "rstcheck *.rst", 'checking syntax of all .rst files:', 'test codestyle')
+    routine(f'{VIRT_ENV_COMMAND} rstcheck *.rst', 'checking syntax of all .rst files:', 'next: build check')
 
     print('generating documentation now...')
     os.system('(cd ./docs && exec make html)')
@@ -209,21 +209,20 @@ if __name__ == "__main__":
     try:
         inp = int(input())
         if inp == 1:
-            rebuild_flag = ' -r'
+            rebuild_flag = '-r'
     except ValueError:
         pass
 
-    # routine(VIRT_ENV_COMMAND + "tox" + rebuild_flag, 'checking syntax, codestyle and imports', 'continue')
     routine(f'{VIRT_ENV_COMMAND} tox {rebuild_flag} -e codestyle', 'checking syntax, codestyle and imports',
             'run tests')
-    routine(f'{VIRT_ENV_COMMAND} tox {rebuild_flag}  -e py37', 'build tests py3')
+    routine(f'{VIRT_ENV_COMMAND} tox {rebuild_flag} -e py37', 'run tests')
 
     print('Tests finished.')
 
     routine(None,
             'Please commit your changes, push and wait if Travis tests build successfully. '
             'Only then merge them into the master.',
-            'Build successful. Publish and upload now.')
+            'CI tests passed & merge into master complete. Build and upload now.')
 
     # TODO do this automatically, problem are the commit messages <- often the same as changelog!
     # git commit --message
@@ -244,12 +243,11 @@ if __name__ == "__main__":
     # routine("python3 setup.py sdist bdist_wheel upload", 'Uploading the package now.') # deprecated
     # new twine publishing routine:
     # https://packaging.python.org/tutorials/packaging-projects/
-	
-    routine(f"python setup.py sdist bdist_wheel --python-tag {PYTHON_TAG}", 'building the package now.')
-	
+    # delete the build folder before to get a fresh build
+    routine(f"rm -r -f build; python setup.py sdist bdist_wheel --python-tag {PYTHON_TAG}", 'building the package now.',
+            'build done. check the included files! test uploading.')
 
-    # path = abspath(join(__file__, pardir, 'dist')) # TODO
-    path = abspath(join(pardir, 'dist'))
+    path = abspath(join(__file__, pardir, 'dist'))
     all_archives_this_version = [f for f in os.listdir(path) if isfile(join(path, f)) and version_str in f]
     paths2archives = [abspath(join(path, f)) for f in all_archives_this_version]
     command = "twine upload --repository-url https://test.pypi.org/legacy/ " + ' '.join(paths2archives)
