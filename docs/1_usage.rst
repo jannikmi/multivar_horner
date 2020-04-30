@@ -57,7 +57,6 @@ to create a representation of the multivariate polynomial :math:`p` in Horner fa
 
 .. code-block:: python
 
-
     from multivar_horner.multivar_horner import HornerMultivarPolynomial
 
     # [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0
@@ -263,6 +262,11 @@ or
     p_x = polynomial.eval(x)  # -29.0
 
 
+or
+
+.. code-block:: python
+    x = [-2.0, 3.0, 1.0]
+    p_x = polynomial.eval(x, validate_input=True) # -29.0
 
 
 

@@ -17,7 +17,7 @@ Installation with pip:
 Basics
 ------
 
-Let's look at the example multivariate polynomial:
+Let's consider this example multivariate polynomial:
 
 :math:`p(x) = 5 + 1 x_1^3 x_2^1 + 2 x_1^2 x_3^1 + 3 x_1^1 x_2^1 x_3^1`
 

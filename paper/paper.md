@@ -47,13 +47,29 @@ Accordingly the package presented here can be helpful always when (multivariate)
 In one dimension there is only a single possible Horner factorisation of a polynomial.
 In the multivariate case however the factorisation is ambiguous as there are multiple possible factors to factorise with.
 The key functionality of `multivar_horner` is finding a good instance among the many possible Horner factorisations of a multivariate polynomial.
+
+Let's consider the the example multivariate polynomial $p(x) = 5 + 1 x_1^3 x_2^1 + 2 x_1^2 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
+The polynomial $p$ is the sum of $5$ monomials and has dimensionality $3$.
+$p$ can also be written as $p(x) = 5 x_1^0 x_2^0 x_3^0 + 1 x_1^3 x_2^1 x_3^0 + 2 x_1^2 x_2^0 x_3^1 + 3 x_1^1 x_2^1 x_3^1$
+The coefficients of the monomials are 5, 1, 2 and 3.
+
+``multivar_horner`` allows to find a Horner factorisation of $p$ and to evaluate $p$ at a point $x$:
+
+```python
+from multivar_horner import HornerMultivarPolynomial
+coefficients = [5.0, 1.0, 2.0, 3.0]
+exponents = [[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]]
+p = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True)
+x = [-2.0, 3.0, 1.0]
+p_x = p.eval(x, validate_input=True)
+```
+
+The found factorisation is $p(x) = x_1^1 (x_1^1 (x_1^1 (1 x_2^1) + 2 x_3^1) + 3 x_2^1 x_3^1) + 5$.
+
 This is achieved by recursively factorising with respect to the most commonly used factor in all monomials (greedy heuristic described in [@greedyHorner]).
 When no leaves of the resulting binary "Horner Factorisation Tree" can be factorised any more, a computational "recipe" for evaluating the polynomial is being compiled.
 This recipe encodes all operations required to evaluate the polynomial in numpy arrays [@numpy].
 Functions just in time compiled by Numba [@numba] enable computationally efficient polynomial evaluation.
-
-
-
 
 
 # Degrees of multivariate polynomials
