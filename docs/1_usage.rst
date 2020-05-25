@@ -1,4 +1,3 @@
-.. _usage:
 
 =====
 Usage
@@ -267,6 +266,7 @@ or
 or
 
 .. code-block:: python
+
     x = [-2.0, 3.0, 1.0]
     p_x = polynomial.eval(x, validate_input=True) # -29.0
 

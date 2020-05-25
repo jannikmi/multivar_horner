@@ -258,14 +258,6 @@ if __name__ == "__main__":
     routine(VIRT_ENV_COMMAND + command, 'real upload to PyPI.')
 
     # tag erstellen
-    # TODO add option to skip
     routine(None, 'Do you want to create a git release tag?', 'Yes', 'No')
-
-    routine(f"git tag -a v{version} -m 'Version {version}'", 'Creating tag', 'Continue')
-
-    routine(None, 'Do you want to push the git release tag?', 'Yes', 'No')
-    # in den master pushen
-    os.system("git push --tags")
-
-    print('______________')
-    print('Publishing Done.')
+    routine(f"git tag -a v{version} -m 'Version {version}'; git push --tags", 'Creating tag')
+    print(f'______________\nCongrats! Published version {version}.')
