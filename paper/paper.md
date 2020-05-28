@@ -48,9 +48,9 @@ In one dimension there is only a single possible Horner factorisation of a polyn
 In the multivariate case however the factorisation is ambiguous as there are multiple possible factors to factorise with.
 The key functionality of `multivar_horner` is finding a good instance among the many possible Horner factorisations of a multivariate polynomial.
 
-Let's consider the the example multivariate polynomial $p(x) = 5 + 1 x_1^3 x_2^1 + 2 x_1^2 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
+Let's consider the example multivariate polynomial $p(x) = 5 + 1 x_1^3 x_2^1 + 2 x_1^2 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
 The polynomial $p$ is the sum of $5$ monomials, has dimensionality $3$ and can also be written as $p(x) = 5 x_1^0 x_2^0 x_3^0 + 1 x_1^3 x_2^1 x_3^0 + 2 x_1^2 x_2^0 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
-The coefficients of the monomials are 5, 1, 2 and 3 respectively.
+The coefficients of the monomials are $5$, $1$, $2$ and $3$ respectively.
 
 ``multivar_horner`` allows to find a Horner factorisation of $p$ and to evaluate $p$ at a point $x$:
 
@@ -65,8 +65,9 @@ p_x = p.eval(x, validate_input=True)
 
 The found factorisation is $p(x) = x_1^1 (x_1^1 (x_1^1 (1 x_2^1) + 2 x_3^1) + 3 x_2^1 x_3^1) + 5$.
 
-This is achieved by recursively factorising with respect to the most commonly used factor in all monomials (greedy heuristic described in [@greedyHorner]).
-When no leaves of the resulting binary "Horner Factorisation Tree" can be factorised any more, a computational "recipe" for evaluating the polynomial is being compiled.
+This is achieved by recursively factorising with respect to the factor most commonly used in all monomials.
+This approach equals the greedy heuristic described in [@greedyHorner].
+When no leaves of the resulting binary "Horner Factorisation Tree" can be factorised any more, a "recipe" for evaluating the polynomial is being compiled.
 This recipe encodes all operations required to evaluate the polynomial in numpy arrays [@numpy].
 Functions just in time compiled by Numba [@numba] enable computationally efficient polynomial evaluation.
 
@@ -123,8 +124,8 @@ As a result, the Horner factorisations are computationally easier to evaluate.
 The package has been created due to the recent advances in multivariate polynomial interpolation [@Hecht1; @Hecht2].
 High dimensional interpolants of large degrees create the demand for evaluating multivariate polynomials computationally efficient and numerically stable.
 Among others, these advances enable modeling the behaviour of (physical) systems with polynomials.
-Obtaining such an analytical, multidimensional and nonlinear representation of a system opens up many possibilities.
-With so called "Response Surface Methods"[@michelfeitresponse] for example a system can be analysed and optimised.
+Obtaining an analytical, multidimensional and nonlinear representation of a system opens up many possibilities.
+With so called "interpolation response surface methods"[@michelfeitresponse] for example a system can be analysed and optimised.
 
 Instead of using a heuristic to choose the next factor, one can allow a search over all possible Horner factorisations in order to arrive at a minimal factorisation.
 The amount of possible factorisations, however, is increasing exponentially with the degree and dimensionality of a polynomial (the amount of monomials).
@@ -136,7 +137,7 @@ This approach, which is similar to the branch-and-bound method suggested in [@ko
 
 In [@kuipers2013improving] Monte Carlo tree search has been used to find more performant factorisations than with greedy heuristics.
 
-Other representations of polynomials are being specified in [@LeeFactorization2013] and [@leiserson2010efficient].
+Other beneficial representations of polynomials are for example being specified in [@LeeFactorization2013] and [@leiserson2010efficient].
 
 
 # Further reading
