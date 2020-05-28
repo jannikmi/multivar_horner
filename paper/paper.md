@@ -28,7 +28,6 @@ bibliography: paper.bib
 
 # Summary
 
-
 Polynomials are a central concept in mathematics and find application in a wide range of fields.
 Thereby, one often asks for numerically stable and efficient evaluation schemes, which mostly rely on compact representations of (multivariate) polynomials [@LeeFactorization2013; @leiserson2010efficient; @Hecht1].
 
@@ -38,8 +37,9 @@ The Horner factorisation is more compact in the sense that it requires less math
 Consequently, evaluating a multivariate polynomial in Horner factorisation is faster and numerically more stable [@pena2000multivariate; @pena2000multivariate2; @greedyHorner] (cf. \autoref{fig:num_err_growth}).
 These advantages come at the cost of an initial computational effort required to find the factorisation.
 
-Accordingly the package presented here can be helpful always when (multivariate) polynomials have to be evaluated efficiently, the numerical error has to be small or a compact representation of the polynomial is required.
-
+Accordingly the package presented here can be helpful always when (multivariate) polynomials have to be evaluated efficiently, the numerical error of the polynomial evaluation has to be small or a compact representation of the polynomial is required.
+This holds true for many applications applying numerical analysis.
+One example use case where this package is already being employed are novel response surface methods [@michelfeitresponse] based on multivariate Netwon interploation [@Hecht1].
 
 
 # Functionality
@@ -122,6 +122,9 @@ As a result, the Horner factorisations are computationally easier to evaluate.
 
 The package has been created due to the recent advances in multivariate polynomial interpolation [@Hecht1; @Hecht2].
 High dimensional interpolants of large degrees create the demand for evaluating multivariate polynomials computationally efficient and numerically stable.
+Among others, these advances enable modeling the behaviour of (physical) systems with polynomials.
+Obtaining such an analytical, multidimensional and nonlinear representation of a system opens up many possibilities.
+With so called "Response Surface Methods"[@michelfeitresponse] for example a system can be analysed and optimised.
 
 Instead of using a heuristic to choose the next factor, one can allow a search over all possible Horner factorisations in order to arrive at a minimal factorisation.
 The amount of possible factorisations, however, is increasing exponentially with the degree and dimensionality of a polynomial (the amount of monomials).

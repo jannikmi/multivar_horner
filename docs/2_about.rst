@@ -196,9 +196,8 @@ Tell me if and how your are using this package. This encourages me to develop an
 Most certainly there is stuff I missed, things I could have optimized even further or explained more clearly, etc.
 I would be really glad to get some feedback.
 
-If you encounter any bugs, have suggestions etc.
-do not hesitate to **open an Issue** or **add a Pull Requests** on Git.
-
+If you encounter any bugs, have suggestions etc. do not hesitate to **open an Issue** or **add a Pull Requests** on Git.
+Please refer to the :ref:`contribution guidelines <contributing>`
 
 
 Acknowledgements

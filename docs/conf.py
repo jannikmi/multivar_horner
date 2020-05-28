@@ -14,16 +14,12 @@ import os
 import sys
 
 # Get the project root dir, which is the parent dir of this
-# project_root = os.path.abspath('..')
-# sys.path.insert(0, project_root)
 
-# TODO
 cwd = os.getcwd()
 project_root = os.path.dirname(cwd)
 
 # Insert the project root dir as the first element in the PYTHONPATH.
-# This lets us ensure that the source package is imported, and that its
-# version is used.
+# This ensures that the source package is importable
 sys.path.insert(0, os.path.join(project_root))
 
 import multivar_horner  # needed for auto document, ATTENTION: must then be installed during online build!
@@ -31,7 +27,7 @@ import multivar_horner  # needed for auto document, ATTENTION: must then be inst
 # -- Project information -----------------------------------------------------
 
 project = 'multivar_horner'
-copyright = '2018-2020, Jannik Michelfeit'
+copyright = '2018, Jannik Michelfeit'
 author = 'Jannik Michelfeit'
 
 
