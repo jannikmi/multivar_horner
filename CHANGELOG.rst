@@ -5,9 +5,9 @@ Changelog
 2.0.0 (2020-04-28)
 __________________
 
+* BUGFIX: factor evaluation optimisation caused errors in rare cases. this optimisation has been removed completely. every factor occurring in a factorisation is being evaluated independently now. this simplifies the factorisation process. the concept of "Goedel ID" (=unique encoding using prime numbers) is not required any more
 * ATTENTION: changed polynomial degree class attribute names to comply with naming conventions of the scientific literature
 * added __call__ method for evaluating a polynomial in a simplified notation v=p(x)
-* factor evaluation is not being optimised any more, simplifies polynomial construction, the concept of Goedel ID not required any more
 * fixed dependencies to: ``numpy>=1.16``, ``numba>=0.48``
 * clarified docstrings (using Google style)
 * more verbose error messages during input verification
