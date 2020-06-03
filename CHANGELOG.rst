@@ -6,12 +6,12 @@ Changelog
 __________________
 
 * ATTENTION: changed polynomial degree class attribute names to comply with naming conventions of the scientific literature
-* added __call__ method for evaluating a polynomial in a simplified notation v=p(x)
+* added __call__ method for evaluating a polynomial in a simplified notation ``v=p(x)``
 * factor evaluation is not being optimised any more, simplifies polynomial construction, the concept of Goedel ID not required any more
 * fixed dependencies to: ``numpy>=1.16``, ``numba>=0.48``
 * clarified docstrings (using Google style)
 * more verbose error messages during input verification
-* split up requirements.txt (into basic dependencies and test dependencies)
+* split up ``requirements.txt`` (into basic dependencies and test dependencies)
 * added sphinx documentation
 * updated benchmark results
 
@@ -19,28 +19,29 @@ tests:
 
 * added test for numerical stability
 * added plotting features for evaluating the numerical stability
-* added tests comparing functionality to 1D numpy polynomials
+* added tests comparing functionality to 1D ``numpy`` polynomials
 * added tests comparing functionality to naive polynomial evaluation
 * added basic API functionality test
 
 internal:
 
-* added class AbstractPolynomial
+* added class ``AbstractPolynomial``
 * added typing
 * adjusted publishing routine
 * testing multiple python versions
 * using the specific tags of the supported python version for the build wheels
+* removed ``example.py``
 
 
 1.3.0 (2020-03-14)
 __________________
 
 
-* NEW FEATURE: changing coefficients on the fly with `poly.change_coefficients(coeffs)`
-* NEW DEPENDENCY: python3.6+ (for using f'' format strings)
+* NEW FEATURE: changing coefficients on the fly with ``poly.change_coefficients(coeffs)``
+* NEW DEPENDENCY: ``python3.6+`` (for using f'' format strings)
 * the real valued coefficients are now included in the string representation of a factorised polynomial
 * add contribution guidelines
-* added instructions in readme, example.py
+* added instructions in readme, ``example.py``
 * restructured the factorisation routine (simplified, clean up)
 * extended tests
 
