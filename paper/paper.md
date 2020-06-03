@@ -33,7 +33,7 @@ Polynomials are a central concept in mathematics and find application in a wide 
 
 
 The so called Horner factorisation is such a representation with beneficial properties.
-Compared to the canonical (unfactorised) form, this representation offers some important advantages.
+Compared to the unfactorised representation of a multivariate polynomial, in the following called "canonical form", this representation offers some important advantages.
 First of all the Horner factorisation is more compact in the sense that it requires less mathematical operations in order to evaluate the polynomial (cf. \autoref{fig:num_ops_growth}).
 Consequently, evaluating a multivariate polynomial in Horner factorisation is faster and numerically more stable [@pena2000multivariate; @pena2000multivariate2; @greedyHorner] (cf. \autoref{fig:num_err_growth}).
 These advantages come at the cost of an initial computational effort required to find the factorisation.
@@ -52,14 +52,13 @@ In the following the key functionality of this package is being outlined.
 For a more details on polynomials and Horner factorisations please refer to the literature, e.g. [@neumaier2001introduction].
 
 A polynomial in canonical form is a sum of monomials.
-For univariate polynomials in canonical form $f(x) = a_0 + a_1 x + a_2 x^2 + ... + a_d x^d$ the Horner factorisation is unique: $f(x) = a_0 + x ( a_1 + x( ... x (a_d) ... )$
-In the multivariate case however the factorisation is ambiguous as there are multiple possible factors to factorise with.
+For a univariate polynomial, which can be written as $f(x) = a_0 + a_1 x + a_2 x^2 + ... + a_d x^d$ (canonical form), the Horner factorisation is unique: $f(x) = a_0 + x ( a_1 + x( ... x (a_d) ... )$
+In the multivariate case however the factorisation is ambiguous, as there are multiple possible factors to factorise with.
+The key functionality of `multivar_horner` is finding a good instance among the many possible Horner factorisations of a multivariate polynomial.
 
 Let's consider the example multivariate polynomial in canonical form $p(x) = 5 + 1 x_1^3 x_2^1 + 2 x_1^2 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
 The polynomial $p$ is the sum of $5$ monomials, has dimensionality $3$ and can also be written as $p(x) = 5 x_1^0 x_2^0 x_3^0 + 1 x_1^3 x_2^1 x_3^0 + 2 x_1^2 x_2^0 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
 The coefficients of the monomials are $5$, $1$, $2$ and $3$ respectively.
-
-The key functionality of `multivar_horner` is finding a good instance among the many possible Horner factorisations of a multivariate polynomial.
 The following code snipped shows how to use ``multivar_horner`` for computing a Horner factorisation of $p$ and evaluating $p$ at a point $x$:
 
 ```python
@@ -137,40 +136,34 @@ Among others, these advances enable modeling the behaviour of (physical) systems
 Obtaining an analytical, multidimensional and nonlinear representation of a system opens up many possibilities.
 With so called "interpolation response surface methods"[@michelfeitresponse] for example a system can be analysed and optimised.
 
-Instead of using a heuristic to choose the next factor, one can allow a search over all possible Horner factorisations in order to arrive at a minimal factorisation.
-The amount of possible factorisations, however, is increasing exponentially with the degree and dimensionality of a polynomial (the amount of monomials).
-One possibility to avoid computing each factorisation is to employ a version of A-star search [@hart1968formal] adapted for factorisation trees.
-This approach, which is similar to the branch-and-bound method suggested in [@kojima2008efficient, ch. 3.1], has been implemented by `multivar_horner`.
-
-
-[@carnicer1990evaluation] shows how factorisation trees can be used to evaluate multivariate polynomials and their derivatives.
-
-In [@kuipers2013improving] Monte Carlo tree search has been used to find more performant factorisations than with greedy heuristics.
-
-Other beneficial representations of polynomials are for example being specified in [@LeeFactorization2013] and [@leiserson2010efficient].
-
-
 [NumPy](https://numpy.org/doc/stable/reference/routines.polynomials.polynomial.html) [@numpy] offers functionality to represent and manipulate polynomials of dimensionality up to 3.
-
 SymPy offers the dedicated module [sympy.polys](https://docs.sympy.org/latest/modules/polys/index.html) for symbolically operating with polynomials.
-
 [Sage](https://doc.sagemath.org/html/en/reference/polynomial_rings/index.html) covers the algebraic side of polynomials.
+The Julia package [StaticPolynomials](https://github.com/JuliaAlgebra/StaticPolynomials.jl) has a similar functionality, but it does not support computing Horner factorisations.
 
 `multivar_horner` has no functions to directly interoperate with other software packages.
 The generality of the required input parameters however still ensures the compatibility with other approaches.
-It is for example easy to manipulate a polynomial with other libraries and then factorise the resulting output polynomial with `multivar_horner` afterwards by simply transferring coefficients and exponents.
+It is for example easy to manipulate a polynomial with other libraries and then compute the Horner factorisation representation of the resulting output polynomial with `multivar_horner` afterwards, by simply transferring coefficients and exponents.
 Some intermediary operations to convert the parameters into the required format might be necessary.
 
-
-The Julia package [StaticPolynomials](https://github.com/JuliaAlgebra/StaticPolynomials.jl) has a similar functionality, but it does not support computing Horner factorisations.
 
 # Further reading
 
 The documentation of the package is hosted on [readthedocs.io](https://multivar_horner.readthedocs.io/en/latest/).
-
 Any bugs or feature requests can be issued on [GitHub](https://github.com/MrMinimal64/multivar_horner/issues) [@github].
 The [contribution guidelines](https://github.com/MrMinimal64/multivar_horner/blob/master/CONTRIBUTING.rst) can be found there as well.
 
+The underlying basic mathematical concepts are being explained in numerical analysis text books like [@neumaier2001introduction].
+The Horner scheme at the core of `multivar_horner` has been theoretically outlined in [@greedyHorner].
+
+Instead of using a heuristic to choose the next factor, one can allow a search over all possible Horner factorisations in order to arrive at a minimal factorisation.
+The amount of possible factorisations, however, is increasing exponentially with the degree and dimensionality of a polynomial (the amount of monomials).
+One possibility to avoid computing each factorisation is to employ a version of A-star search [@hart1968formal] adapted for factorisation trees.
+`multivar_horner` also implements this approach, which is similar to the branch-and-bound method suggested in [@kojima2008efficient, ch. 3.1].
+
+[@carnicer1990evaluation] shows how factorisation trees can be used to evaluate multivariate polynomials and their derivatives.
+In [@kuipers2013improving] Monte Carlo tree search has been used to find more performant factorisations than with greedy heuristics.
+Other beneficial representations of polynomials are for example being specified in [@LeeFactorization2013] and [@leiserson2010efficient].
 
 
 # Acknowledgements
