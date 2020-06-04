@@ -75,5 +75,5 @@ With the class ``MultivarPolynomial`` a polynomial can be represented in :ref:`c
 
 All available features of this package are explained :ref:`HERE <usage>`.
 
-The API documentation can be fround :ref:`HERE <api>`.
+The API documentation can be found :ref:`HERE <api>`.
 
