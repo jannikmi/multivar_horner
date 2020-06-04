@@ -7,15 +7,12 @@ multivar_horner
 .. image:: https://travis-ci.org/MrMinimal64/multivar_horner.svg?branch=master
     :target: https://travis-ci.org/MrMinimal64/multivar_horner
 
-
 .. image:: https://img.shields.io/pypi/wheel/multivar-horner.svg
     :target: https://pypi.python.org/pypi/multivar-horner
-
 
 .. image:: https://pepy.tech/badge/multivar-horner
     :alt: Total PyPI downloads
     :target: https://pepy.tech/project/multivar-horner
-
 
 .. image:: https://img.shields.io/pypi/v/multivar_horner.svg
     :alt: latest version on PyPI

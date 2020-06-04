@@ -2,6 +2,22 @@
 About
 =====
 
+
+.. image:: https://travis-ci.org/MrMinimal64/multivar_horner.svg?branch=master
+    :target: https://travis-ci.org/MrMinimal64/multivar_horner
+
+.. image:: https://img.shields.io/pypi/wheel/multivar-horner.svg
+    :target: https://pypi.python.org/pypi/multivar-horner
+
+.. image:: https://pepy.tech/badge/multivar-horner
+    :alt: Total PyPI downloads
+    :target: https://pepy.tech/project/multivar-horner
+
+.. image:: https://img.shields.io/pypi/v/multivar_horner.svg
+    :alt: latest version on PyPI
+    :target: https://pypi.python.org/pypi/multivar-horner
+
+
 ``multivar_horner`` is a python package implementing a multivariate `Horner scheme ("Horner's method", "Horner's rule") <https://en.wikipedia.org/wiki/Horner%27s_method>`__:cite:`horner1819xxi`  for efficiently evaluating multivariate polynomials.
 
 For an explanation of multivariate Horner factorisations and the terminology used here refer to e.g. `Greedy algorithms for optimizing multivariate Horner schemes <https://dl.acm.org/doi/pdf/10.1145/980175.980179>`__ :cite:`ceberio2004greedy`
