@@ -39,7 +39,7 @@ Consequently, evaluating a multivariate polynomial in Horner factorisation is fa
 These advantages come at the cost of an initial computational effort required to find the factorisation.
 
 The `multivar_horner` Python package implements a multivariate Horner scheme ("Horner's method", "Horner's rule") [@horner1819xxi] and thereby allows computing Horner factorisations of multivariate polynomials given in canonical form.
-Representing multivariate polynomials or arbitrary degree also in canonical form, computing derivatives of polynomials and evaluating polynomials at a given point are further features of the package.
+Representing multivariate polynomials of arbitrary degree also in canonical form, computing derivatives of polynomials and evaluating polynomials at a given point are further features of the package.
 Accordingly the package presented here can be helpful always when (multivariate) polynomials have to be evaluated efficiently, the numerical error of the polynomial evaluation has to be small or a compact representation of the polynomial is required.
 This holds true for many applications applying numerical analysis.
 One example use case where this package is already being employed are novel response surface methods [@michelfeitresponse] based on multivariate Netwon interploation [@Hecht1].
@@ -59,6 +59,9 @@ The key functionality of `multivar_horner` is finding a good instance among the 
 Let's consider the example multivariate polynomial in canonical form $p(x) = 5 + 1 x_1^3 x_2^1 + 2 x_1^2 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
 The polynomial $p$ is the sum of $5$ monomials, has dimensionality $3$ and can also be written as $p(x) = 5 x_1^0 x_2^0 x_3^0 + 1 x_1^3 x_2^1 x_3^0 + 2 x_1^2 x_2^0 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
 The coefficients of the monomials are $5$, $1$, $2$ and $3$ respectively.
+It is trivial but computationally expensive to represent this kind of formulation with matrices and vectors and to evaluate it in this way.
+In this particular case for example a polynomial evaluation would require 27 operations.
+Due to its simplicity this kind of formulation is being used for defining multivariate polynomials as input.
 The following code snipped shows how to use ``multivar_horner`` for computing a Horner factorisation of $p$ and evaluating $p$ at a point $x$:
 
 ```python
@@ -71,7 +74,7 @@ x = [-2.0, 3.0, 1.0]
 p_x = p.eval(x, validate_input=True) # -29.0
 ```
 
-The factorisation computed by ``multivar_horner`` is $p(x) =  x_1 (x_1 (x_1 (1 x_2) + 2 x_3) + 3 x_2 x_3) + 5$.
+The factorisation computed by ``multivar_horner`` is $p(x) =  x_1 (x_1 (x_1 (1 x_2) + 2 x_3) + 3 x_2 x_3) + 5$ and requires 10 operations for every polynomial evaluation.
 
 This is achieved by recursively factorising with respect to the factor most commonly used in all monomials.
 When no leaves of the resulting binary "Horner Factorisation Tree" can be factorised any more, a "recipe" for evaluating the polynomial is being compiled.
@@ -142,7 +145,7 @@ SymPy offers the dedicated module [sympy.polys](https://docs.sympy.org/latest/mo
 The Julia package [StaticPolynomials](https://github.com/JuliaAlgebra/StaticPolynomials.jl) has a similar functionality, but it does not support computing Horner factorisations.
 
 `multivar_horner` has no functions to directly interoperate with other software packages.
-The generality of the required input parameters however still ensures the compatibility with other approaches.
+The generality of the required input parameters (coefficients and exponents) however still ensures the compatibility with other approaches.
 It is for example easy to manipulate a polynomial with other libraries and then compute the Horner factorisation representation of the resulting output polynomial with `multivar_horner` afterwards, by simply transferring coefficients and exponents.
 Some intermediary operations to convert the parameters into the required format might be necessary.
 
