@@ -5,7 +5,7 @@ import sys
 import numpy as np
 
 from multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
-from multivar_horner.global_settings import UINT_DTYPE
+from multivar_horner.global_settings import UINT_DTYPE, FLOAT_DTYPE
 from tests.test_settings import MAX_COEFF_MAGNITUDE, MAX_NUMERICAL_ERROR, NR_COEFF_CHANGES, NR_TEST_POLYNOMIALS
 
 
@@ -98,7 +98,7 @@ def all_possible_exponents(dim, deg):
     #     all_possible[i] = cntr2exp_vect(i)
 
     for i, exponents in enumerate(itertools.product(range(deg + 1), repeat=dim)):
-        all_possible[i] = exponents
+        all_possible[i] = np.asarray(exponents)
 
     # there must not be duplicate exponent vectors
     assert all_possible.shape == np.unique(all_possible, axis=0).shape
@@ -139,7 +139,7 @@ def evaluate_numerical_error(dim, max_degree):
     # basic idea: evaluating a polynomial at x = all 1 should give the sum of coefficients
     # -> any deviation is the numerical error
     results = []
-    x = np.ones(dim, dtype=np.float)
+    x = np.ones(dim, dtype=FLOAT_DTYPE)
     max_error = 0.0
     ctr_total = 0
     ctr_total_max = NR_TEST_POLYNOMIALS * NR_COEFF_CHANGES

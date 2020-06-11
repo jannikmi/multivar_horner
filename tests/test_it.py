@@ -19,7 +19,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from multivar_horner.global_settings import UINT_DTYPE
+from multivar_horner.global_settings import UINT_DTYPE, FLOAT_DTYPE
 from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 # settings for numerical stability tests
 from tests.test_helpers import evaluate_numerical_error, naive_eval_reference, proto_test_case, vectorize
@@ -39,8 +39,8 @@ class MainTest(unittest.TestCase):
         :return:
         """
         print('\nTESTING COSNTRUCTION API...')
-        coefficients = np.array([[5.0], [1.0], [2.0], [3.0]], dtype=np.float64)
-        exponents = np.array([[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=np.uint32)
+        coefficients = np.array([[5.0], [1.0], [2.0], [3.0]], dtype=FLOAT_DTYPE)
+        exponents = np.array([[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE)
 
         polynomial1 = MultivarPolynomial(coefficients, exponents, compute_representation=False)
         polynomial2 = MultivarPolynomial(coefficients, exponents, compute_representation=True)
