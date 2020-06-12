@@ -19,7 +19,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from multivar_horner.global_settings import UINT_DTYPE, FLOAT_DTYPE
+from multivar_horner.global_settings import FLOAT_DTYPE, UINT_DTYPE
 from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 # settings for numerical stability tests
 from tests.test_helpers import evaluate_numerical_error, naive_eval_reference, proto_test_case, vectorize

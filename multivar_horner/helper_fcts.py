@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from .global_settings import UINT_DTYPE, FLOAT_DTYPE
+from .global_settings import FLOAT_DTYPE, UINT_DTYPE
 
 
 def rectify_coefficients(coefficients):
@@ -35,7 +35,6 @@ def rectify(coefficients, exponents):
 
 
 def validate_coefficients(coefficients) -> None:
-
     assert isinstance(coefficients, np.ndarray), 'coefficients must be given as numpy ndarray'
     assert len(coefficients.shape) == 2 and coefficients.shape[1] == 1, \
         'coefficients must be given as a [n, 1] ndarray'
