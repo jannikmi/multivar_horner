@@ -127,3 +127,6 @@ venv.bak/
 publish_old.py
 playground.py
 tests/debug.py
+
+# vim
+*.swp

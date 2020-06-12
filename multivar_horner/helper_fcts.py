@@ -2,9 +2,11 @@
 
 import numpy as np
 
+from .global_settings import UINT_DTYPE, FLOAT_DTYPE
+
 
 def rectify_coefficients(coefficients):
-    rectified_coefficients = np.atleast_1d(np.array(coefficients, dtype=np.float64)).reshape(-1, 1)
+    rectified_coefficients = np.atleast_1d(np.asarray(coefficients, dtype=FLOAT_DTYPE)).reshape(-1, 1)
     return rectified_coefficients
 
 
@@ -18,11 +20,10 @@ def rectify(coefficients, exponents):
     """
     rectified_coefficients = rectify_coefficients(coefficients)
 
-    rectified_exponents = np.atleast_2d(np.array(exponents, dtype=np.int))
+    rectified_exponents = np.atleast_2d(np.asarray(exponents, dtype=UINT_DTYPE))
     # exponents must not be negative!
     # ATTENTION: when converting to unsigned integer, negative integers become large!
     assert not np.any(rectified_exponents < 0)
-    rectified_exponents = rectified_exponents.astype(np.uint32)
 
     # ignore the entries with 0.0 coefficients
     if np.any(rectified_coefficients == 0.0):
@@ -35,7 +36,7 @@ def rectify(coefficients, exponents):
 
 def validate_coefficients(coefficients) -> None:
 
-    assert type(coefficients) is np.ndarray, 'coefficients must be given as numpy ndarray'
+    assert isinstance(coefficients, np.ndarray), 'coefficients must be given as numpy ndarray'
     assert len(coefficients.shape) == 2 and coefficients.shape[1] == 1, \
         'coefficients must be given as a [n, 1] ndarray'
 

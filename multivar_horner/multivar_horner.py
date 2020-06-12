@@ -106,7 +106,7 @@ class AbstractPolynomial(ABC):
 
         self.num_monomials: int = self.exponents.shape[0]
         self.dim: int = self.exponents.shape[1]
-        self.unused_variables = np.where(~np.any(self.exponents, axis=1))[0]
+        self.unused_variables = np.where(~np.any(self.exponents.astype(BOOL_DTYPE), axis=1))[0]
         self.total_degree: int = np.max(np.sum(self.exponents, axis=0))
         self.euclidean_degree: float = np.max(np.linalg.norm(self.exponents, ord=2, axis=0))
         self.maximal_degree: int = np.max(self.exponents)
@@ -297,7 +297,7 @@ class MultivarPolynomial(AbstractPolynomial):
         """
 
         if validate_input:
-            x = np.array(x)
+            x = np.asarray(x)
             assert len(x.shape) == 1
             assert x.shape[0] == self.dim
 
@@ -503,7 +503,7 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         """
 
         if validate_input:
-            x = np.array(x, dtype=np.float)
+            x = np.asarray(x, dtype=FLOAT_DTYPE)
             assert len(x.shape) == 1
             assert x.shape[0] == self.dim
 
