@@ -168,7 +168,7 @@ def evaluate_numerical_error(dim, max_degree):
             results.append(result)
             abs_numerical_error = abs(p_x_horner - p_x_expected)
             max_error = max(max_error, abs_numerical_error)
-            sys.stdout.write(f'\r(poly #{poly_ctr + 1} coeff #{coeff_ctr + 1}, {(ctr_total + 1) / ctr_total_max:.1%})'
+            sys.stdout.write(f'\n(poly #{poly_ctr + 1} coeff #{coeff_ctr + 1}, {(ctr_total + 1) / ctr_total_max:.1%})'
                              f' max numerical error: {max_error:.2e}')
             sys.stdout.flush()
             if max_error > MAX_NUMERICAL_ERROR:
