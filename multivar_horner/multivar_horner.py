@@ -12,7 +12,10 @@ from multivar_horner.global_settings import (
     BOOL_DTYPE, DEBUG, DEFAULT_PICKLE_FILE_NAME, FLOAT_DTYPE, TYPE_1D_FLOAT, TYPE_2D_INT, UINT_DTYPE,
 )
 from multivar_horner.helper_classes import FactorContainer
-from multivar_horner.helper_fcts import rectify, rectify_coefficients, validate, validate_coefficients
+from multivar_horner.helper_fcts import (
+    rectify_coefficients, rectify_construction_parameters, rectify_query_point,
+    validate_coefficients, validate_construction_parameters, validate_query_point,
+)
 from multivar_horner.helpers_fcts_numba import eval_recipe, naive_eval
 
 
@@ -95,10 +98,10 @@ class AbstractPolynomial(ABC):
                  validate_input: bool = False, compute_representation: bool = False):
 
         if rectify_input:
-            coefficients, exponents = rectify(coefficients, exponents)
+            coefficients, exponents = rectify_construction_parameters(coefficients, exponents)
 
         if validate_input:
-            validate(coefficients, exponents)
+            validate_construction_parameters(coefficients, exponents)
 
         self.coefficients: np.ndarray = coefficients
         self.exponents: np.ndarray = exponents
@@ -248,10 +251,16 @@ class MultivarPolynomial(AbstractPolynomial):
         unused_variables: the dimensions the polynomial does not depend on
         num_ops: the amount of mathematical operations required to evaluate the polynomial in this representation
         representation: a human readable string visualising the polynomial representation
+
+    Raises:
+        TypeError: if ``validate_input=True`` and coefficients or exponents are not given as ndarrays
+            of the required dtype
+        ValueError: if ``validate_input=True`` and coefficients or exponents do not have the required shape or
+            do not fulfill the other requirements or ``rectify_input=True`` and there are negative exponents
     """
 
-    def __init__(self, coefficients, exponents, rectify_input=False, validate_input=False,
-                 compute_representation=False, *args, **kwargs):
+    def __init__(self, coefficients: TYPE_1D_FLOAT, exponents: TYPE_2D_INT, rectify_input: bool = False,
+                 validate_input: bool = False, compute_representation: bool = False, *args, **kwargs):
 
         super(MultivarPolynomial, self).__init__(coefficients, exponents, rectify_input, validate_input,
                                                  compute_representation)
@@ -282,26 +291,33 @@ class MultivarPolynomial(AbstractPolynomial):
         self.representation = representation
         return self.representation
 
-    def eval(self, x: TYPE_1D_FLOAT, validate_input: bool = True) -> float:
-        """ computes the value of the polynomial at point x
+    def eval(self, x: TYPE_1D_FLOAT, rectify_input: bool = False, validate_input: bool = False, ) -> float:
+        """ computes the value of the polynomial at query point x
 
-        makes use of Numba just in time compiled functions to speed things up
+        makes use of fast ``Numba`` just in time compiled functions
 
         Args:
-            x: ndarray of floats with shape = [m]
-            validate_input: whether to convert the x into a ndarray and to
-                check if it fulfills the requirements
+            x: ndarray of floats with shape = [self.dim] representing the query point
+            rectify_input: bool, default=False
+                whether to convert coefficients and exponents into compatible numpy arrays
+                with this set to True, the query point x can be given in standard python arrays
+            validate_input: check if the query point x fulfills the requirements
 
         Returns:
-            the value of the polynomial at point x
+             the value of the polynomial at point x
+
+        Raises:
+            TypeError: if ``validate_input=True`` and x is not given as ndarray of dtype float
+            ValueError: if ``validate_input=True`` and x does not have the shape ``[self.dim]``
         """
 
+        if rectify_input:
+            x = rectify_query_point(x)
         if validate_input:
-            x = np.asarray(x)
-            assert len(x.shape) == 1
-            assert x.shape[0] == self.dim
+            validate_query_point(x)
+        if x.shape[0] != self.dim:
+            raise ValueError(f'the query point x does not have the required dimensionality {self.dim}')
 
-        # TODO remove flatten, always store coefficients as a 1D array (also for horner fact.)?!
         return naive_eval(x, self.coefficients.flatten(), self.exponents)
 
 
@@ -371,6 +387,12 @@ class HornerMultivarPolynomial(AbstractPolynomial):
             the polynomial values of the factorisation_tree.
             encoded as a boolean ndarray separate from tree_recipe,
             since only the two operations ADD & MUL need to be encoded.
+
+    Raises:
+        TypeError: if ``validate_input=True`` and coefficients or exponents are not given as ndarrays
+            of the required dtype
+        ValueError: if ``validate_input=True`` and coefficients or exponents do not have the required shape or
+            do not fulfill the other requirements
     """
     # __slots__ declared in parents are available in child classes. However, child subclasses will get a __dict__
     # and __weakref__ unless they also define __slots__ (which should only contain names of any additional slots).
@@ -488,27 +510,37 @@ class HornerMultivarPolynomial(AbstractPolynomial):
                 np.array(tree_recipe, dtype=UINT_DTYPE).reshape((-1, 2)),
                 np.array(tree_ops, dtype=BOOL_DTYPE))
 
-    def eval(self, x: TYPE_1D_FLOAT, validate_input: bool = False) -> float:
-        """ computes the value of the polynomial at point x
+    def eval(self, x: TYPE_1D_FLOAT, rectify_input: bool = False, validate_input: bool = False, ) -> float:
+        """ computes the value of the polynomial at query point x
 
         makes use of fast ``Numba`` just in time compiled functions
 
         Args:
-            x: ndarray of floats with shape = [m]
-            validate_input: whether to convert the x into a ndarray and to
-            check if it fulfills the requirements
+            x: ndarray of floats with shape = [self.dim] representing the query point
+            rectify_input: bool, default=False
+                whether to convert coefficients and exponents into compatible numpy arrays
+                with this set to True, the query point x can be given in standard python arrays
+            validate_input: check if the query point x fulfills the requirements
 
         Returns:
              the value of the polynomial at point x
+
+        Raises:
+            TypeError: if ``validate_input=True`` and x is not given as ndarray of dtype float
+            ValueError: if ``validate_input=True`` and x does not have the shape ``[self.dim]``
         """
 
+        if rectify_input:
+            x = rectify_query_point(x)
         if validate_input:
-            x = np.asarray(x, dtype=FLOAT_DTYPE)
-            assert len(x.shape) == 1
-            assert x.shape[0] == self.dim
+            validate_query_point(x)
+        if x.shape[0] != self.dim:
+            raise ValueError(f'the query point x does not have the required dimensionality {self.dim}')
 
         value_array = np.empty(self.value_array_length, dtype=FLOAT_DTYPE)
         # the coefficients are being stored at the beginning of the value array
+        # TODO remove flatten, always store coefficients as a 1D array (also for horner fact.)?!
+        #   also in MultivarPolynomial.eval()
         value_array[:self.num_monomials] = self.coefficients.flatten()
 
         return eval_recipe(x, value_array, self.copy_recipe, self.scalar_recipe,

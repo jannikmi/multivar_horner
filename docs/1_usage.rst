@@ -71,6 +71,10 @@ pass ``validate_input=True`` to check if input data is valid (e.g. only non nega
 
     the default for both options is ``False`` for increased speed
 
+.. note::
+
+    the dtypes are fixed due to the just in time compiled ``Numba`` functions
+
 
 .. code-block:: python
 
@@ -252,7 +256,7 @@ in order to evaluate a polynomial at a point ``x``:
 .. code-block:: python
 
     # define a query point and evaluate the polynomial
-    x = np.array([-2.0, 3.0, 1.0], dtype=np.float64)  # numpy (1,N) ndarray
+    x = np.array([-2.0, 3.0, 1.0], dtype=np.float64)  # numpy ndarray with shape [N]
     p_x = polynomial(x) # -29.0
 
 
@@ -269,9 +273,19 @@ or
 .. code-block:: python
 
     x = [-2.0, 3.0, 1.0]
-    p_x = polynomial.eval(x, validate_input=True) # -29.0
+    p_x = polynomial.eval(x, rectify_input=True, validate_input=True) # -29.0
 
 
+As during construction of a polynomial instance, pass ``rectify_input=True`` to automatically try converting the input to the required ``numpy`` data structure.
+Pass ``validate_input=True`` to check if input data is valid (e.g. matching dtype, shape, etc.).
+
+.. note::
+
+    the default for both options is ``False`` for increased speed
+
+.. note::
+
+    the dtypes are fixed due to the just in time compiled ``Numba`` functions
 
 
 computing the partial derivative of a polynomial

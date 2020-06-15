@@ -5,7 +5,7 @@ import sys
 import numpy as np
 
 from multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
-from multivar_horner.global_settings import UINT_DTYPE, FLOAT_DTYPE
+from multivar_horner.global_settings import FLOAT_DTYPE, UINT_DTYPE
 from tests.test_settings import MAX_COEFF_MAGNITUDE, MAX_NUMERICAL_ERROR, NR_COEFF_CHANGES, NR_TEST_POLYNOMIALS
 
 
@@ -33,7 +33,6 @@ def get_rnd_poly_properties(all_exponents, degree, max_abs_coeff=1.0, integer_co
     sparsity: the ratio of 'active' monomials out of all possible monomials
 
     there must be at least 1 entry ('active' monomial)
-
 
     :param all_exponents:
     :param degree: the total degree the monomial must (at least) have
