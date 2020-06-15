@@ -34,7 +34,6 @@ def get_rnd_poly_properties(all_exponents, degree, max_abs_coeff=1.0, integer_co
 
     there must be at least 1 entry ('active' monomial)
 
-
     :param all_exponents:
     :param degree: the total degree the monomial must (at least) have
     :param max_abs_coeff:

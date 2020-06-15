@@ -37,6 +37,7 @@ All factors appearing in the factorisation are being evaluated only once (reusin
 
 
 **Cons:**
+
  * increased initial computational requirements and memory to find and then store the factorisation
 
 

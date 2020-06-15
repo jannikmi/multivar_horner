@@ -6,7 +6,7 @@ ID_MULT = False
 ID_ADD = True  # ATTENTION: is being used in helpers_fcts_numba.py/eval_recipe()
 
 # numba is expecting certain data types (static typing):
-INT_DTYPE = numpy.int64  # i8 =  8byte integer
+# INT_DTYPE = numpy.int64  # i8 =  8byte integer
 UINT_DTYPE = numpy.uint32  # u4 =  4byte unsigned integer
 FLOAT_DTYPE = numpy.float64  # f8 =  8byte float
 BOOL_DTYPE = numpy.bool

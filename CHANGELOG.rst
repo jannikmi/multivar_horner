@@ -2,6 +2,22 @@ Changelog
 =========
 
 
+2.1.0 (2020-06-15)
+__________________
+
+
+ATTENTION: API changes:
+* ``TypeError`` and ``ValueError`` are being raised instead of ``AssertionError`` in case of invalid input parameters with ``validate_input=True``
+* added same parameters and behavior of ``rectify_input`` and ``validate_input`` in the ``.eval()`` function of polynomials
+
+
+internal:
+
+* Use ``np.asarray()`` instead of ``np.array()`` to avoid unnecessary copies
+* more test cases for invalid input parameters
+
+
+
 2.0.0 (2020-04-28)
 __________________
 

@@ -6,57 +6,73 @@ from .global_settings import FLOAT_DTYPE, UINT_DTYPE
 
 
 def rectify_coefficients(coefficients):
-    rectified_coefficients = np.atleast_1d(np.asarray(coefficients, dtype=FLOAT_DTYPE)).reshape(-1, 1)
+    rectified_coefficients = np.atleast_2d(np.asarray(coefficients, dtype=FLOAT_DTYPE)).reshape(-1, 1)
     return rectified_coefficients
 
 
-def rectify(coefficients, exponents):
+def rectify_construction_parameters(coefficients, exponents):
     """
-    convert the input into numpy arrays valid as input to MultivarPolynomial
-    raise an error if the given input is incompatible
+    convert the input into numpy arrays valid as input of AbstractPolynomial
     :param coefficients: possibly a python list of coefficients to be converted
     :param exponents: possibly a nested python list of exponents to be converted
+     ATTENTION: when converting to unsigned integer, negative integers become large!
     :return: the input converted into appropriate numpy data types
     """
     rectified_coefficients = rectify_coefficients(coefficients)
-
-    rectified_exponents = np.atleast_2d(np.asarray(exponents, dtype=UINT_DTYPE))
-    # exponents must not be negative!
-    # ATTENTION: when converting to unsigned integer, negative integers become large!
-    assert not np.any(rectified_exponents < 0)
-
-    # ignore the entries with 0.0 coefficients
-    if np.any(rectified_coefficients == 0.0):
-        non_zero_coeff_rows = np.where(rectified_coefficients != 0.0)[0]
-        rectified_coefficients = rectified_coefficients[non_zero_coeff_rows, :]
-        rectified_exponents = rectified_exponents[non_zero_coeff_rows, :]
-
+    exponents = np.atleast_2d(exponents)
+    if np.any(exponents < 0):
+        raise ValueError('negative exponents are not allowed!'
+                         f'the conversion to {UINT_DTYPE} would turn negative values into very large values')
+    rectified_exponents = exponents.astype(UINT_DTYPE)
     return rectified_coefficients, rectified_exponents
 
 
+def rectify_query_point(x):
+    """
+    convert the input into numpy ndarray valid as input to AbstractPolynomial.eval()
+    :param x: possibly a python list to be converted
+    :return: the input converted into appropriate numpy data type
+    """
+    rectified_x = np.atleast_1d(np.asarray(x, dtype=FLOAT_DTYPE))
+    return rectified_x
+
+
 def validate_coefficients(coefficients) -> None:
-    assert isinstance(coefficients, np.ndarray), 'coefficients must be given as numpy ndarray'
-    assert len(coefficients.shape) == 2 and coefficients.shape[1] == 1, \
-        'coefficients must be given as a [n, 1] ndarray'
+    if not isinstance(coefficients, np.ndarray):
+        raise TypeError('coefficients must be given as numpy.ndarray')
+    if coefficients.dtype.type is not FLOAT_DTYPE:
+        raise TypeError(f'coefficients must have dtype {FLOAT_DTYPE}')
+    if len(coefficients.shape) != 2 or coefficients.shape[1] != 1:
+        raise ValueError('coefficients must be given as a [M, 1] ndarray')
+    if coefficients.shape[0] == 0:
+        raise ValueError('there must be at least one coefficient')
 
-    assert coefficients.shape[0] > 0, 'there must be at least one coefficient'
-
-    # assert not np.any(coefficients == 0.0), 'there must not be any coefficients with 0.0'
-    # allowed since coefficients should be changeable
+    # NOTE: "0 coefficients" are allowed because coefficients should be changeable!
 
 
-def validate(coefficients, exponents) -> None:
-    """
-    raise an error when the given input parameters of a polynomial are not valid
-    """
-
+def validate_construction_parameters(coefficients, exponents) -> None:
     validate_coefficients(coefficients)
 
-    assert type(exponents) is np.ndarray, 'exponents must be given as numpy ndarray'
-    assert len(exponents.shape) == 2, 'exponents must be 2 dimensional (a list of exponent vectors)'
-    assert not np.any(exponents < 0), 'exponents must not be negative'
-
+    if not isinstance(exponents, np.ndarray):
+        raise TypeError('exponents must be given as numpy.ndarray')
+    if exponents.dtype.type is not UINT_DTYPE:
+        # NOTE: this also ensures non negative exponents
+        # value check is being done in rectification fct
+        raise TypeError(f'exponents must have dtype {UINT_DTYPE}')
+    if len(exponents.shape) != 2:
+        raise ValueError('exponents must be given as a [M, N] ndarray (a list of exponent vectors)')
+    if np.any(exponents < 0):
+        raise ValueError('exponents must not be negative')
     if exponents.shape != np.unique(exponents, axis=0).shape:
         raise ValueError('there must not be duplicate exponent vectors')
+    if coefficients.shape[0] != exponents.shape[0]:
+        raise ValueError('there must be as many exponent vectors as coefficients')
 
-    assert coefficients.shape[0] == exponents.shape[0], 'there must be as many exponent vectors as coefficients'
+
+def validate_query_point(x) -> None:
+    if not isinstance(x, np.ndarray):
+        raise TypeError('the query point x  must be given as numpy.ndarray')
+    if x.dtype.type is not FLOAT_DTYPE:
+        raise TypeError(f'the query point x must have dtype {FLOAT_DTYPE}')
+    if len(x.shape) != 1:
+        raise ValueError('the query point x must be given as a ndarray of shape [N]')

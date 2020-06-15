@@ -1,6 +1,11 @@
 import os
 from math import log10
 
+import numpy as np
+from numpy import array as a
+
+from multivar_horner.global_settings import UINT_DTYPE
+
 EXPORT_RESOLUTION = 300  # dpi
 EXPORT_SIZE_X = 19.0  # inch
 EXPORT_SIZE_Y = 11.0  # inch
@@ -30,31 +35,120 @@ MAX_ERR_EXPONENT = max(-15, (int(log10(MAX_COEFF_MAGNITUDE)) - 10))
 MAX_NUMERICAL_ERROR = 10 ** MAX_ERR_EXPONENT
 
 # TEST CASES:
-INVALID_INPUT_DATA = [
-    # calling with x of another dimension
-    (([1.0, 2.0, 3.0],
-      [[3, 1, 0], [2, 0, 1], [1, 1, 1]],
-      [-2.0, 3.0]),
+
+# invalid:
+# rectify_input=False, numpy arrays needed
+# should raise TypeError
+INPUT_DATA_INVALID_TYPES_CONSTRUCTION = [
+    # not numpy.ndarray
+    ((([[1.0], [2.0], [3.0]]),
+      a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
+      a([-2.0, 3.0, 1.0])),
+     29.0),
+    ((a([[1.0], [2.0], [3.0]]),
+      ([[3, 1, 0], [2, 0, 1], [1, 1, 1]]),
+      a([-2.0, 3.0, 1.0])),
+     29.0),
+    ((None,
+      a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
+      a([-2.0, 3.0, 1.0])),
+     29.0),
+    ((a([[1.0], [2.0], [3.0]]),
+      None,
+      a([-2.0, 3.0, 1.0])),
      29.0),
 
-    (([1.0, 2.0, 3.0],
-      [[3, 1, 0], [2, 0, 1], [1, 1, 1]],
-      [-2.0, 3.0, 1.0, 4.0]),
+    # incorrect dtype
+    ((a([[1.0], [2.0], [3.0]], dtype=np.int),
+      a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
+      a([-2.0, 3.0, 1.0])),
      29.0),
-
-    # negative exponents are not allowed
-    (([1.0, 2.0, 3.0],
-      [[3, -1, 0], [2, 0, 1], [1, 1, 1]],
-      [-2.0, 3.0, 1.0, 4.0]),
+    ((a([[1.0], [2.0], [3.0]]),
+      a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=np.float),
+      a([-2.0, 3.0, 1.0])),
      29.0),
-
-    # duplicate exponent entries are not allowed
-    (([1.0, 2.0, 3.0],
-      [[3, 1, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]],
-      [-2.0, 3.0, 1.0, 4.0]),
-     29.0),
-
 ]
+
+INPUT_DATA_INVALID_TYPES_QUERY = [
+    # not numpy.ndarray
+    ((a([[1.0], [2.0], [3.0]]),
+      a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
+      ([-2.0, 3.0, 1.0])),
+     29.0),
+    ((a([[1.0], [2.0], [3.0]]),
+      a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
+      None),
+     29.0),
+    # incorrect dtype
+    ((a([[1.0], [2.0], [3.0]]),
+      a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
+      a([-2.0, 3.0, 1.0], dtype=np.int)),
+     29.0),
+]
+
+# should raise ValueError
+INPUT_DATA_INVALID_VALUES_CONSTRUCTION = [
+    # wrong shapes
+    ((a([[1.0, 2.0, 3.0]]),
+      a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
+      a([-2.0, 3.0, 1.0])),
+     29.0),
+    ((a([1.0, 2.0, 3.0]),
+      a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
+      a([-2.0, 3.0, 1.0])),
+     29.0),
+    # different amount of coefficients and exponents
+    ((a([[1.0], [2.0], ]),
+      a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
+      a([-2.0, 3.0, 1.0])),
+     29.0),
+    ((a([[1.0], [2.0], [3.0], [0.5]]),
+      a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
+      a([-2.0, 3.0, 1.0])),
+     29.0),
+    ((a([[1.0], [2.0], [3.0]]),
+      a([[3, 1, 0], [2, 0, 1]], dtype=UINT_DTYPE),
+      a([-2.0, 3.0, 1.0])),
+     29.0),
+    ((a([[1.0], [2.0], [3.0], ]),
+      a([[3, 1, 0], [2, 0, 1], [1, 1, 1], [1, 1, 3]], dtype=UINT_DTYPE),
+      a([-2.0, 3.0, 1.0])),
+     29.0),
+    # duplicate exponent entries are not allowed
+    ((a([[1.0], [2.0], [3.0]]),
+      a([[3, 1, 0], [2, 0, 1], [2, 0, 1]], dtype=UINT_DTYPE),
+      a([-2.0, 3.0, 1.0])),
+     29.0),
+    # no coefficients
+    ((a([]),
+      a([], dtype=UINT_DTYPE),
+      a([-2.0, 3.0, 1.0])),
+     29.0),
+]
+
+# should raise ValueError
+INPUT_DATA_INVALID_VALUES_QUERY = [
+    # query point x has wrong dimension
+    ((a([[1.0], [2.0], [3.0]]),
+      a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
+      a([-2.0, 3.0])),
+     29.0),
+    ((a([[1.0], [2.0], [3.0]]),
+      a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
+      a([-2.0, 3.0, 1.0, 0.1])),
+     29.0),
+    # wrong shape
+    ((a([[1.0], [2.0], [3.0]]),
+      a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
+      a([[-2.0, 3.0, 1.0]])),
+     29.0),
+    ((a([[1.0], [2.0], [3.0]]),
+      a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
+      a([[-2.0], [3.0], [1.0]])),
+     29.0),
+]
+
+# rectify_input=True, numpy arrays not needed
 VALID_TEST_DATA = [
     #
     # p(x) =  5.0
