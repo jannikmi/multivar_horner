@@ -4,9 +4,12 @@
 multivar_horner
 ============================
 
-
 .. image:: https://travis-ci.org/MrMinimal64/multivar_horner.svg?branch=master
     :target: https://travis-ci.org/MrMinimal64/multivar_horner
+
+.. image:: https://readthedocs.org/projects/multivar_horner/badge/?version=latest
+    :alt: documentation status
+    :target: https://multivar_horner.readthedocs.io/en/latest/?badge=latest
 
 .. image:: https://img.shields.io/pypi/wheel/multivar-horner.svg
     :target: https://pypi.python.org/pypi/multivar-horner
