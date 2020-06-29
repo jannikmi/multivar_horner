@@ -7,6 +7,7 @@ __________________
 
 
 ATTENTION: API changes:
+
 * ``TypeError`` and ``ValueError`` are being raised instead of ``AssertionError`` in case of invalid input parameters with ``validate_input=True``
 * added same parameters and behavior of ``rectify_input`` and ``validate_input`` in the ``.eval()`` function of polynomials
 
