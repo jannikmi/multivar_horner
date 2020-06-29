@@ -172,8 +172,7 @@ Other beneficial representations of polynomials are for example being specified 
 # Acknowledgements
 
 Thanks to Michael Hecht (Max Planck Institute of Molecular Cell Biology and Genetics) and Steve Schmerler (Helmholtz-Zentrum Dresden-Rossendorf) for valuable input enabling this publication.
-I also thank the editor David P. Sanders for his helpful feedback.
+I also thank the editor David P. Sanders (Universidad Nacional Autónoma de México) as well as the reviewers Alexander Konovalov (University of St Andrews) and Henrik Barthels (RWTH Aachen University) for their helpful feedback.
 
-TODO Reviewer contributions
 
 # References
