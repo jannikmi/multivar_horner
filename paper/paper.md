@@ -71,7 +71,7 @@ exponents = [[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]]
 p = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True)
 # [#ops=10] p(x) = x_1 (x_1 (x_1 (1.0 x_2) + 2.0 x_3) + 3.0 x_2 x_3) + 5.0
 x = [-2.0, 3.0, 1.0]
-p_x = p.eval(x, validate_input=True) # -29.0
+p_x = p.eval(x, rectify_input=True) # -29.0
 ```
 
 The factorisation computed by ``multivar_horner`` is $p(x) =  x_1 (x_1 (x_1 (1 x_2) + 2 x_3) + 3 x_2 x_3) + 5$ and requires 10 operations for every polynomial evaluation.
