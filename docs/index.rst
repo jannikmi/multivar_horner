@@ -22,6 +22,10 @@ multivar_horner
     :alt: latest version on PyPI
     :target: https://pypi.python.org/pypi/multivar-horner
 
+.. image:: https://joss.theoj.org/papers/0b514c6894780f3cc81ed88c141631d4/status.svg
+    :alt: JOSS status
+    :target: https://joss.theoj.org/papers/0b514c6894780f3cc81ed88c141631d4
+
 
 a python package implementing a multivariate `Horner scheme ("Horner's method", "Horner's rule") <https://en.wikipedia.org/wiki/Horner%27s_method>`__:cite:`horner1819xxi` for efficiently evaluating multivariate polynomials.
 
