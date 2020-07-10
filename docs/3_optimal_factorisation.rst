@@ -10,7 +10,7 @@ See :ref:`this code <optimal_usage>` for an example usage.
 
 Instead of using a heuristic to choose the next factor one can allow a search over all possible (meaningful) factorisations in order to arrive at a minimal Horner factorisation.
 The amount of possible factorisations however is increasing exponentially with the degree of a polynomial and its amount of monomials.
-One possibility to avoid computing each factorisation is to employ a version of A*-search:cite:`hart1968formal` adapted for factorisation trees:
+One possibility to avoid computing each factorisation is to employ a version of A*-search :cite:`hart1968formal` adapted for factorisation trees:
 • Initialise a set of all meaningful possible first level Newton factorisations
 • Rank all factorisation according to a lower bound (“heuristic”) of their lowest possible amount of operations
 • Iteratively factorise the most promising factorisation and update the heuristic
@@ -26,9 +26,9 @@ A use case however is to compute and store a minimal representation of a polynom
 
 **NOTES:**
 
-* currently this approach seems to try all possible factorisations in most cases, because the heuristic in use is too optimistic (= brute force, improvements needed)
-* this requires MUCH more memory and computing time than just trying one factorisation (the number of possible factorisations is growing exponentially with the size of the polynomial!).
-* in the first test runs the results seemed to be identical (in terms of #ops) with the vanilla approach of just trying one factorisation!
-* in contrast to univariate polynomials there are possibly many optimal Horner factorisations of a multivariate polynomial. one could easily adapt this approach to find all optimal Horner factorisations
+* for the small polynomial examples in the current tests, the results were identical (in terms of #ops) with the approach of just trying one factorisation (further analysis needed)!
+* in some cases this approach currently is trying all possible factorisations, because the heuristic in use is too optimistic (= brute force, further analysis and improvements needed)
+* this requires MUCH more computational resources than just trying one factorisation (the number of possible factorisations is growing exponentially with the size of the polynomial!).
+* there are possibly many optimal Horner factorisations of a multivariate polynomial. one could easily adapt this approach to find all optimal Horner factorisations
 * even an optimal Horner factorisation must not be the globally minimal representation of a polynomial. there are possibly better types of factorisations and techniques: e.g. "algebraic factorisation", "common subexpression elimination"
-
+* there are multiple possible concepts of optimality (or minimality) of a polynomial
