@@ -75,8 +75,10 @@ p_x = p.eval(x, rectify_input=True) # -29.0
 ```
 
 The factorisation computed by ``multivar_horner`` is $p(x) =  x_1 (x_1 (x_1 (1 x_2) + 2 x_3) + 3 x_2 x_3) + 5$ and requires 10 operations for every polynomial evaluation.
+It should be noted that the implemented factorisation procedure is coefficient agnostic and hence does not for example optimise multiplications with $1$. 
+This design choice has been made in order to have the ability to change the coefficients of a computed polynomial representation a posteriori.
 
-This is achieved by recursively factorising with respect to the factor most commonly used in all monomials.
+With the default settings a Horner factorisation is being computed by recursively factorising with respect to the factor most commonly used in all monomials.
 When no leaves of the resulting binary "Horner Factorisation Tree" can be factorised any more, a "recipe" for evaluating the polynomial is being compiled.
 This recipe encodes all operations required to evaluate the polynomial in numpy arrays [@numpy].
 This enables the use of functions just in time compiled by Numba [@numba], which cause the polynomial evaluation to be computationally efficient.
