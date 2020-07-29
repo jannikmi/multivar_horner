@@ -26,11 +26,19 @@ bibliography: paper.bib
 
 ---
 
-# Summary
+# Abstract
+
+Many applications in the sciences require numerically stable and computationally efficient evaluation of multivariate polynomials.
+Finding beneficial representations of polynomials, such as Horner factorisations, is therefore crucial.
+`multivar_horner`[@github], the `python` package presented here, is the first open source software for computing multivariate Horner factorisations.
+This work briefly outlines the functionality of the package and puts it into reference to previous work in the field.
+Benchmarks additionally prove the advantages of the implementation and Horner factorisations in general.
+
+
+# Introduction
 
 Polynomials are a central concept in mathematics and find application in a wide range of fields.
 (Multivariate) polynomials have different possible mathematical representations and the beneficial properties of some representations are in great demand in many applications[@LeeFactorization2013; @leiserson2010efficient; @Hecht1].
-
 
 The so called Horner factorisation is such a representation with beneficial properties.
 Compared to the unfactorised representation of a multivariate polynomial, in the following called "canonical form", this representation offers some important advantages.
@@ -62,7 +70,7 @@ The coefficients of the monomials are $5$, $1$, $2$ and $3$ respectively.
 It is trivial but computationally expensive to represent this kind of formulation with matrices and vectors and to evaluate it in this way.
 In this particular case for example a polynomial evaluation would require 27 operations.
 Due to its simplicity this kind of formulation is being used for defining multivariate polynomials as input.
-The following code snipped shows how to use ``multivar_horner`` for computing a Horner factorisation of $p$ and evaluating $p$ at a point $x$:
+The following code snipped shows how to use `multivar_horner` for computing a Horner factorisation of $p$ and evaluating $p$ at a point $x$:
 
 ```python
 from multivar_horner import HornerMultivarPolynomial
@@ -72,9 +80,9 @@ p = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True)
 # [#ops=10] p(x) = x_1 (x_1 (x_1 (1.0 x_2) + 2.0 x_3) + 3.0 x_2 x_3) + 5.0
 x = [-2.0, 3.0, 1.0]
 p_x = p.eval(x, rectify_input=True) # -29.0
-```
+````
 
-The factorisation computed by ``multivar_horner`` is $p(x) =  x_1 (x_1 (x_1 (1 x_2) + 2 x_3) + 3 x_2 x_3) + 5$ and requires 10 operations for every polynomial evaluation.
+The factorisation computed by `multivar_horner` is $p(x) =  x_1 (x_1 (x_1 (1 x_2) + 2 x_3) + 3 x_2 x_3) + 5$ and requires 10 operations for every polynomial evaluation.
 It should be noted that the implemented factorisation procedure is coefficient agnostic and hence does not for example optimise multiplications with $1$. 
 This design choice has been made in order to have the ability to change the coefficients of a computed polynomial representation a posteriori.
 
@@ -141,10 +149,16 @@ Among others, these advances enable modeling the behaviour of (physical) systems
 Obtaining an analytical, multidimensional and nonlinear representation of a system opens up many possibilities.
 With so called "interpolation response surface methods"[@michelfeitresponse] for example a system can be analysed and optimised.
 
-[NumPy](https://numpy.org/doc/stable/reference/routines.polynomials.polynomial.html) [@numpy] offers functionality to represent and manipulate polynomials of dimensionality up to 3.
-SymPy offers the dedicated module [sympy.polys](https://docs.sympy.org/latest/modules/polys/index.html) for symbolically operating with polynomials.
-[Sage](https://doc.sagemath.org/html/en/reference/polynomial_rings/index.html) covers the algebraic side of polynomials.
-The Julia package [StaticPolynomials](https://github.com/JuliaAlgebra/StaticPolynomials.jl) has a similar functionality, but it does not support computing Horner factorisations.
+
+The commercial software [`Maple`](https://www.maplesoft.com/support/help/Maple/view.aspx?path=convert%2Fhorner) offers the ability to compute multivariate Horner factorisations. `multivar_horner` however is the first open source implementation of a multivariate Horner scheme.
+The `Wolfram Mathematica` framework supports [univariate Horner factorisations](https://reference.wolfram.com/language/ref/HornerForm.html)
+The `Julia` package [StaticPolynomials](https://github.com/JuliaAlgebra/StaticPolynomials.jl) has a functionality similar to `multivar_horner`, but it does not support computing Horner factorisations.
+
+
+[`NumPy`](https://numpy.org/doc/stable/reference/routines.polynomials.polynomial.html) [@numpy] offers functionality to represent and manipulate polynomials of dimensionality up to 3.
+`SymPy` offers the dedicated module [`sympy.polys`](https://docs.sympy.org/latest/modules/polys/index.html) for symbolically operating with polynomials.
+As stated in the [documentation](https://mattpap.github.io/masters-thesis/html/src/algorithms.html#evaluation-of-polynomials), `SymPy` does not use Horner factorisations for polynomial evaluation in the multivariate case.
+[`Sage`](https://doc.sagemath.org/html/en/reference/polynomial_rings/index.html) covers the algebraic side of polynomials.
 
 `multivar_horner` has no functions to directly interoperate with other software packages.
 The generality of the required input parameters (coefficients and exponents) however still ensures the compatibility with other approaches.
