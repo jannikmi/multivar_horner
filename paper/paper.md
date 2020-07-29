@@ -151,8 +151,8 @@ With so called "interpolation response surface methods"[@michelfeitresponse] for
 
 
 The commercial software [`Maple`](https://www.maplesoft.com/support/help/Maple/view.aspx?path=convert%2Fhorner) offers the ability to compute multivariate Horner factorisations. `multivar_horner` however is the first open source implementation of a multivariate Horner scheme.
-The `Wolfram Mathematica` framework supports [univariate Horner factorisations](https://reference.wolfram.com/language/ref/HornerForm.html)
-The `Julia` package [StaticPolynomials](https://github.com/JuliaAlgebra/StaticPolynomials.jl) has a functionality similar to `multivar_horner`, but it does not support computing Horner factorisations.
+The `Wolfram Mathematica` framework supports [univariate Horner factorisations](https://reference.wolfram.com/language/ref/HornerForm.html).
+The `Julia` package [StaticPolynomials](https://github.com/JuliaAlgebra/StaticPolynomials.jl) has a functionality similar to `multivar_horner`, but does not support computing Horner factorisations.
 
 
 [`NumPy`](https://numpy.org/doc/stable/reference/routines.polynomials.polynomial.html) [@numpy] offers functionality to represent and manipulate polynomials of dimensionality up to 3.
@@ -188,7 +188,7 @@ Other beneficial representations of polynomials are for example being specified 
 # Acknowledgements
 
 Thanks to Michael Hecht (Max Planck Institute of Molecular Cell Biology and Genetics) and Steve Schmerler (Helmholtz-Zentrum Dresden-Rossendorf) for valuable input enabling this publication.
-I also thank the editor David P. Sanders (Universidad Nacional Autónoma de México) as well as the reviewers Alexander Konovalov (University of St Andrews) and Henrik Barthels (RWTH Aachen University) for their helpful feedback.
+I also thank the editor David P. Sanders (Universidad Nacional Autónoma de México) as well as the reviewers Alexander Konovalov (University of St Andrews), Henrik Barthels (RWTH Aachen University) and Sascha Timme (TU Berlin) for their helpful feedback.
 
 
 # References
