@@ -56,7 +56,8 @@ With this package it is also possible to represent polynomials in :ref:`canonica
 
 Also see:
 `GitHub <https://github.com/MrMinimal64/multivar_horner>`__,
-`PyPI <https://pypi.python.org/pypi/multivar_horner/>`__
+`PyPI <https://pypi.python.org/pypi/multivar_horner/>`__,
+`arXiv paper <https://arxiv.org/abs/2007.13152>`__
 
 
 

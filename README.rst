@@ -63,5 +63,6 @@ For more refer to the `documentation <https://multivar_horner.readthedocs.io/en/
 
 Also see:
 `GitHub <https://github.com/MrMinimal64/multivar_horner>`__,
-`PyPI <https://pypi.python.org/pypi/multivar_horner/>`__
+`PyPI <https://pypi.python.org/pypi/multivar_horner/>`__,
+`arXiv paper <https://arxiv.org/abs/2007.13152>`__
 
