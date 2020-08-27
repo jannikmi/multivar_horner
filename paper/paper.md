@@ -47,8 +47,9 @@ Consequently, evaluating a multivariate polynomial in Horner factorisation is fa
 These advantages come at the cost of an initial computational effort required to find the factorisation.
 
 The `multivar_horner` Python package implements a multivariate Horner scheme ("Horner's method", "Horner's rule") [@horner1819xxi] and thereby allows computing Horner factorisations of multivariate polynomials given in canonical form.
-Representing multivariate polynomials of arbitrary degree also in canonical form, computing derivatives of polynomials and evaluating polynomials at a given point are further features of the package.
-Accordingly the package presented here can be helpful always when (multivariate) polynomials have to be evaluated efficiently, the numerical error of the polynomial evaluation has to be small or a compact representation of the polynomial is required.
+The package offers the functionality of representing multivariate polynomials of arbitrary degree in Horner factorisation as well as in in canonical form.
+Additionally it allows to compute the parial derivatives of a polynomial and to evaluate a polynomial at a given point.
+Accordingly the package presented here is useful whenever (multivariate) polynomials have to be evaluated efficiently, the numerical error of the polynomial evaluation has to be small or a compact representation of the polynomial is required.
 This holds true for many applications applying numerical analysis.
 One example use case where this package is already being employed are novel response surface methods [@michelfeitresponse] based on multivariate Netwon interploation [@Hecht1].
 
@@ -65,7 +66,7 @@ In the multivariate case however the factorisation is ambiguous, as there are mu
 The key functionality of `multivar_horner` is finding a good instance among the many possible Horner factorisations of a multivariate polynomial.
 
 Let's consider the example multivariate polynomial in canonical form $p(x) = 5 + 1 x_1^3 x_2^1 + 2 x_1^2 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
-The polynomial $p$ is the sum of $5$ monomials, has dimensionality $3$ and can also be written as $p(x) = 5 x_1^0 x_2^0 x_3^0 + 1 x_1^3 x_2^1 x_3^0 + 2 x_1^2 x_2^0 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
+The polynomial $p$ is the sum of $4$ monomials, has dimensionality $3$ and can also be written as $p(x) = 5 x_1^0 x_2^0 x_3^0 + 1 x_1^3 x_2^1 x_3^0 + 2 x_1^2 x_2^0 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
 The coefficients of the monomials are $5$, $1$, $2$ and $3$ respectively.
 It is trivial but computationally expensive to represent this kind of formulation with matrices and vectors and to evaluate it in this way.
 In this particular case for example a polynomial evaluation would require 27 operations.
