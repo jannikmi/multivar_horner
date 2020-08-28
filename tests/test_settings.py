@@ -4,7 +4,7 @@ from os.path import abspath, join, pardir
 import numpy as np
 from numpy import array as a
 
-from multivar_horner.global_settings import UINT_DTYPE, FLOAT_DTYPE
+from multivar_horner.global_settings import FLOAT_DTYPE, UINT_DTYPE
 
 EXPORT_RESOLUTION = 300  # dpi
 EXPORT_SIZE_X = 19.0  # inch
@@ -13,7 +13,6 @@ SHOW_PLOTS = False
 PLOTTING_DIR = abspath(join(__file__, pardir, 'plots'))
 
 ALPHA = 0.8
-
 
 NR_TEST_POLYNOMIALS = 5  # repetitions
 MAX_COEFF_MAGNITUDE = 1e0

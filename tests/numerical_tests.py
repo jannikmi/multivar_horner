@@ -8,8 +8,10 @@ import numpy as np
 from multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 from multivar_horner.global_settings import FLOAT_DTYPE
 from tests.test_helpers import rnd_settings_list
-from tests.test_settings import DIM_RANGE, DEGREE_RANGE, TEST_RESULTS_PICKLE, NR_TEST_POLYNOMIALS, NR_COEFF_CHANGES, \
-    MAX_COEFF_MAGNITUDE, MAX_NUMERICAL_ERROR
+from tests.test_settings import (
+    DEGREE_RANGE, DIM_RANGE, MAX_COEFF_MAGNITUDE, MAX_NUMERICAL_ERROR,
+    NR_COEFF_CHANGES, NR_TEST_POLYNOMIALS, TEST_RESULTS_PICKLE,
+)
 
 
 def evaluate_numerical_error(dim, max_degree):
@@ -50,7 +52,7 @@ def evaluate_numerical_error(dim, max_degree):
             # this would cause additional numerical error, because the algorithms have only 64-bit accuracy!
             # -> create 64-bit coefficients, then convert them to 128-bit!
             coefficients = np.asarray(coefficients, dtype=np.float128)
-            p_x_expected = np.sum(coefficients) # ground truth
+            p_x_expected = np.sum(coefficients)  # ground truth
 
             result = (poly, poly_horner, p_x_expected, p_x, p_x_horner)
             results.append(result)

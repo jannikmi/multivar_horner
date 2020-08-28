@@ -22,8 +22,8 @@ from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPo
 # settings for numerical stability tests
 from tests.test_helpers import naive_eval_reference, proto_test_case, vectorize
 from tests.test_settings import (
-    COEFF_CHANGE_DATA, INPUT_DATA_INVALID_TYPES_CONSTRUCTION,
-    INPUT_DATA_INVALID_TYPES_QUERY, INPUT_DATA_INVALID_VALUES_CONSTRUCTION, INPUT_DATA_INVALID_VALUES_QUERY,
+    COEFF_CHANGE_DATA, INPUT_DATA_INVALID_TYPES_CONSTRUCTION, INPUT_DATA_INVALID_TYPES_QUERY,
+    INPUT_DATA_INVALID_VALUES_CONSTRUCTION, INPUT_DATA_INVALID_VALUES_QUERY,
     MAX_INP_MAGNITUDE, NR_TEST_POLYNOMIALS, VALID_TEST_DATA,
 )
 

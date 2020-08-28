@@ -129,5 +129,3 @@ def vectorize(obj):
 # vectorised version of naive_eval() in multivar_horner.helpers_fcts_numba
 def naive_eval_reference(X, exponents, coefficients):
     return np.dot(np.array([[(x ** ex).prod() for ex in exponents] for x in X]), coefficients)
-
-

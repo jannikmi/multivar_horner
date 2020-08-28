@@ -4,18 +4,18 @@ import time
 import timeit
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
+
+import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from matplotlib.patches import Rectangle
-from scipy.special import binom
-
 from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
+from scipy.special import binom
 from tests.test_helpers import rnd_input_list, rnd_settings_list
 from tests.test_settings import (
     DEGREE_RANGE, DIM_RANGE, EXPORT_RESOLUTION, NR_SAMPLES_SPEED_TEST,
-    PLOTTING_DIR, SHOW_PLOTS, SPEED_RUN_PICKLE, TEST_RESULTS_PICKLE, ALPHA,
+    PLOTTING_DIR, SHOW_PLOTS, SPEED_RUN_PICKLE, TEST_RESULTS_PICKLE,
 )
 
 
