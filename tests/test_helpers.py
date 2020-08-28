@@ -1,12 +1,9 @@
 import itertools
 import random
-import sys
 
 import numpy as np
 
-from multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 from multivar_horner.global_settings import FLOAT_DTYPE, UINT_DTYPE
-from tests.test_settings import MAX_COEFF_MAGNITUDE, MAX_NUMERICAL_ERROR, NR_COEFF_CHANGES, NR_TEST_POLYNOMIALS
 
 
 def proto_test_case(data, fct):
@@ -65,6 +62,7 @@ def get_rnd_poly_properties(all_exponents, degree, max_abs_coeff=1.0, integer_co
     exponents = all_exponents[row_idxs, :]
     nr_monomials = exponents.shape[0]
     coefficients = (np.random.rand(nr_monomials, 1) - 0.5) * (2 * max_abs_coeff)  # [ -max_abs_coeff; max_abs_coeff]
+    coefficients = coefficients.astype(FLOAT_DTYPE)
     if integer_coeffs:
         coefficients = np.round(coefficients)
 
@@ -128,56 +126,8 @@ def vectorize(obj):
     return lambda x: np.array([obj(np.atleast_1d(x_i)) for x_i in x])
 
 
-#
 # vectorised version of naive_eval() in multivar_horner.helpers_fcts_numba
 def naive_eval_reference(X, exponents, coefficients):
     return np.dot(np.array([[(x ** ex).prod() for ex in exponents] for x in X]), coefficients)
 
 
-def evaluate_numerical_error(dim, max_degree):
-    # basic idea: evaluating a polynomial at x = all 1 should give the sum of coefficients
-    # -> any deviation is the numerical error
-    results = []
-    x = np.ones(dim, dtype=FLOAT_DTYPE)
-    max_error = 0.0
-    ctr_total = 0
-    ctr_total_max = NR_TEST_POLYNOMIALS * NR_COEFF_CHANGES
-
-    print(f'evaluating numerical error: dim: {dim}, max. degree: {max_degree} ...')
-    for poly_ctr, (coefficients, exponents) in enumerate(rnd_settings_list(NR_TEST_POLYNOMIALS, dim, max_degree,
-                                                                           max_abs_coeff=MAX_COEFF_MAGNITUDE,
-                                                                           integer_coeffs=False)):
-        # debug: validate_input=True
-        nr_monomials = exponents.shape[0]
-        # find factorisation (expensive)
-        poly_horner = HornerMultivarPolynomial(coefficients, exponents, validate_input=True)
-
-        for coeff_ctr in range(NR_COEFF_CHANGES):
-            # simply change coefficients of the found factorisation (cheap)
-            coefficients = (np.random.rand(nr_monomials, 1) - 0.5) * (2 * MAX_COEFF_MAGNITUDE)
-            # is testing for in_place=True at the same time
-            poly_horner.change_coefficients(coefficients, validate_input=True, in_place=True)
-            p_x_horner = poly_horner.eval(x)
-
-            poly = MultivarPolynomial(coefficients, exponents)
-            p_x_expected = np.sum(coefficients)
-            p_x = poly.eval(x)
-
-            result = (poly, poly_horner, p_x_expected, p_x, p_x_horner)
-            results.append(result)
-            abs_numerical_error = abs(p_x_horner - p_x_expected)
-            max_error = max(max_error, abs_numerical_error)
-            sys.stdout.write(f'\n(poly #{poly_ctr + 1} coeff #{coeff_ctr + 1}, {(ctr_total + 1) / ctr_total_max:.1%})'
-                             f' max numerical error: {max_error:.2e}')
-            sys.stdout.flush()
-            if max_error > MAX_NUMERICAL_ERROR:
-                # # DEBUG:
-                # with open('coefficients.pickle', 'wb') as f:
-                #     pickle.dump(coefficients, f)
-                # with open('exponents.pickle', 'wb') as f:
-                #     pickle.dump(exponents, f)
-                raise AssertionError(f'numerical error {max_error:.2e} exceeded limit of {MAX_NUMERICAL_ERROR :.2e} ')
-            ctr_total += 1
-
-    print('\n... done.\n')
-    return results

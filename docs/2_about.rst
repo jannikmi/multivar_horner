@@ -133,6 +133,15 @@ This has also been visualised in the following figure:
     numerical error of evaluating randomly generated polynomials in canonical form relative to the Horner factorisation.
 
 
+.. note::
+
+    if you require an even higher numerical stability you can set ``FLOAT_DTYPE = numpy.float128``
+    or ``FLOAT_DTYPE = numpy.longfloat`` in ``global_settings.py``.
+    Then however the jit compilation has to be removed in ``helper_fcts_numba.py`` (``Numba`` does not support float128).
+
+
+
+
 Speed tests
 ^^^^^^^^^^^
 

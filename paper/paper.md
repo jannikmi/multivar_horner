@@ -37,7 +37,7 @@ Benchmarks additionally prove the advantages of the implementation and Horner fa
 
 # Introduction
 
-Polynomials are a central concept in mathematics and find application in a wide range of fields.
+Polynomials are a central concept in mathematics and find application in a wide range of fields[@prasolov2009polynomials; @boumova2002applications; @cools2002advances; @akritas1989elements; @Hecht1].
 (Multivariate) polynomials have different possible mathematical representations and the beneficial properties of some representations are in great demand in many applications[@LeeFactorization2013; @leiserson2010efficient; @Hecht1].
 
 The so called Horner factorisation is such a representation with beneficial properties.
@@ -68,9 +68,12 @@ The key functionality of `multivar_horner` is finding a good instance among the 
 Let's consider the example multivariate polynomial in canonical form $p(x) = 5 + 1 x_1^3 x_2^1 + 2 x_1^2 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
 The polynomial $p$ is the sum of $4$ monomials, has dimensionality $3$ and can also be written as $p(x) = 5 x_1^0 x_2^0 x_3^0 + 1 x_1^3 x_2^1 x_3^0 + 2 x_1^2 x_2^0 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
 The coefficients of the monomials are $5$, $1$, $2$ and $3$ respectively.
-It is trivial but computationally expensive to represent this kind of formulation with matrices and vectors and to evaluate it in this way.
-In this particular case for example a polynomial evaluation would require 27 operations.
-Due to its simplicity this kind of formulation is being used for defining multivariate polynomials as input.
+
+From this formulation it is straight forward to represent a multivariate polynomial with a single vector of coefficients and one exponent matrix.
+Due to its simplicity and universality this kind of representation is being used for defining polynomials as input.
+It should be noted that this most trivial representation is computationally very expensive to evaluate.
+In this particular case for example a polynomial evaluation based on arrays would in total require 27 operations (exponentiations, multiplications and additions).
+
 The following code snipped shows how to use `multivar_horner` for computing a Horner factorisation of $p$ and evaluating $p$ at a point $x$:
 
 ```python
@@ -98,9 +101,9 @@ The just in time compiled functions are always being used, since a pure python p
 
 
 It is important to note that in contrast to the one dimensional case, several concepts of degree exist for polynomials in multiple dimensions.
-Following the notation of [@trefethen2017multivariate] the usual notion of degree of a polynomial, the maximal degree, is the maximal sum of exponents of all monomials.
+Following the notation of [@trefethen2017multivariate] the usual notion of degree of a polynomial, the *total degree*, is the maximal sum of exponents of all monomials.
 This is equal to the maximal $l_1$-norm of all exponent vectors of the monomials.
-Accordingly the euclidean degree is the maximal $l_2$-norm and the maximal degree is the maximal $l_{\infty}$-norm of all exponent vectors.
+Accordingly the *euclidean degree* is the maximal $l_2$-norm and the *maximal degree* is the maximal $l_{\infty}$-norm of all exponent vectors.
 Refer to [@trefethen2017multivariate] for precise definitions.
 
 A polynomial is called fully occupied with respect to a certain degree if all possible monomials having a smaller or equal degree are present.
@@ -122,7 +125,7 @@ This effect intensifies as the dimensionality grows.
 
 For benchmarking our method the following procedure is used:
 In order to draw polynomials with uniformly random occupancy, the probability of monomials being present is picked randomly.
-For a fixed maximal degree $n$ in $m$ dimensions there are $(n+1)^m$ possible exponent vectors corresponding to monomials.
+For a fixed *maximal* degree $n$ in $m$ dimensions there are $(n+1)^m$ possible exponent vectors corresponding to monomials.
 Each of these monomials is being activated with the chosen probability.
 
 For each maximal degree up to 7 and until dimensionality 7, 5 polynomials were drawn randomly.
@@ -130,12 +133,16 @@ In order to compute the numerical error, each polynomial has been evaluated at t
 The true result in this case should always be the sum of all coefficients.
 Any deviation of the evaluation value from the sum of coefficients hence is numerical error.
 In order to receive more representative results, the obtained numerical error is being averaged over 100 tries with uniformly random coefficients in the range $[-1; 1]$.
+The polynomial evaluation uses the default 64-bit floating point numbers, whereas the ground truth sum of 64-bit coefficients has been computed with 128-bit accuracy in order to avoid numerical errors in the ground truth value.
+
 
 ![numerical error of evaluating randomly generated polynomials in canonical form relative to the Horner factorisation.\label{fig:num_err_heatmap}](../docs/_static/num_err_heatmap.png)
 
 Note that even though the original monomials are not actually present in a Horner factorisation, the amount of coefficients however is identical to the amount of coefficients of its canonical form.
 With increasing size in terms of the amount of included coefficients the numerical error of both the canonical form and the Horner factorisation found by `multivar_horner` grow exponentially (cf. \autoref{fig:num_err_growth}).
 However, in comparison to the canonical form, the Horner factorisation is more numerically stable as it has also been visualised in \autoref{fig:num_err_heatmap}.
+For theoretical results of 
+The numerical stability of Horner factorisations has theoretically been shown in [@greedyHorner; @pena2000multivariate; @pena2000multivariate2].
 
 Even though the amount of operations required for evaluating the polynomials grow exponentially with their size irrespective of the representation, the rate of growth is lower for the Horner factorisation (cf. \autoref{fig:num_ops_growth}).
 As a result, the Horner factorisations are computationally easier to evaluate.

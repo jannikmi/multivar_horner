@@ -12,9 +12,7 @@
 
 
 import itertools
-import pickle
 import unittest
-from itertools import product
 
 import numpy as np
 import pytest
@@ -22,11 +20,11 @@ import pytest
 from multivar_horner.global_settings import FLOAT_DTYPE, UINT_DTYPE
 from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 # settings for numerical stability tests
-from tests.test_helpers import evaluate_numerical_error, naive_eval_reference, proto_test_case, vectorize
+from tests.test_helpers import naive_eval_reference, proto_test_case, vectorize
 from tests.test_settings import (
-    COEFF_CHANGE_DATA, DEGREE_RANGE, DIM_RANGE, INPUT_DATA_INVALID_TYPES_CONSTRUCTION,
+    COEFF_CHANGE_DATA, INPUT_DATA_INVALID_TYPES_CONSTRUCTION,
     INPUT_DATA_INVALID_TYPES_QUERY, INPUT_DATA_INVALID_VALUES_CONSTRUCTION, INPUT_DATA_INVALID_VALUES_QUERY,
-    MAX_INP_MAGNITUDE, NR_TEST_POLYNOMIALS, TEST_RESULTS_PICKLE, VALID_TEST_DATA,
+    MAX_INP_MAGNITUDE, NR_TEST_POLYNOMIALS, VALID_TEST_DATA,
 )
 
 
@@ -123,7 +121,7 @@ class MainTest(unittest.TestCase):
         def query_should_raise(data, expected_error):
             for inp, expected_output in data:
                 coeff, exp, x = inp
-                # construction must not raise an error:
+                # NOTE: construction must not raise an error:
                 p = MultivarPolynomial(coeff, exp, rectify_input=False, validate_input=True)
                 with pytest.raises(expected_error):
                     p(x, rectify_input=False, validate_input=True)
@@ -313,19 +311,6 @@ class MainTest(unittest.TestCase):
 
         proto_test_case(VALID_TEST_DATA, cmp_value_changed_coeffs_fct)
         print('OK.\n')
-
-    def test_numerical_stability(self):
-
-        print('\nevaluating the numerical error:')
-        results = []
-        for dim, max_degree in product(DIM_RANGE, DEGREE_RANGE):
-            results += evaluate_numerical_error(dim, max_degree)  # do not append list as entry
-
-        with open(TEST_RESULTS_PICKLE, 'wb') as f:
-            print(f'exporting numerical test results in {TEST_RESULTS_PICKLE}')
-            pickle.dump(results, f)
-
-        print('done.\n')
 
 
 if __name__ == '__main__':

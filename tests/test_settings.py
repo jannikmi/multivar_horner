@@ -1,16 +1,19 @@
-import os
 from math import log10
+from os.path import abspath, join, pardir
 
 import numpy as np
 from numpy import array as a
 
-from multivar_horner.global_settings import UINT_DTYPE
+from multivar_horner.global_settings import UINT_DTYPE, FLOAT_DTYPE
 
 EXPORT_RESOLUTION = 300  # dpi
 EXPORT_SIZE_X = 19.0  # inch
 EXPORT_SIZE_Y = 11.0  # inch
 SHOW_PLOTS = False
-PLOTTING_DIR = os.path.abspath(os.path.join(os.path.pardir, 'plots'))
+PLOTTING_DIR = abspath(join(__file__, pardir, 'plots'))
+
+ALPHA = 0.8
+
 
 NR_TEST_POLYNOMIALS = 5  # repetitions
 MAX_COEFF_MAGNITUDE = 1e0
@@ -71,58 +74,58 @@ INPUT_DATA_INVALID_TYPES_CONSTRUCTION = [
 
 INPUT_DATA_INVALID_TYPES_QUERY = [
     # not numpy.ndarray
-    ((a([[1.0], [2.0], [3.0]]),
+    ((a([[1.0], [2.0], [3.0]], dtype=FLOAT_DTYPE),
       a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
       ([-2.0, 3.0, 1.0])),
      29.0),
-    ((a([[1.0], [2.0], [3.0]]),
+    ((a([[1.0], [2.0], [3.0]], dtype=FLOAT_DTYPE),
       a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
       None),
      29.0),
     # incorrect dtype
-    ((a([[1.0], [2.0], [3.0]]),
+    ((a([[1.0], [2.0], [3.0]], dtype=FLOAT_DTYPE),
       a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
-      a([-2.0, 3.0, 1.0], dtype=np.int)),
+      a([-2.0, 3.0, 1.0], dtype=np.int)),  # wrong
      29.0),
 ]
 
 # should raise ValueError
 INPUT_DATA_INVALID_VALUES_CONSTRUCTION = [
     # wrong shapes
-    ((a([[1.0, 2.0, 3.0]]),
+    ((a([[1.0, 2.0, 3.0]], dtype=FLOAT_DTYPE),
       a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
-      a([-2.0, 3.0, 1.0])),
+      a([-2.0, 3.0, 1.0], dtype=FLOAT_DTYPE)),
      29.0),
-    ((a([1.0, 2.0, 3.0]),
+    ((a([1.0, 2.0, 3.0], dtype=FLOAT_DTYPE),
       a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
-      a([-2.0, 3.0, 1.0])),
+      a([-2.0, 3.0, 1.0], dtype=FLOAT_DTYPE)),
      29.0),
     # different amount of coefficients and exponents
-    ((a([[1.0], [2.0], ]),
+    ((a([[1.0], [2.0], ], dtype=FLOAT_DTYPE),
       a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
-      a([-2.0, 3.0, 1.0])),
+      a([-2.0, 3.0, 1.0], dtype=FLOAT_DTYPE)),
      29.0),
-    ((a([[1.0], [2.0], [3.0], [0.5]]),
+    ((a([[1.0], [2.0], [3.0], [0.5]], dtype=FLOAT_DTYPE),
       a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
-      a([-2.0, 3.0, 1.0])),
+      a([-2.0, 3.0, 1.0], dtype=FLOAT_DTYPE)),
      29.0),
-    ((a([[1.0], [2.0], [3.0]]),
+    ((a([[1.0], [2.0], [3.0]], dtype=FLOAT_DTYPE),
       a([[3, 1, 0], [2, 0, 1]], dtype=UINT_DTYPE),
-      a([-2.0, 3.0, 1.0])),
+      a([-2.0, 3.0, 1.0], dtype=FLOAT_DTYPE)),
      29.0),
-    ((a([[1.0], [2.0], [3.0], ]),
+    ((a([[1.0], [2.0], [3.0], ], dtype=FLOAT_DTYPE),
       a([[3, 1, 0], [2, 0, 1], [1, 1, 1], [1, 1, 3]], dtype=UINT_DTYPE),
-      a([-2.0, 3.0, 1.0])),
+      a([-2.0, 3.0, 1.0], dtype=FLOAT_DTYPE)),
      29.0),
     # duplicate exponent entries are not allowed
-    ((a([[1.0], [2.0], [3.0]]),
+    ((a([[1.0], [2.0], [3.0]], dtype=FLOAT_DTYPE),
       a([[3, 1, 0], [2, 0, 1], [2, 0, 1]], dtype=UINT_DTYPE),
-      a([-2.0, 3.0, 1.0])),
+      a([-2.0, 3.0, 1.0], dtype=FLOAT_DTYPE)),
      29.0),
     # no coefficients
-    ((a([]),
+    ((a([], dtype=FLOAT_DTYPE),
       a([], dtype=UINT_DTYPE),
-      a([-2.0, 3.0, 1.0])),
+      a([-2.0, 3.0, 1.0], dtype=FLOAT_DTYPE)),
      29.0),
 ]
 

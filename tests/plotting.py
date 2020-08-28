@@ -2,30 +2,34 @@ import os
 import pickle
 import time
 import timeit
-
-import numpy as np
+from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib.patches import Rectangle
-from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 from scipy.special import binom
+
+from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 from tests.test_helpers import rnd_input_list, rnd_settings_list
 from tests.test_settings import (
     DEGREE_RANGE, DIM_RANGE, EXPORT_RESOLUTION, NR_SAMPLES_SPEED_TEST,
-    PLOTTING_DIR, SHOW_PLOTS, SPEED_RUN_PICKLE, TEST_RESULTS_PICKLE,
+    PLOTTING_DIR, SHOW_PLOTS, SPEED_RUN_PICKLE, TEST_RESULTS_PICKLE, ALPHA,
 )
 
 
 def get_plot_name(file_name='plot'):
     file_name = file_name.replace(' ', '_')
+    Path(PLOTTING_DIR).mkdir(parents=True, exist_ok=True)
     return os.path.abspath(os.path.join(PLOTTING_DIR, file_name + '_' + str(time.time())[:-7] + '.png'))
 
 
 def export_plot(fig, plot_title):
     # fig.set_size_inches(EXPORT_SIZE_X, EXPORT_SIZE_Y, forward=True)
-    plt.savefig(get_plot_name(plot_title), dpi=EXPORT_RESOLUTION)
+    path = get_plot_name(plot_title)
+    print(f'saving plot in {path}')
+    plt.savefig(path, dpi=EXPORT_RESOLUTION)
     plt.clf()  # clear last figure
 
 
@@ -520,7 +524,8 @@ def plot_num_error_growth_comparison(results):
     df = df.append(df_horner, ignore_index=True)
 
     sns.scatterplot(x=attr_name_num_coeff, y=attr_name_numerical_err, hue=attr_name_representation, data=df,
-                    alpha=0.8)
+                    # alpha=ALPHA
+                    )
     # plot = sns.relplot(x=attr_name_num_coeff, y=attr_name_numerical_err, hue=attr_name_representation,
     #                    style=attr_name_representation,
     #                    kind="line", data=df,)
@@ -614,6 +619,7 @@ def plot_num_coeffs2num_ops(results):
 
 
 def plot_numerical_error():
+    print(f'generating numerical benchmark plots. reading data from {TEST_RESULTS_PICKLE}...')
     try:
         with open(TEST_RESULTS_PICKLE, 'rb') as f:
             results = pickle.load(f)
@@ -627,6 +633,7 @@ def plot_numerical_error():
     plot_num_err_heatmap(results)
     plot_num_error_growth_comparison(results)
     plot_num_coeffs2num_ops(results)
+    print('plotting numerical benchmarks done.')
 
 
 if __name__ == '__main__':
@@ -643,4 +650,4 @@ if __name__ == '__main__':
     # TODO include plots in documentation
     plot_speed_results()  # create plots with speed test data
 
-    # plot_numerical_error() create plots with numerical test data
+    plot_numerical_error()  # create plots with numerical test data
