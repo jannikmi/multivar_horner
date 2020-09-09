@@ -87,7 +87,7 @@ p_x = p.eval(x, rectify_input=True) # -29.0
 ````
 
 The factorisation computed by `multivar_horner` is $p(x) =  x_1 (x_1 (x_1 (1 x_2) + 2 x_3) + 3 x_2 x_3) + 5$ and requires 10 operations for every polynomial evaluation.
-It should be noted that the implemented factorisation procedure is coefficient agnostic and hence does not for example optimise multiplications with $1$. 
+It should be noted that the implemented factorisation procedure is coefficient agnostic and hence does not for example optimise multiplications with $1$.
 This design choice has been made in order to have the ability to change the coefficients of a computed polynomial representation a posteriori.
 
 With the default settings a Horner factorisation is being computed by recursively factorising with respect to the factor most commonly used in all monomials.
@@ -129,19 +129,16 @@ For a fixed *maximal* degree $n$ in $m$ dimensions there are $(n+1)^m$ possible 
 Each of these monomials is being activated with the chosen probability.
 
 For each maximal degree up to 7 and until dimensionality 7, 5 polynomials were drawn randomly.
-In order to compute the numerical error, each polynomial has been evaluated at the point of all ones.
-The true result in this case should always be the sum of all coefficients.
-Any deviation of the evaluation value from the sum of coefficients hence is numerical error.
-In order to receive more representative results, the obtained numerical error is being averaged over 100 tries with uniformly random coefficients in the range $[-1; 1]$.
-The polynomial evaluation uses the default 64-bit floating point numbers, whereas the ground truth sum of 64-bit coefficients has been computed with 128-bit accuracy in order to avoid numerical errors in the ground truth value.
-
+In order to compute the numerical error, each polynomial has been evaluated at a point chosen uniformly random from $[-1; 1]^m$ with the different methods.
+The polynomial evaluation algorithms use 64-bit floating point numbers, whereas the ground truth has been computed with 128-bit accuracy in order to avoid numerical errors in the ground truth value.
+To receive more representative results, the obtained numerical error is being averaged over 100 tries with uniformly random coefficients each in the range $[-1; 1]$,
+All errors are displayed as (averaged) absolute values.
 
 ![numerical error of evaluating randomly generated polynomials in canonical form relative to the Horner factorisation.\label{fig:num_err_heatmap}](../docs/_static/num_err_heatmap.png)
 
 Note that even though the original monomials are not actually present in a Horner factorisation, the amount of coefficients however is identical to the amount of coefficients of its canonical form.
 With increasing size in terms of the amount of included coefficients the numerical error of both the canonical form and the Horner factorisation found by `multivar_horner` grow exponentially (cf. \autoref{fig:num_err_growth}).
 However, in comparison to the canonical form, the Horner factorisation is more numerically stable as it has also been visualised in \autoref{fig:num_err_heatmap}.
-For theoretical results of 
 The numerical stability of Horner factorisations has theoretically been shown in [@greedyHorner; @pena2000multivariate; @pena2000multivariate2].
 
 Even though the amount of operations required for evaluating the polynomials grow exponentially with their size irrespective of the representation, the rate of growth is lower for the Horner factorisation (cf. \autoref{fig:num_ops_growth}).

@@ -9,8 +9,8 @@ from multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 from multivar_horner.global_settings import FLOAT_DTYPE
 from tests.test_helpers import rnd_settings_list
 from tests.test_settings import (
-    DEGREE_RANGE, DIM_RANGE, MAX_COEFF_MAGNITUDE, MAX_NUMERICAL_ERROR,
-    NR_COEFF_CHANGES, NR_TEST_POLYNOMIALS, TEST_RESULTS_PICKLE,
+    DEGREE_RANGE, DIM_RANGE, DTYPE_HIGH_PREC, MAX_COEFF_MAGNITUDE,
+    MAX_NUMERICAL_ERROR, NR_COEFF_CHANGES, NR_TEST_POLYNOMIALS, TEST_RESULTS_PICKLE,
 )
 
 
@@ -31,8 +31,16 @@ def evaluate_numerical_error(dim, max_degree):
         nr_monomials = exponents.shape[0]
         # find factorisation (expensive)
         poly_horner = HornerMultivarPolynomial(coefficients, exponents, validate_input=True)
+        poly = MultivarPolynomial(coefficients, exponents)
+        coefficients = coefficients.astype(DTYPE_HIGH_PREC)
+        poly_high_prec = MultivarPolynomial(coefficients, exponents, validate_input=False)
 
         for coeff_ctr in range(NR_COEFF_CHANGES):
+
+            # evaluation @ uniformly random point
+            x = ((np.random.rand(dim) - 0.5) * (2 * MAX_COEFF_MAGNITUDE))
+            x = x.astype(FLOAT_DTYPE)
+
             # simply change coefficients of the found factorisation (cheap)
             coefficients = ((np.random.rand(nr_monomials, 1) - 0.5) * (2 * MAX_COEFF_MAGNITUDE))
             coefficients = coefficients.astype(FLOAT_DTYPE)
@@ -41,7 +49,7 @@ def evaluate_numerical_error(dim, max_degree):
             poly_horner.change_coefficients(coefficients, validate_input=True, in_place=True)
             p_x_horner = poly_horner.eval(x)
 
-            poly = MultivarPolynomial(coefficients, exponents)
+            poly.change_coefficients(coefficients, validate_input=True, in_place=True)
             p_x = poly.eval(x)
 
             # in order to compare to a numerically accurate ground truth
@@ -51,8 +59,16 @@ def evaluate_numerical_error(dim, max_degree):
             # one must NOT create random 128-bit coefficients as ground truth
             # this would cause additional numerical error, because the algorithms have only 64-bit accuracy!
             # -> create 64-bit coefficients, then convert them to 128-bit!
-            coefficients = np.asarray(coefficients, dtype=np.float128)
-            p_x_expected = np.sum(coefficients)  # ground truth
+            coefficients = coefficients.astype(DTYPE_HIGH_PREC)
+            # p_x_expected = np.sum(coefficients)  # ground truth
+
+            # ground truth at random point:
+            # NOTE: need to deactivate jit compilation of naive approach
+            # use higher prevision
+            # suppress input validation
+            poly_high_prec.change_coefficients(coefficients, validate_input=False, in_place=True)
+            x = x.astype(DTYPE_HIGH_PREC)
+            p_x_expected = poly_high_prec.eval(x)
 
             result = (poly, poly_horner, p_x_expected, p_x, p_x_horner)
             results.append(result)
@@ -60,7 +76,7 @@ def evaluate_numerical_error(dim, max_degree):
             max_error = max(max_error, abs_numerical_error)
             sys.stdout.write(f'(poly #{poly_ctr + 1} coeff #{coeff_ctr + 1}, {(ctr_total + 1) / ctr_total_max:.1%})'
                              f' max numerical error: {max_error:.2e}\r')
-            sys.stdout.flush()
+            # sys.stdout.flush()
             if max_error > MAX_NUMERICAL_ERROR:
                 # # DEBUG:
                 # with open('coefficients.pickle', 'wb') as f:

@@ -14,12 +14,13 @@ PLOTTING_DIR = abspath(join(__file__, pardir, 'plots'))
 
 ALPHA = 0.8
 
+
 NR_TEST_POLYNOMIALS = 5  # repetitions
 MAX_COEFF_MAGNITUDE = 1e0
 MAX_INP_MAGNITUDE = MAX_COEFF_MAGNITUDE  # max magnitude of evaluation points x
-MAX_DIMENSION = 3
+MAX_DIMENSION = 7
 DIM_RANGE = list(range(1, MAX_DIMENSION + 1))
-MAX_DEGREE = 4
+MAX_DEGREE = 7
 DEGREE_RANGE = list(range(1, MAX_DEGREE + 1))
 
 # speed tests
@@ -29,6 +30,7 @@ SPEED_RUN_PICKLE = 'speed_results.pickle'
 # numercial tests
 NR_COEFF_CHANGES = 100  # controlling the noise for averaging the numerical error of a single polynomial run
 TEST_RESULTS_PICKLE = 'test_results.pickle'
+DTYPE_HIGH_PREC = np.float128
 
 # max allowed numerical error
 # n orders of magnitudes less than the coefficients

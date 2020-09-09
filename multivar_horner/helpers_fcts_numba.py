@@ -12,7 +12,7 @@ from numba import b1, f8, jit, u4
 
 
 # TODO define and import dtypes globally
-@jit(f8(f8[:], f8[:], u4[:, :]), nopython=True, cache=True)
+# @jit(f8(f8[:], f8[:], u4[:, :]), nopython=True, cache=True)
 def naive_eval(x, coefficients, exponents):
     nr_coeffs = len(coefficients)
     # nr_monomials,nr_dims = exponents.shape

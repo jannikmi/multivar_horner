@@ -505,7 +505,7 @@ def plot_num_error_growth_comparison(results):
 
     attr_name_representation = 'representation'
     attr_name_num_coeff = 'number of coefficients'
-    attr_name_numerical_err = 'average numerical error'
+    attr_name_numerical_err = 'average absolute numerical error'
     repr_name_horner = 'Horner factorisation'
     repr_name_naive = 'canonical form'
 
@@ -646,8 +646,8 @@ if __name__ == '__main__':
     # TODO plot with seaborn in the same fashion as numerical test
     # TODO compare & plot the performance wrt. the "density" of the polynomials. sparse <-> fully occupied
     # TODO make num tested polynomials dependent on parameters (size, time) (faster runs are more noisy)
-    run_speed_benchmark()  # generate speed test data
+    # run_speed_benchmark()  # generate speed test data
     # TODO include plots in documentation
-    plot_speed_results()  # create plots with speed test data
+    # plot_speed_results()  # create plots with speed test data
 
     plot_numerical_error()  # create plots with numerical test data
