@@ -74,19 +74,24 @@ Due to its simplicity and universality this kind of representation is used for d
 It should be noted that this most trivial representation is computationally very expensive to evaluate.
 In this particular case, for example, a polynomial evaluation based on arrays would require a total of 27 operations (exponentiations, multiplications and additions).
 
-The following code snippet shows how to use `multivar_horner` for computing a Horner factorisation of $p$ and evaluating $p$ at a point $x$:
+The following code snippet shows how to use `multivar_horner` for computing a Horner factorisation of $p$: 
+
 
 ```python
 from multivar_horner import HornerMultivarPolynomial
 coefficients = [5.0, 1.0, 2.0, 3.0]
 exponents = [[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]]
-p = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True)
-# [#ops=10] p(x) = x_1 (x_1 (x_1 (1.0 x_2) + 2.0 x_3) + 3.0 x_2 x_3) + 5.0
-x = [-2.0, 3.0, 1.0]
-p_x = p.eval(x, rectify_input=True) # -29.0
+p = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True, compute_representation=True)
 ````
 
-The factorisation computed by `multivar_horner` is $p(x) =  x_1 (x_1 (x_1 (1 x_2) + 2 x_3) + 3 x_2 x_3) + 5$ and requires 10 operations for every polynomial evaluation.
+The factorisation computed by `multivar_horner` is $p(x) =  x_1 (x_1 (x_1 (1 x_2) + 2 x_3) + 3 x_2 x_3) + 5$ and requires 10 mathematical operations for every polynomial evaluation.
+The human readable representation of the polynomial can be accessed with:
+
+```python
+print(p.representation)
+# [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0
+````
+
 It should be noted that the implemented factorisation procedure is coefficient-agnostic and hence does not, for example, optimise multiplications with $1$.
 This design choice has been made in order to have the ability to change the coefficients of a computed polynomial representation a posteriori.
 
@@ -95,6 +100,13 @@ When no leaves of the resulting binary "Horner factorisation tree" can be factor
 This recipe encodes all operations required to evaluate the polynomial in `numpy` arrays [@numpy].
 This enables the use of functions just-in-time compiled by `numba` [@numba], which allow the polynomial evaluation to be computationally efficient.
 The just-in-time compiled functions are always used, since a pure-Python polynomial evaluation would to some extent outweigh the benefits of Horner factorisation representations.
+
+`multivar_horner` allows to evaluate the polynomial $p$ at a point $x$:
+
+```python
+x = [-2.0, 3.0, 1.0]
+p_x = p.eval(x, rectify_input=True) # -29.0
+````
 
 
 # Degrees of multivariate polynomials
