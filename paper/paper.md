@@ -81,7 +81,8 @@ The following code snippet shows how to use `multivar_horner` for computing a Ho
 from multivar_horner import HornerMultivarPolynomial
 coefficients = [5.0, 1.0, 2.0, 3.0]
 exponents = [[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]]
-p = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True, compute_representation=True)
+p = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True, 
+	compute_representation=True)
 ````
 
 The factorisation computed by `multivar_horner` is $p(x) =  x_1 (x_1 (x_1 (1 x_2) + 2 x_3) + 3 x_2 x_3) + 5$ and requires 10 mathematical operations for every polynomial evaluation.
@@ -89,7 +90,8 @@ The human readable representation of the polynomial can be accessed with:
 
 ```python
 print(p.representation)
-# [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0
+# [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) 
+	+ 3.0 x_2^1 x_3^1) + 5.0
 ````
 
 It should be noted that the implemented factorisation procedure is coefficient-agnostic and hence does not, for example, optimise multiplications with $1$.
