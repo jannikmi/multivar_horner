@@ -91,7 +91,7 @@ The human readable representation of the polynomial can be accessed with:
 ```python
 print(p.representation)
 # >> [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) 
-#                                    + 3.0 x_2^1 x_3^1) + 5.0
+#                        + 3.0 x_2^1 x_3^1) + 5.0
 ````
 
 It should be noted that the implemented factorisation procedure is coefficient-agnostic and hence does not, for example, optimise multiplications with $1$.
