@@ -2,7 +2,7 @@ import numpy as np
 
 from .global_settings import ID_ADD, ID_MULT, UINT_DTYPE
 from .helper_classes import PriorityQueue2D
-from .helpers_fcts_numba import compile_valid_options, count_usage, factor_num_ops, num_ops_1D_horner, true_num_ops
+from .helpers_fcts_numba import compile_valid_options, count_num_ops, count_usage, factor_num_ops, num_ops_1D_horner
 
 
 class FactorisationNode:
@@ -96,7 +96,9 @@ class OptimalFactorisationNode(FactorisationNode):
 
     def __init__(self, factor, node1_fact, node2, factorized_rows, non_factorized_rows):
         super(OptimalFactorisationNode, self).__init__(factor, node1_fact, node2, factorized_rows, non_factorized_rows)
-        self.cost_estimate = 0
+        self.cost_estimate: int = 0
+        # IDEA: when different factorisations have the same cost estimate,
+        # favour the one which is factorised the most already
         self.factorisation_measure = 0
         self.fully_factorized = False
         self.update_properties()
@@ -394,10 +396,11 @@ class OptimalPolynomialNode(BasePolynomialNode):
          -> derive rule.
         """
         if self.fully_factorized:
-            # use the true number of operations
-            self.cost_estimate = true_num_ops(self.exponents)
+            # the actual operation count can be computed:
+            self.cost_estimate = count_num_ops(self.exponents)
         else:
-            heuristic = 0
+            # count one multiplication with the coefficients for each monomial
+            heuristic = np.count_nonzero(np.any(self.exponents, axis=1))
             for dim_unique_exp in self.unique_exponents:
                 heuristic += num_ops_1D_horner(dim_unique_exp)
             self.cost_estimate = heuristic
@@ -430,7 +433,6 @@ class OptimalPolynomialNode(BasePolynomialNode):
         self.factorisation_measure = len(options)
         self.fully_factorized = len(options) == 0
         self.options = options
-        pass
 
     def refine(self):
         """
@@ -438,7 +440,7 @@ class OptimalPolynomialNode(BasePolynomialNode):
 
         TODO improvement:
         initially compute good factorisation (with heuristic). use as upper bound for the #ops
-        do not keep factorisations which have a higher or equal! estimated #ops (<- save memory)
+        do not keep factorisations which have a higher or !equal! estimated #ops (<- save memory)
         when heap becomes empty, the heuristic solution is optimal
         apply to all layers, pass upper bound down the tree (reduce accordingly)
         NOTE: when searching all optimal solutions having the same #ops as the upper bound is allowed!

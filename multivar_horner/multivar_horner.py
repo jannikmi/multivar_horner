@@ -16,7 +16,7 @@ from multivar_horner.helper_fcts import (
     rectify_coefficients, rectify_construction_parameters, rectify_query_point,
     validate_coefficients, validate_construction_parameters, validate_query_point,
 )
-from multivar_horner.helpers_fcts_numba import eval_recipe, naive_eval
+from multivar_horner.helpers_fcts_numba import count_num_ops, eval_recipe, naive_eval
 
 
 # is not a helper function to make it an importable part of the package
@@ -265,11 +265,9 @@ class MultivarPolynomial(AbstractPolynomial):
         super(MultivarPolynomial, self).__init__(coefficients, exponents, rectify_input, validate_input,
                                                  compute_representation)
 
-        # the number of instructions required for processing the ndarrays:
-        # exponentiation: dim*num_monomials
-        # multiplication: coefficient and scalar factors (monomials): x*num_monomials
-        # sum: num_monomials-1
-        self.num_ops = 2 * self.dim * self.num_monomials + self.num_monomials - 1
+        # NOTE: count the number of multiplications of the representation
+        # not the actual amount of operations required by the naive evaluation with numpy arrays
+        self.num_ops = count_num_ops(self.exponents)
         self.compute_string_representation(*args, **kwargs)
 
     def compute_string_representation(self, coeff_fmt_str: str = '{:.2}', factor_fmt_str: str = 'x_{dim}^{exp}', *args,
@@ -421,9 +419,6 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         self.copy_recipe, self.scalar_recipe, self.monomial_recipe, self.tree_recipe, self.tree_ops = \
             self._compile_recipes()
 
-        # for every entry in each recipe one operation is being done
-        self.num_ops = self.scalar_recipe.shape[0] + self.monomial_recipe.shape[0] + self.tree_ops.shape[0]
-
         self.value_array_length = self.num_monomials + len(self.factor_container.scalar_factors) + len(
             self.factor_container.monomial_factors)
 
@@ -485,6 +480,10 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         scalar_recipe = []
         monomial_recipe = []
 
+        # count the amount of multiplications encoded by the recipes
+        # NOTE: count exponentiations as exponent-1 multiplications, e.g. x^3 <-> 2 operations
+        self.num_ops = 0
+
         # -> IMPORTANT: value idx assignment must happen first for the scalar factors
         for scalar_factor in self.factor_container.scalar_factors:
             scalar_factor.value_idx = value_idx
@@ -492,6 +491,9 @@ class HornerMultivarPolynomial(AbstractPolynomial):
             copy_instr, scalar_instr = scalar_factor.get_recipe()
             copy_recipe += copy_instr
             scalar_recipe += scalar_instr
+            if len(scalar_instr) > 0:
+                exponent = scalar_instr[0][2]
+                self.num_ops += exponent - 1
 
         for monomial_factor in self.factor_container.monomial_factors:
             monomial_factor.value_idx = value_idx
@@ -499,16 +501,20 @@ class HornerMultivarPolynomial(AbstractPolynomial):
             monomial_factor.factorisation_idxs = [f.value_idx for f in monomial_factor.scalar_factors]
             monomial_instr = monomial_factor.get_recipe()
             monomial_recipe += monomial_instr
+            self.num_ops += 1  # every monomial instruction encodes one multiplication
 
         # compile the recipe for evaluating the Horner factorisation tree
         tree_recipe, tree_ops = self.factorisation_tree.get_recipe()
         # convert the recipes into the data types expected by the jit compiled functions
         # and store them
+        tree_ops = np.array(tree_ops, dtype=BOOL_DTYPE)
+        self.num_ops += len(tree_ops) - np.count_nonzero(tree_ops)  # every 0/False encodes a multiplication
+
         return (np.array(copy_recipe, dtype=UINT_DTYPE).reshape((-1, 2)),
                 np.array(scalar_recipe, dtype=UINT_DTYPE).reshape((-1, 3)),
                 np.array(monomial_recipe, dtype=UINT_DTYPE).reshape((-1, 3)),
                 np.array(tree_recipe, dtype=UINT_DTYPE).reshape((-1, 2)),
-                np.array(tree_ops, dtype=BOOL_DTYPE))
+                tree_ops)
 
     def eval(self, x: TYPE_1D_FLOAT, rectify_input: bool = False, validate_input: bool = False, ) -> float:
         """ computes the value of the polynomial at query point x

@@ -109,20 +109,22 @@ def num_ops_1D_horner(unique_exponents):
     :param unique_exponents: np array of unique exponents sorted in increasing order without 0
     :return: the number of operations of the one dimensional Horner factorisation
         without counting additions (just MUL & POW) and without considering the coefficients
+    do not count additions and exponentiations. just multiplications
+    do not consider the multiplications with the coefficients (amount stays constant)
 
 
     NOTE: in 1D the Horner factorisation is both unique and optimal (minimal amount of operations)
+    -> gives a lower bound for the amount of required operations
+    (=required property for usage as cost estimation heuristic)
     """
     nr_unique_exponents = unique_exponents.shape[0]
-    # the exponent 0 is not present!
-    assert not np.any(unique_exponents == 0)
-
+    # assert not np.any(unique_exponents == 0), "the exponent 0 must not be present"
     if nr_unique_exponents == 0:
         return 0
 
     # one MUL operation is required !between! all factors in the factorisation chain
     # the amount of factors (= "length of factorisation chain") is equal to the amount of unique existing exponents
-    num_ops = nr_unique_exponents - 1
+    num_ops = - 1
 
     # start with exponent 0 (not in unique exponents)
     # the difference between one and the next exponent determines if a POW operation is needed to evaluate a factor
@@ -130,30 +132,41 @@ def num_ops_1D_horner(unique_exponents):
     prev_exp = 0
     for i in range(nr_unique_exponents):
         exp = unique_exponents[i]
-        if exp - prev_exp >= 2:
-            num_ops += 1  # 1 POW operation
+        # the exponents MUST increase -> count at least one operation (multiplication)
+        # for every exponent difference >1
+        # count exponent-1 additional multiplications for computing the exponentiations
+        exp_diff = exp - prev_exp
+        num_ops += exp_diff
         prev_exp = exp
 
     return num_ops
 
 
 @jit(u4(u4[:, :]), nopython=True, cache=True)
-def true_num_ops(exponent_matrix):
-    """
-    without counting additions (just MUL & POW) and but WITH considering the coefficients (1 MUL per monomial)
-    """
-    num_ops = 0
-    for monomial_nr in range(exponent_matrix.shape[0]):
-        for dim in range(exponent_matrix.shape[1]):
-            exp = exponent_matrix[monomial_nr, dim]
-            if exp > 0:
-                # per scalar factor 1 MUL operation is required
-                num_ops += 1
-                if exp >= 2:
-                    # for scalar factors with exponent >= 2 additionally 1 POW operation is required
-                    num_ops += 1
+def count_num_ops(exponent_matrix):
+    """ counts the amount of multiplications required during evaluation
 
-    return num_ops
+    under the assumption: this polynomial representation does not get factorised any further
+    do not count additions and exponentiations
+
+    1 multiplication required for every coefficient when there is a monomial (non zero exponent) present
+    one multiplication for multiplying the scalar factors with each other
+    (amount of non zero exponents in each monomial -1)
+    exponent - 1 multiplications for every evaluation of an exponentiation of every scalar factor
+    = the total sum of exponents
+    """
+    return np.sum(exponent_matrix)
+
+
+@jit(u4(u4, u4), nopython=True, cache=True)
+def factor_num_ops(dim, exp):
+    """
+    NOTE: all factors are scalars: x^i
+    count every exponentiation as exponent-1 multiplications
+
+    :return: the amount of operations required to evaluate the scalar factor
+    """
+    return exp - 1
 
 
 @jit(u4[:](u4, u4[:], u4[:], u4[:, :]), nopython=True, cache=True)
@@ -203,16 +216,3 @@ def count_usage(dim, exp, exponent_matrix):
             usage_cnt += 1
 
     return usage_cnt
-
-
-@jit(u4(u4, u4), nopython=True, cache=True)
-def factor_num_ops(dim, exp):
-    """
-    :return: the amount of operations required to evaluate the scalar factor
-    """
-    if exp >= 2:
-        # 1 MUL + 1 POW
-        return 2
-    else:
-        # 1 MUL
-        return 1

@@ -44,11 +44,11 @@ class MainTest(unittest.TestCase):
         polynomial1 = MultivarPolynomial(coefficients, exponents, compute_representation=False)
         polynomial2 = MultivarPolynomial(coefficients, exponents, compute_representation=True)
         # both must have a string representation
-        # [#ops=27] p(x)
-        # [#ops=27] p(x) = 5.0 x_1^0 x_2^0 x_3^0 + 1.0 x_1^3 x_2^1 x_3^0 + 2.0 x_1^2 x_2^0 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
+        # [#ops=10] p(x)
+        # [#ops=10] p(x) = 5.0 x_1^0 x_2^0 x_3^0 + 1.0 x_1^3 x_2^1 x_3^0 + 2.0 x_1^2 x_2^0 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
         assert len(str(polynomial1)) < len(str(polynomial2))
         assert str(polynomial1) == polynomial1.representation
-        assert polynomial1.num_ops == 27
+        assert polynomial1.num_ops == 10
 
         return_str_repr = polynomial1.compute_string_representation(coeff_fmt_str='{:1.1e}',
                                                                     factor_fmt_str='(x{dim} ** {exp})')
@@ -57,11 +57,13 @@ class MainTest(unittest.TestCase):
 
         polynomial1 = HornerMultivarPolynomial(coefficients, exponents, compute_representation=False)
         polynomial2 = HornerMultivarPolynomial(coefficients, exponents, compute_representation=True)
-        # [#ops=10]
-        # [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0
-        assert len(str(polynomial1)) < len(str(polynomial2))
-        assert str(polynomial1) == polynomial1.representation
-        assert polynomial1.num_ops == 10
+        r1 = str(polynomial1)  # [#ops=7] p(x)
+        r2 = str(polynomial2)  # [#ops=7] p(x) = x_1 (x_1 (x_1 (1.0 x_2) + 2.0 x_3) + 3.0 x_2 x_3) + 5.0
+        assert len(r1) < len(r2)
+        assert r1 == polynomial1.representation
+        assert r2 == polynomial2.representation
+        assert polynomial1.num_ops == polynomial2.num_ops
+        assert polynomial2.num_ops == 7
 
         return_str_repr = polynomial1.compute_string_representation(coeff_fmt_str='{:1.1e}',
                                                                     factor_fmt_str='(x{dim} ** {exp})')
