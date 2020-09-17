@@ -74,14 +74,14 @@ Due to its simplicity and universality this kind of representation is used for d
 It should be noted that this most trivial representation is computationally very expensive to evaluate.
 In this particular case, for example, a polynomial evaluation based on arrays would require a total of 27 operations (exponentiations, multiplications and additions).
 
-The following code snippet shows how to use `multivar_horner` for computing a Horner factorisation of $p$: 
+The following code snippet shows how to use `multivar_horner` for computing a Horner factorisation of $p$:
 
 
 ```python
 from multivar_horner import HornerMultivarPolynomial
 coefficients = [5.0, 1.0, 2.0, 3.0]
 exponents = [[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]]
-p = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True, 
+p = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True,
 	compute_representation=True)
 ````
 
@@ -90,7 +90,7 @@ The human readable representation of the polynomial can be accessed with:
 
 ```python
 print(p.representation)
-# >> [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) 
+# >> [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1)
 #                        + 3.0 x_2^1 x_3^1) + 5.0
 ````
 
@@ -146,7 +146,7 @@ Five polynomials were sampled randomly for each maximal degree up to 7 and dimen
 In order to compute the numerical error, each polynomial is evaluated at a point sampled uniformly from $[-1; 1]^m$ with the different methods.
 The polynomial evaluation algorithms use 64-bit floating point numbers, whereas the ground truth is computed with 128-bit accuracy in order to avoid numerical errors in the ground truth value.
 To obtain more representative results, the numerical error is averaged over 100 runs with uniformly-random coefficients each in the range $[-1; 1]$.
-All errors are displayed as (averaged) absolute values.
+All errors are displayed relative to the ground truth.
 
 ![Numerical error of evaluating randomly generated polynomials in canonical form relative to the Horner factorisation.\label{fig:num_err_heatmap}](../docs/_static/num_err_heatmap.png)
 

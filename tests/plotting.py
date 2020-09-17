@@ -306,12 +306,18 @@ def plot_speed_results():
 
 def extract_numerical_error_horner(result):
     poly, poly_horner, p_x_expected, p_x, p_x_horner = result
-    return abs(p_x_horner - p_x_expected)
+    abs_error = abs(p_x_horner - p_x_expected)
+    rel_error = abs_error / abs(p_x_expected)
+    # return abs_error
+    return rel_error
 
 
 def extract_numerical_error_naive(result):
     poly, poly_horner, p_x_expected, p_x, p_x_horner = result
-    return abs(p_x_horner - p_x)
+    abs_error = abs(p_x - p_x_expected)
+    rel_error = abs_error / abs(p_x_expected)
+    # return abs_error
+    return rel_error
 
 
 def has_nonzero_err_horner(result):
@@ -505,7 +511,7 @@ def plot_num_error_growth_comparison(results):
 
     attr_name_representation = 'representation'
     attr_name_num_coeff = 'number of coefficients'
-    attr_name_numerical_err = 'average absolute numerical error'
+    attr_name_numerical_err = 'average relative numerical error'
     repr_name_horner = 'Horner factorisation'
     repr_name_naive = 'canonical form'
 
