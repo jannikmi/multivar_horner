@@ -32,6 +32,12 @@ def evaluate_numerical_error(dim, max_degree):
         # find factorisation (expensive)
         poly_horner = HornerMultivarPolynomial(coefficients, exponents, validate_input=True)
         poly = MultivarPolynomial(coefficients, exponents)
+
+        # # for evaluating only the polynomial properties without the numerical errors:
+        # result = (poly, poly_horner, 0.0,0.0,0.0)
+        # results.append(result)
+        # continue
+
         coefficients = coefficients.astype(DTYPE_HIGH_PREC)
         poly_high_prec = MultivarPolynomial(coefficients, exponents, validate_input=False)
 
@@ -88,7 +94,6 @@ def evaluate_numerical_error(dim, max_degree):
 
         sys.stdout.write("\n")  # move the cursor to the next line
 
-    print('\n... done.\n')
     return results
 
 
