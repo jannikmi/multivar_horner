@@ -86,8 +86,12 @@ The just in time compiled functions are always being used, since a pure python p
 # Degrees of multivariate polynomials
 
 
-It is important to note that in contrast to the one dimensional case, several concepts of degree exist for polynomials in multiple dimensions.
-Following the notation of [@trefethen2017multivariate] the usual notion of degree of a polynomial, the maximal degree, is the maximal sum of exponents of all monomials.
+![The number of coefficients of fully occupied polynomials of different degrees in 3 dimensions.\label{fig:num_coeff_growth}](num_coeff_growth.png)
+
+
+
+In contrast to the one-dimensional case, there are several concepts of degree for polynomials in multiple dimensions.
+Following the notation of [@trefethen2017multivariate] the usual notion of degree of a polynomial, the *total degree*, is the maximal sum of exponents of all monomials.
 This is equal to the maximal $l_1$-norm of all exponent vectors of the monomials.
 Accordingly the euclidean degree is the maximal $l_2$-norm and the maximal degree is the maximal $l_{\infty}$-norm of all exponent vectors.
 Refer to [@trefethen2017multivariate] for precise definitions.
@@ -95,9 +99,6 @@ Refer to [@trefethen2017multivariate] for precise definitions.
 A polynomial is called fully occupied with respect to a certain degree if all possible monomials having a smaller or equal degree are present.
 The occupancy of a polynomial can then be defined as the amount of existing monomials relative to the fully occupied polynomial of this degree.
 A fully occupied polynomial hence has an occupancy of $1$.
-
-
-![the amount of coefficients of fully occupied polynomials of different degrees in 3 dimensions.\label{fig:num_coeff_growth}](num_coeff_growth.png)
 
 
 The amount of coefficients (equal to the amount of possible monomials) in multiple dimensions highly depends on the type of degree a polynomial has (cf. \autoref{fig:num_coeff_growth}).
