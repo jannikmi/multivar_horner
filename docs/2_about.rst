@@ -56,7 +56,8 @@ With this package it is also possible to represent polynomials in :ref:`canonica
 
 Also see:
 `GitHub <https://github.com/MrMinimal64/multivar_horner>`__,
-`PyPI <https://pypi.python.org/pypi/multivar_horner/>`__
+`PyPI <https://pypi.python.org/pypi/multivar_horner/>`__,
+`arXiv paper <https://arxiv.org/abs/2007.13152>`__
 
 
 
@@ -110,9 +111,10 @@ As a result the Horner factorisations are computationally easier to evaluate.
 Numerical error
 ^^^^^^^^^^^^^^^
 
-In order to compute the numerical error, each polynomial has been evaluated at the point of all ones.
-The true result in this case should always be the sum of all coefficients.
-The resulting numerical error is being averaged over 100 tries with uniformly random coefficients in the range [-1; 1].
+In order to compute the numerical error, each polynomial has been evaluated at a point chosen uniformly random from $[-1; 1]^m$ with the different methods.
+The polynomial evaluation algorithms use 64-bit floating point numbers, whereas the ground truth has been computed with 128-bit accuracy in order to avoid numerical errors in the ground truth value.
+To receive more representative results, the obtained numerical error is being averaged over 100 tries with uniformly random coefficients each in the range $[-1; 1]$,
+All errors are displayed as (averaged) absolute values.
 
 
 With increasing size in terms of the amount of included coefficients the numerical error of both the canonical form and the Horner factorisation found by ``multivar_horner`` grow exponentially.
@@ -130,6 +132,15 @@ This has also been visualised in the following figure:
 .. figure:: _static/num_err_heatmap.png
 
     numerical error of evaluating randomly generated polynomials in canonical form relative to the Horner factorisation.
+
+
+.. note::
+
+    if you require an even higher numerical stability you can set ``FLOAT_DTYPE = numpy.float128``
+    or ``FLOAT_DTYPE = numpy.longfloat`` in ``global_settings.py``.
+    Then however the jit compilation has to be removed in ``helper_fcts_numba.py`` (``Numba`` does not support float128).
+
+
 
 
 Speed tests

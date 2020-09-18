@@ -132,21 +132,26 @@ in order to compile a string representation of a polynomial pass ``compute_repre
 
 .. note::
 
-    the number in square brackets indicates the number of mathematical operations (ADD, MUL, POW) required
+    the number in square brackets indicates the number of multiplications required
     to evaluate the polynomial.
+
+.. note::
+
+    exponentiations are counted as exponent - 1 operations, e.g. x^3 <-> 2 operations
 
 .. code-block:: python
 
     polynomial = MultivarPolynomial(coefficients, exponents)
-    print(polynomial) # [#ops=27] p(x)
+    print(polynomial)  # [#ops=10] p(x)
+
 
     polynomial = MultivarPolynomial(coefficients, exponents, compute_representation=True)
     print(polynomial)
-    # [#ops=27] p(x) = 5.0 x_1^0 x_2^0 x_3^0 + 1.0 x_1^3 x_2^1 x_3^0 + 2.0 x_1^2 x_2^0 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
+    # [#ops=10] p(x) = 5.0 x_1^0 x_2^0 x_3^0 + 1.0 x_1^3 x_2^1 x_3^0 + 2.0 x_1^2 x_2^0 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
 
     horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, compute_representation=True)
     print(horner_polynomial.representation)
-    # [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0
+    # [#ops=7] p(x) = x_1 (x_1 (x_1 (1.0 x_2) + 2.0 x_3) + 3.0 x_2 x_3) + 5.0
 
 
 the formatting of the string representation can be changed with the parameters ``coeff_fmt_str`` and ``factor_fmt_str``:
@@ -169,7 +174,7 @@ the string representation can be computed after construction as well.
 
     polynomial.compute_string_representation(coeff_fmt_str='{:1.1e}', factor_fmt_str='(x{dim} ** {exp})')
     print(polynomial)
-    # [#ops=27] p(x) = 5.0e+00 (x1 ** 0) (x2 ** 0) (x3 ** 0) + 1.0e+00 (x1 ** 3) (x2 ** 1) (x3 ** 0)
+    # [#ops=10] p(x) = 5.0e+00 (x1 ** 0) (x2 ** 0) (x3 ** 0) + 1.0e+00 (x1 ** 3) (x2 ** 1) (x3 ** 0)
     #                   + 2.0e+00 (x1 ** 2) (x2 ** 0) (x3 ** 1) + 3.0e+00 (x1 ** 1) (x2 ** 1) (x3 ** 1)
 
 
@@ -316,7 +321,7 @@ computing the partial derivative of a polynomial
 .. code-block:: python
 
     deriv_2 = polynomial.get_partial_derivative(2, compute_representation=True)
-    # [#ops=5] p(x) = x_1 (x_1^2 (1.0) + 3.0 x_3)
+    # p(x) = x_1 (x_1^2 (1.0) + 3.0 x_3)
 
 
 
@@ -340,7 +345,7 @@ computing the gradient of a polynomial
 
     grad = polynomial.get_gradient(compute_representation=True)
     # grad = [
-    #     [#ops=8] p(x) = x_1 (x_1 (3.0 x_2) + 4.0 x_3) + 3.0 x_2 x_3,
-    #     [#ops=5] p(x) = x_1 (x_1^2 (1.0) + 3.0 x_3),
-    #     [#ops=4] p(x) = x_1 (x_1 (2.0) + 3.0 x_2)
+    #     p(x) = x_1 (x_1 (3.0 x_2) + 4.0 x_3) + 3.0 x_2 x_3,
+    #     p(x) = x_1 (x_1^2 (1.0) + 3.0 x_3),
+    #     p(x) = x_1 (x_1 (2.0) + 3.0 x_2)
     # ]

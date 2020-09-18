@@ -52,7 +52,7 @@ Quick Guide:
     exponents = np.array([[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=np.uint32)
 
 
-    # [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0
+    # [#ops=7] p(x) = x_1 (x_1 (x_1 (1.0 x_2) + 2.0 x_3) + 3.0 x_2 x_3) + 5.0
     horner_polynomial = HornerMultivarPolynomial(coefficients, exponents)
     x = np.array([-2.0, 3.0, 1.0], dtype=np.float64)
     p_x = horner_polynomial(x)
@@ -63,5 +63,6 @@ For more refer to the `documentation <https://multivar_horner.readthedocs.io/en/
 
 Also see:
 `GitHub <https://github.com/MrMinimal64/multivar_horner>`__,
-`PyPI <https://pypi.python.org/pypi/multivar_horner/>`__
+`PyPI <https://pypi.python.org/pypi/multivar_horner/>`__,
+`arXiv paper <https://arxiv.org/abs/2007.13152>`__
 

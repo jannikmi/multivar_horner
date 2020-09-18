@@ -12,9 +12,7 @@
 
 
 import itertools
-import pickle
 import unittest
-from itertools import product
 
 import numpy as np
 import pytest
@@ -22,11 +20,11 @@ import pytest
 from multivar_horner.global_settings import FLOAT_DTYPE, UINT_DTYPE
 from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 # settings for numerical stability tests
-from tests.test_helpers import evaluate_numerical_error, naive_eval_reference, proto_test_case, vectorize
+from tests.test_helpers import naive_eval_reference, proto_test_case, vectorize
 from tests.test_settings import (
-    COEFF_CHANGE_DATA, DEGREE_RANGE, DIM_RANGE, INPUT_DATA_INVALID_TYPES_CONSTRUCTION,
-    INPUT_DATA_INVALID_TYPES_QUERY, INPUT_DATA_INVALID_VALUES_CONSTRUCTION, INPUT_DATA_INVALID_VALUES_QUERY,
-    MAX_INP_MAGNITUDE, NR_TEST_POLYNOMIALS, TEST_RESULTS_PICKLE, VALID_TEST_DATA,
+    COEFF_CHANGE_DATA, INPUT_DATA_INVALID_TYPES_CONSTRUCTION, INPUT_DATA_INVALID_TYPES_QUERY,
+    INPUT_DATA_INVALID_VALUES_CONSTRUCTION, INPUT_DATA_INVALID_VALUES_QUERY,
+    MAX_INP_MAGNITUDE, NR_TEST_POLYNOMIALS, VALID_TEST_DATA,
 )
 
 
@@ -46,11 +44,11 @@ class MainTest(unittest.TestCase):
         polynomial1 = MultivarPolynomial(coefficients, exponents, compute_representation=False)
         polynomial2 = MultivarPolynomial(coefficients, exponents, compute_representation=True)
         # both must have a string representation
-        # [#ops=27] p(x)
-        # [#ops=27] p(x) = 5.0 x_1^0 x_2^0 x_3^0 + 1.0 x_1^3 x_2^1 x_3^0 + 2.0 x_1^2 x_2^0 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
+        # [#ops=10] p(x)
+        # [#ops=10] p(x) = 5.0 x_1^0 x_2^0 x_3^0 + 1.0 x_1^3 x_2^1 x_3^0 + 2.0 x_1^2 x_2^0 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
         assert len(str(polynomial1)) < len(str(polynomial2))
         assert str(polynomial1) == polynomial1.representation
-        assert polynomial1.num_ops == 27
+        assert polynomial1.num_ops == 10
 
         return_str_repr = polynomial1.compute_string_representation(coeff_fmt_str='{:1.1e}',
                                                                     factor_fmt_str='(x{dim} ** {exp})')
@@ -59,11 +57,13 @@ class MainTest(unittest.TestCase):
 
         polynomial1 = HornerMultivarPolynomial(coefficients, exponents, compute_representation=False)
         polynomial2 = HornerMultivarPolynomial(coefficients, exponents, compute_representation=True)
-        # [#ops=10]
-        # [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0
-        assert len(str(polynomial1)) < len(str(polynomial2))
-        assert str(polynomial1) == polynomial1.representation
-        assert polynomial1.num_ops == 10
+        r1 = str(polynomial1)  # [#ops=7] p(x)
+        r2 = str(polynomial2)  # [#ops=7] p(x) = x_1 (x_1 (x_1 (1.0 x_2) + 2.0 x_3) + 3.0 x_2 x_3) + 5.0
+        assert len(r1) < len(r2)
+        assert r1 == polynomial1.representation
+        assert r2 == polynomial2.representation
+        assert polynomial1.num_ops == polynomial2.num_ops
+        assert polynomial2.num_ops == 7
 
         return_str_repr = polynomial1.compute_string_representation(coeff_fmt_str='{:1.1e}',
                                                                     factor_fmt_str='(x{dim} ** {exp})')
@@ -123,7 +123,7 @@ class MainTest(unittest.TestCase):
         def query_should_raise(data, expected_error):
             for inp, expected_output in data:
                 coeff, exp, x = inp
-                # construction must not raise an error:
+                # NOTE: construction must not raise an error:
                 p = MultivarPolynomial(coeff, exp, rectify_input=False, validate_input=True)
                 with pytest.raises(expected_error):
                     p(x, rectify_input=False, validate_input=True)
@@ -313,19 +313,6 @@ class MainTest(unittest.TestCase):
 
         proto_test_case(VALID_TEST_DATA, cmp_value_changed_coeffs_fct)
         print('OK.\n')
-
-    def test_numerical_stability(self):
-
-        print('\nevaluating the numerical error:')
-        results = []
-        for dim, max_degree in product(DIM_RANGE, DEGREE_RANGE):
-            results += evaluate_numerical_error(dim, max_degree)  # do not append list as entry
-
-        with open(TEST_RESULTS_PICKLE, 'wb') as f:
-            print(f'exporting numerical test results in {TEST_RESULTS_PICKLE}')
-            pickle.dump(results, f)
-
-        print('done.\n')
 
 
 if __name__ == '__main__':

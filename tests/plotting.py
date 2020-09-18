@@ -2,6 +2,7 @@ import os
 import pickle
 import time
 import timeit
+from pathlib import Path
 
 import numpy as np
 
@@ -20,12 +21,15 @@ from tests.test_settings import (
 
 def get_plot_name(file_name='plot'):
     file_name = file_name.replace(' ', '_')
+    Path(PLOTTING_DIR).mkdir(parents=True, exist_ok=True)
     return os.path.abspath(os.path.join(PLOTTING_DIR, file_name + '_' + str(time.time())[:-7] + '.png'))
 
 
 def export_plot(fig, plot_title):
     # fig.set_size_inches(EXPORT_SIZE_X, EXPORT_SIZE_Y, forward=True)
-    plt.savefig(get_plot_name(plot_title), dpi=EXPORT_RESOLUTION)
+    path = get_plot_name(plot_title)
+    print(f'saving plot in {path}')
+    plt.savefig(path, dpi=EXPORT_RESOLUTION)
     plt.clf()  # clear last figure
 
 
@@ -302,12 +306,18 @@ def plot_speed_results():
 
 def extract_numerical_error_horner(result):
     poly, poly_horner, p_x_expected, p_x, p_x_horner = result
-    return abs(p_x_horner - p_x_expected)
+    abs_error = abs(p_x_horner - p_x_expected)
+    rel_error = abs_error / abs(p_x_expected)
+    # return abs_error
+    return rel_error
 
 
 def extract_numerical_error_naive(result):
     poly, poly_horner, p_x_expected, p_x, p_x_horner = result
-    return abs(p_x_horner - p_x)
+    abs_error = abs(p_x - p_x_expected)
+    rel_error = abs_error / abs(p_x_expected)
+    # return abs_error
+    return rel_error
 
 
 def has_nonzero_err_horner(result):
@@ -501,7 +511,7 @@ def plot_num_error_growth_comparison(results):
 
     attr_name_representation = 'representation'
     attr_name_num_coeff = 'number of coefficients'
-    attr_name_numerical_err = 'average numerical error'
+    attr_name_numerical_err = 'average relative numerical error'
     repr_name_horner = 'Horner factorisation'
     repr_name_naive = 'canonical form'
 
@@ -520,7 +530,8 @@ def plot_num_error_growth_comparison(results):
     df = df.append(df_horner, ignore_index=True)
 
     sns.scatterplot(x=attr_name_num_coeff, y=attr_name_numerical_err, hue=attr_name_representation, data=df,
-                    alpha=0.8)
+                    # alpha=ALPHA
+                    )
     # plot = sns.relplot(x=attr_name_num_coeff, y=attr_name_numerical_err, hue=attr_name_representation,
     #                    style=attr_name_representation,
     #                    kind="line", data=df,)
@@ -614,6 +625,7 @@ def plot_num_coeffs2num_ops(results):
 
 
 def plot_numerical_error():
+    print(f'generating numerical benchmark plots. reading data from {TEST_RESULTS_PICKLE}...')
     try:
         with open(TEST_RESULTS_PICKLE, 'rb') as f:
             results = pickle.load(f)
@@ -627,6 +639,7 @@ def plot_numerical_error():
     plot_num_err_heatmap(results)
     plot_num_error_growth_comparison(results)
     plot_num_coeffs2num_ops(results)
+    print('plotting numerical benchmarks done.')
 
 
 if __name__ == '__main__':
@@ -639,8 +652,8 @@ if __name__ == '__main__':
     # TODO plot with seaborn in the same fashion as numerical test
     # TODO compare & plot the performance wrt. the "density" of the polynomials. sparse <-> fully occupied
     # TODO make num tested polynomials dependent on parameters (size, time) (faster runs are more noisy)
-    run_speed_benchmark()  # generate speed test data
+    # run_speed_benchmark()  # generate speed test data
     # TODO include plots in documentation
-    plot_speed_results()  # create plots with speed test data
+    # plot_speed_results()  # create plots with speed test data
 
-    # plot_numerical_error() create plots with numerical test data
+    plot_numerical_error()  # create plots with numerical test data
