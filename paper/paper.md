@@ -74,6 +74,11 @@ Due to its simplicity and universality this kind of representation is used for d
 It should be noted that this most trivial representation is computationally very expensive to evaluate.
 In this particular case, for example, a polynomial evaluation based on arrays would require a total of 27 operations (exponentiations, multiplications and additions).
 
+Without taking common subexpression elimination into account, the number of additions does not need to be considered, since it remains constant irrespective of the polynomial factorisation.
+In the following we only count the number of multiplications for a less biased comparison to other polynomial representations.
+Note that every exponentiation is being counted as exponent - 1 operations.
+The number of multiplications contained in the canonical representation of a polynomial consequently is equal to the sum of its exponents.
+
 The following code snippet shows how to use `multivar_horner` for computing a Horner factorisation of $p$:
 
 
@@ -85,13 +90,12 @@ p = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True,
 	compute_representation=True)
 ````
 
-The factorisation computed by `multivar_horner` is $p(x) =  x_1 (x_1 (x_1 (1 x_2) + 2 x_3) + 3 x_2 x_3) + 5$ and requires 10 mathematical operations for every polynomial evaluation.
+The factorisation computed by `multivar_horner` is $p(x) =  x_1 (x_1 (x_1 (1 x_2) + 2 x_3) + 3 x_2 x_3) + 5$ and requires 7 multiplications for every polynomial evaluation.
 The human readable representation of the polynomial can be accessed with:
 
 ```python
 print(p.representation)
-# >> [#ops=10] p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1)
-#                        + 3.0 x_2^1 x_3^1) + 5.0
+# [#ops=7] p(x) = x_1 (x_1 (x_1 (1.0 x_2) + 2.0 x_3) + 3.0 x_2 x_3) + 5.0
 ````
 
 It should be noted that the implemented factorisation procedure is coefficient-agnostic and hence does not, for example, optimise multiplications with $1$.
@@ -155,7 +159,7 @@ With increasing size in terms of the number of included coefficients, the numeri
 However, in comparison to the canonical form, the Horner factorisation is more numerically stable, as visualised in \autoref{fig:num_err_heatmap}.
 The numerical stability of Horner factorisations has theoretically been shown in [@greedyHorner; @pena2000multivariate; @pena2000multivariate2].
 
-Even though the number of operations required for evaluating the polynomials grows exponentially with their size, irrespective of the representation, the rate of growth is lower for the Horner factorisation (cf. \autoref{fig:num_ops_growth}).
+Even though the number of operations required for evaluating the polynomials grows exponentially with their size, irrespective of the considered representation, \autoref{fig:num_ops_growth} shows that the rate of growth is lower for the Horner factorisation.
 As a result, the Horner factorisations are computationally easier to evaluate.
 
 ![Number of operations required to evaluate randomly generated polynomials.\label{fig:num_ops_growth}](../docs/_static/num_ops_growth.png)
