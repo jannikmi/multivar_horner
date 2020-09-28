@@ -72,12 +72,12 @@ The coefficients of the monomials are $5$, $1$, $2$ and $3$ respectively.
 From this formulation it is straightforward to represent a multivariate polynomial with a single vector of coefficients and one exponent matrix.
 Due to its simplicity and universality this kind of representation is used for defining polynomials as input.
 It should be noted that this most trivial representation is computationally very expensive to evaluate.
-In this particular case, for example, a polynomial evaluation based on arrays would require a total of 27 operations (exponentiations, multiplications and additions).
 
-Without taking common subexpression elimination into account, the number of additions does not need to be considered, since it remains constant irrespective of the polynomial factorisation.
-In the following we only count the number of multiplications for a less biased comparison to other polynomial representations.
+The number of additions of a polynomial remains constant irrespective of the polynomial factorisation, since it depends solely on the number of monomials and a factorisation does not influence the number of monomials.
+This holds true only without taking common subexpression elimination into account.
+Hence the number of additions is irrelevant for evaluating the quality of a factorisation.
+In the following we accordingly only count the number of multiplications for a less biased comparison to other polynomial representations.
 Note that every exponentiation is being counted as exponent - 1 operations.
-The number of multiplications contained in the canonical representation of a polynomial consequently is equal to the sum of its exponents.
 
 The following code snippet shows how to use `multivar_horner` for computing a Horner factorisation of $p$:
 
