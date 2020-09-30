@@ -30,7 +30,7 @@ bibliography: paper.bib
 
 Many applications in the sciences require numerically stable and computationally efficient evaluation of multivariate polynomials.
 Finding beneficial representations of polynomials, such as Horner factorisations, is therefore crucial.
-`multivar_horner`[@github], the Python package presented here, is, as far as we are aware, the first open-source software for computing multivariate Horner factorisations.
+`multivar_horner` [@github], the Python package presented here, is, as far as we are aware, the first open-source software for computing multivariate Horner factorisations.
 This paper briefly outlines the functionality of the package and places it in context with respect to previous work in the field.
 Benchmarks additionally demonstrate the advantages of the implementation and Horner factorisations in general.
 
@@ -65,21 +65,23 @@ For a univariate polynomial $f(x) = a_0 + a_1 x + a_2 x^2 + \cdots + a_d x^d$ (c
 In the multivariate case, however, the factorisation is ambiguous, as there are multiple possible factors to factorise with.
 The key functionality of `multivar_horner` is finding a good instance among the many possible Horner factorisations of a multivariate polynomial.
 
-Let's consider the example multivariate polynomial given in canonical form by $p(x) = 5 + 1 x_1^3 x_2^1 + 2 x_1^2 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
+Let's consider the example multivariate polynomial given in canonical form by $p(x) = 5 + x_1^3 x_2 + 2 x_1^2 x_3 + 3 x_1 x_2 x_3$.
 The polynomial $p$ is the sum of $4$ monomials, has dimensionality $3$ and can also be written as $p(x) = 5 x_1^0 x_2^0 x_3^0 + 1 x_1^3 x_2^1 x_3^0 + 2 x_1^2 x_2^0 x_3^1 + 3 x_1^1 x_2^1 x_3^1$.
 The coefficients of the monomials are $5$, $1$, $2$ and $3$ respectively.
 
 From this formulation it is straightforward to represent a multivariate polynomial with a single vector of coefficients and one exponent matrix.
 Due to its simplicity and universality this kind of representation is used for defining polynomials as input.
-It should be noted that this most trivial representation is computationally very expensive to evaluate.
+It should be noted that this most trivial representation is computationally expensive to evaluate.
 
 The number of additions of a polynomial remains constant irrespective of the polynomial factorisation, since it depends solely on the number of monomials and a factorisation does not influence the number of monomials.
 This holds true only without taking common subexpression elimination into account.
 Hence the number of additions is irrelevant for evaluating the quality of a factorisation.
 In the following we accordingly only count the number of multiplications for a less biased comparison to other polynomial representations.
-Note that every exponentiation is being counted as exponent - 1 operations.
+Note that each exponentiation is counted as (exponent - 1) operations.
 
-The following code snippet shows how to use `multivar_horner` for computing a Horner factorisation of $p$:
+# Usage
+
+The following code snippet shows how to use `multivar_horner` to compute a Horner factorisation of $p$:
 
 
 ```python
@@ -211,7 +213,7 @@ Other beneficial representations of polynomials are specified, for example, in [
 # Acknowledgements
 
 Thanks to Michael Hecht (Max Planck Institute of Molecular Cell Biology and Genetics) and Steve Schmerler (Helmholtz-Zentrum Dresden-Rossendorf) for valuable input enabling this publication.
-I also thank the editor David P. Sanders (Universidad Nacional Autónoma de México) as well as the reviewers Alexander Konovalov (University of St Andrews), Henrik Barthels (RWTH Aachen University) and Sascha Timme (TU Berlin) for their helpful feedback.
+I also thank the editor David P. Sanders (Universidad Nacional Autónoma de México) as well as the reviewers Henrik Barthels (RWTH Aachen University) and Sascha Timme (TU Berlin) for their helpful feedback.
 
 
 # References
