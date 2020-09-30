@@ -1,6 +1,14 @@
 Changelog
 =========
 
+2.1.1 (2020-10-01)
+__________________
+
+Post-JOSS paper review release:
+
+* Changed the method of counting the amount of operations of the polynomial representations. Only the multiplications are being counted. Exponentiations count as (exponent-1) operations.
+* the numerical tests compute the relative average error with an increased precision now
+
 
 2.1.0 (2020-06-15)
 __________________
