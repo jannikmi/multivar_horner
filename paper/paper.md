@@ -16,9 +16,9 @@ authors:
       orcid: 0000-0002-1819-6975
       affiliation: "1, 2" # (Multiple affiliations must be quoted)
 affiliations:
-    - name: Technische Universität Dresden
+    - name: Technische Universität Dresden, Dresden, Germany
       index: 1
-    - name: Max Planck Institute of Molecular Cell Biology and Genetics
+    - name: Max Planck Institute of Molecular Cell Biology and Genetics, Dresden, Germany
       index: 2
 date: 20 April 2020
 bibliography: paper.bib
