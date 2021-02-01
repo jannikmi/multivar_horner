@@ -20,7 +20,7 @@ def naive_eval(x, coefficients, exponents):
     # assert len(x) == nr_dims
     acc = 0.0
     for i in range(nr_coeffs):
-        acc = acc + coefficients[i] * np.prod(np.power(x, exponents[i, :]))
+        acc = acc + coefficients[i] * np.prod(np.power(x, exponents[i]))
     return acc
 
     # equivalent one liner:
