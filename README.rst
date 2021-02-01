@@ -3,9 +3,9 @@ multivar_horner
 ===============
 
 
-.. image:: https://travis-ci.org/MrMinimal64/multivar_horner.svg?branch=master
+.. image:: https://travis-ci.org/jannikmi/multivar_horner.svg?branch=master
     :alt: CI status
-    :target: https://travis-ci.org/MrMinimal64/multivar_horner
+    :target: https://travis-ci.org/jannikmi/multivar_horner
 
 .. image:: https://readthedocs.org/projects/multivar_horner/badge/?version=latest
     :alt: documentation status
@@ -65,7 +65,7 @@ For more refer to the `documentation <https://multivar_horner.readthedocs.io/en/
 
 
 Also see:
-`GitHub <https://github.com/MrMinimal64/multivar_horner>`__,
+`GitHub <https://github.com/jannikmi/multivar_horner>`__,
 `PyPI <https://pypi.python.org/pypi/multivar_horner/>`__,
 `arXiv paper <https://arxiv.org/abs/2007.13152>`__
 

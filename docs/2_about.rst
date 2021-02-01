@@ -3,8 +3,8 @@ About
 =====
 
 
-.. image:: https://travis-ci.org/MrMinimal64/multivar_horner.svg?branch=master
-    :target: https://travis-ci.org/MrMinimal64/multivar_horner
+.. image:: https://travis-ci.org/jannikmi/multivar_horner.svg?branch=master
+    :target: https://travis-ci.org/jannikmi/multivar_horner
 
 .. image:: https://readthedocs.org/projects/multivar_horner/badge/?version=latest
     :alt: documentation status
@@ -58,7 +58,7 @@ With this package it is also possible to represent polynomials in :ref:`canonica
 
 
 Also see:
-`GitHub <https://github.com/MrMinimal64/multivar_horner>`__,
+`GitHub <https://github.com/jannikmi/multivar_horner>`__,
 `PyPI <https://pypi.python.org/pypi/multivar_horner/>`__,
 `arXiv paper <https://arxiv.org/abs/2007.13152>`__
 
@@ -77,7 +77,7 @@ License
 -------
 
 ``multivar_horner`` is distributed under the terms of the MIT license
-(see `LICENSE <https://github.com/MrMinimal64/multivar_horner/blob/master/LICENSE>`__).
+(see `LICENSE <https://github.com/jannikmi/multivar_horner/blob/master/LICENSE>`__).
 
 
 

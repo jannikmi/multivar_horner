@@ -4,8 +4,8 @@
 multivar_horner
 ============================
 
-.. image:: https://travis-ci.org/MrMinimal64/multivar_horner.svg?branch=master
-    :target: https://travis-ci.org/MrMinimal64/multivar_horner
+.. image:: https://travis-ci.org/jannikmi/multivar_horner.svg?branch=master
+    :target: https://travis-ci.org/jannikmi/multivar_horner
 
 .. image:: https://readthedocs.org/projects/multivar_horner/badge/?version=latest
     :alt: documentation status
