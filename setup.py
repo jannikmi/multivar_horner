@@ -10,14 +10,14 @@ setup(
     # version: in VERSION file https://packaging.python.org/guides/single-sourcing-package-version/
     # With this approach you must make sure that the VERSION file is included in all your source
     # and binary distributions (e.g. add include VERSION to your MANIFEST.in).
-    author='J. Michelfeit',
+    author='Jannik Michelfeit',
     author_email='python@michelfe.it',
     license='MIT licence',
-    url='https://github.com/MrMinimal64/multivar_horner',  # use the URL to the github repo
+    url='https://github.com/jannikmi/multivar_horner',  # use the URL to the github repo
     project_urls={
-        "Source Code": "https://github.com/MrMinimal64/multivar_horner",
+        "Source Code": "https://github.com/jannikmi/multivar_horner",
         "Documentation": "https://multivar_horner.readthedocs.io/en/latest/",
-        "Changelog": "https://github.com/MrMinimal64/multivar_horner/blob/master/CHANGELOG.rst",
+        "Changelog": "https://github.com/jannikmi/multivar_horner/blob/master/CHANGELOG.rst",
     },
     keywords='math mathematics polynomial polynomials polynomial-evaluation multivariate multivariate-polynomials'
              ' horner horner-scheme factorisation factorization',
