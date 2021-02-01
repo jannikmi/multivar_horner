@@ -72,16 +72,6 @@ def load_pickle(path: str = DEFAULT_PICKLE_FILE_NAME) -> 'AbstractPolynomial':
 
 # TODO properties: num ops...
 
-class DummyClass:
-    """ a class
-
-    Attributes:
-        a: test attribute
-    """
-
-    # FIXME: creates duplicate entries in Sphinx autodoc
-    __slots__ = ['a']
-
 
 # TODO docstring attributes in parent class, automatic inheritance in sphinx autodoc api docu
 #   -> prevent duplicate docstring in MultivarPolynomial
