@@ -7,12 +7,3 @@ numba>=0.48
 
 pytest
 pytest-cov
-
-docutils # to check your setup.py is well configured
-flake8 # check code quality
-flake8-commas
-isort # to show where imports aren’t sorted
-multilint
-pygments # to check your setup.py is well configured
-rstcheck>=3.3.1
-
