@@ -52,6 +52,8 @@ extensions = [
     'sphinx.ext.napoleon',  # Numpy style docstring rendering
 ]
 
+bibtex_bibfiles = ['refs.bib']
+
 autodoc_default_options = {
     'members': '__all__',
     'member-order': 'bysource',
