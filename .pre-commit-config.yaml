@@ -11,7 +11,7 @@ repos:
             -   id: check-case-conflict
 #            -   id: check-json
 #            -   id: pretty-format-json
-                args: [ "--autofix" ]
+#                args: [ "--autofix" ]
             -   id: check-merge-conflict
             -   id: name-tests-test
             -   id: check-docstring-first
@@ -60,7 +60,7 @@ repos:
         rev: "0.46"
         hooks:
             -   id: check-manifest
-                args: [ "--no-build-isolation", "--ignore", "*.png,.travis/*,docs/*,build_n_install.py,publish.py,readthedocs.yml" ]
+                args: [ "--no-build-isolation", "--ignore", "*.png,.travis/*,docs/*,paper/*,build_n_install.py,publish.py,readthedocs.yml" ]
                 additional_dependencies: [ numpy ]
 
     # TODO sphinx check

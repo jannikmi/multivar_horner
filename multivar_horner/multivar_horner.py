@@ -521,8 +521,8 @@ class HornerMultivarPolynomial(AbstractPolynomial):
                 representation += (
                     " = "
                     + self.factorisation_tree.get_string_representation(
-                    self.coefficients, coeff_fmt_str, factor_fmt_str
-                )
+                        self.coefficients, coeff_fmt_str, factor_fmt_str
+                    )
                 )
                 # exponentiation with 1 won't cause an operation in this representation
                 # but are present in the string representation due to string formatting restrictions

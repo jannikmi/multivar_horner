@@ -215,7 +215,9 @@ class MainTest(unittest.TestCase):
 
             if res1 != res2 or res2 != res3:
                 print(f"x = {x}")
-                raise AssertionError(f"results differ:\n{res1} (canonical)\n{res2} (horner)\n{res3} (horner optimal)\n")
+                raise AssertionError(
+                    f"results differ:\n{res1} (canonical)\n{res2} (horner)\n{res3} (horner optimal)\n"
+                )
 
             assert horner_poly.num_ops >= horner_poly_opt.num_ops
 
@@ -408,7 +410,9 @@ class MainTest(unittest.TestCase):
 
             if res1 != res2 or res2 != res3:
                 print(f"x = {x}")
-                raise AssertionError(f"results differ:\n{res1} (canonical)\n{res2} (horner)\n{res3} (horner optimal)\n")
+                raise AssertionError(
+                    f"results differ:\n{res1} (canonical)\n{res2} (horner)\n{res3} (horner optimal)\n"
+                )
 
             assert horner_poly.num_ops >= horner_poly_opt.num_ops
 
