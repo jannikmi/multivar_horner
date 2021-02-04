@@ -41,7 +41,7 @@ def validate_coefficients(coefficients) -> None:
     if not isinstance(coefficients, np.ndarray):
         raise TypeError('coefficients must be given as numpy.ndarray')
     if coefficients.dtype.type is not FLOAT_DTYPE:
-        raise TypeError(f'coefficients must have dtype {FLOAT_DTYPE}')
+        raise TypeError(f'coefficients must have dtype {FLOAT_DTYPE} but have dtype {coefficients.dtype.type}')
     if len(coefficients.shape) != 2 or coefficients.shape[1] != 1:
         raise ValueError('coefficients must be given as a [M, 1] ndarray')
     if coefficients.shape[0] == 0:

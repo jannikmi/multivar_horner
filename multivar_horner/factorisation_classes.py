@@ -1,6 +1,6 @@
 import numpy as np
 
-from .global_settings import ID_ADD, ID_MULT, UINT_DTYPE
+from .global_settings import ID_ADD, ID_MULT, UINT_DTYPE, BOOL_DTYPE
 from .helper_classes import PriorityQueue2D
 from .helpers_fcts_numba import compile_valid_options, count_num_ops, count_usage, factor_num_ops, num_ops_1D_horner
 
@@ -422,10 +422,9 @@ class OptimalPolynomialNode(BasePolynomialNode):
 
         for dim, dim_unique_exponents in enumerate(self.unique_exponents):
             usage_vector = np.zeros(dim_unique_exponents.shape, dtype=UINT_DTYPE)
-            valid_option_vector = np.zeros(dim_unique_exponents.shape, dtype=bool)
+            valid_option_vector = np.zeros(dim_unique_exponents.shape, dtype=BOOL_DTYPE)
             # TODO test
-            valid_option_vector = compile_valid_options(dim, valid_option_vector, usage_vector, dim_unique_exponents,
-                                                        self.exponents)
+            compile_valid_options(dim, valid_option_vector, usage_vector, dim_unique_exponents, self.exponents)
 
             for exp in dim_unique_exponents[valid_option_vector]:
                 options.append((dim, exp))
@@ -538,7 +537,7 @@ class OptimalFactorisationRoot(OptimalPolynomialNode):
         # the most promising factorisation (lowest cost estimate) is fully factorized now
         # collect all appearing factors in the best solution and assign ids (=idx in the value array) to the nodes
         # need to store which coefficient is being used where in the factorisation tree (coeff_id -> value_idx)
-        coefficient_idxs = np.arange(self.num_monomials, dtype=np.int)
+        coefficient_idxs = np.arange(self.num_monomials, dtype=int)
         self.compile_factors(factor_container, coefficient_idxs)
 
     def find_all_optimal(self):
@@ -565,7 +564,7 @@ class HeuristicFactorisationRoot(BasePolynomialNode):
         # polynomial is fully factorized now
         # collect all appearing factors in the factorisation tree and assign ids (=idx in the value array) to the nodes
         # need to store which coefficient is being used where in the factorisation tree (coeff_id -> value_idx)
-        coefficient_idxs = np.arange(self.num_monomials, dtype=np.int)
+        coefficient_idxs = np.arange(self.num_monomials, dtype=int)
         self.compile_factors(factor_container, coefficient_idxs)
 
 # TODO define factorisation taking the numerical stability (coefficients) into account
