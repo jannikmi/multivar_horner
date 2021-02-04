@@ -1,8 +1,14 @@
 import numpy as np
 
-from .global_settings import ID_ADD, ID_MULT, UINT_DTYPE
+from .global_settings import BOOL_DTYPE, ID_ADD, ID_MULT, UINT_DTYPE
 from .helper_classes import PriorityQueue2D
-from .helpers_fcts_numba import compile_valid_options, count_num_ops, count_usage, factor_num_ops, num_ops_1D_horner
+from .helpers_fcts_numba import (
+    compile_valid_options,
+    count_num_ops,
+    count_usage,
+    factor_num_ops,
+    num_ops_1D_horner,
+)
 
 
 class FactorisationNode:
@@ -18,7 +24,14 @@ class FactorisationNode:
     """
 
     # prevent dynamic attribute assignment (-> safe memory)
-    __slots__ = ['factor', 'node1_fact', 'node2', 'factorized_rows', 'non_factorized_rows', 'value_idx']
+    __slots__ = [
+        "factor",
+        "node1_fact",
+        "node2",
+        "factorized_rows",
+        "non_factorized_rows",
+        "value_idx",
+    ]
 
     def __init__(self, factor, node1_fact, node2, factorized_rows, non_factorized_rows):
         self.factor = factor
@@ -30,11 +43,9 @@ class FactorisationNode:
 
     def get_string_representation(self, *args, **kwargs):
         s = self.factor.__str__(*args, **kwargs)
-        s += ' ({})'.format(
-            self.node1_fact.get_string_representation(*args, **kwargs))
+        s += " ({})".format(self.node1_fact.get_string_representation(*args, **kwargs))
         if self.node2 is not None:
-            s += ' + {}'.format(
-                self.node2.get_string_representation(*args, **kwargs))
+            s += " + {}".format(self.node2.get_string_representation(*args, **kwargs))
         return s
 
     def __str__(self, *args, **kwargs):
@@ -92,10 +103,12 @@ class FactorisationNode:
 
 
 class OptimalFactorisationNode(FactorisationNode):
-    __slots__ = ['cost_estimate', 'factorisation_measure', 'fully_factorized']
+    __slots__ = ["cost_estimate", "factorisation_measure", "fully_factorized"]
 
     def __init__(self, factor, node1_fact, node2, factorized_rows, non_factorized_rows):
-        super(OptimalFactorisationNode, self).__init__(factor, node1_fact, node2, factorized_rows, non_factorized_rows)
+        super(OptimalFactorisationNode, self).__init__(
+            factor, node1_fact, node2, factorized_rows, non_factorized_rows
+        )
         self.cost_estimate: int = 0
         # IDEA: when different factorisations have the same cost estimate,
         # favour the one which is factorised the most already
@@ -104,13 +117,17 @@ class OptimalFactorisationNode(FactorisationNode):
         self.update_properties()
 
     def update_properties(self):
-        self.cost_estimate = factor_num_ops(*self.factor) + self.node1_fact.cost_estimate
+        self.cost_estimate = (
+            factor_num_ops(*self.factor) + self.node1_fact.cost_estimate
+        )
         self.factorisation_measure = self.node1_fact.factorisation_measure
 
         if self.node2 is not None:
             self.cost_estimate += self.node2.cost_estimate
             self.factorisation_measure += self.node2.factorisation_measure
-            self.fully_factorized = self.node1_fact.fully_factorized and self.node2.fully_factorized
+            self.fully_factorized = (
+                self.node1_fact.fully_factorized and self.node2.fully_factorized
+            )
         else:
             self.fully_factorized = self.node1_fact.fully_factorized
 
@@ -131,8 +148,18 @@ class BasePolynomialNode:
     """
 
     # prevent dynamic attribute assignment (-> safe memory)
-    __slots__ = ['exponents', 'unique_exponents', 'num_monomials', 'dim', 'children', 'value_idxs',
-                 'factors', 'has_children', 'children_class', 'factorisation_class']
+    __slots__ = [
+        "exponents",
+        "unique_exponents",
+        "num_monomials",
+        "dim",
+        "children",
+        "value_idxs",
+        "factors",
+        "has_children",
+        "children_class",
+        "factorisation_class",
+    ]
 
     def __init__(self, exponents, *args, **kwargs):
         self.exponents = exponents
@@ -200,27 +227,36 @@ class BasePolynomialNode:
 
         return max_usage_option
 
-    def get_string_representation(self, coefficients=None, coeff_fmt_str='{:.2}', factor_fmt_str='x_{dim}^{exp}'):
+    def get_string_representation(
+        self, coefficients=None, coeff_fmt_str="{:.2}", factor_fmt_str="x_{dim}^{exp}"
+    ):
 
         if self.has_children:
-            return self.get_child().get_string_representation(coefficients=coefficients, coeff_fmt_str=coeff_fmt_str,
-                                                              factor_fmt_str=factor_fmt_str)
+            return self.get_child().get_string_representation(
+                coefficients=coefficients,
+                coeff_fmt_str=coeff_fmt_str,
+                factor_fmt_str=factor_fmt_str,
+            )
         else:
             monomial_representations = []
             for i, exp_vect in enumerate(self.exponents):
                 if coefficients is None:
-                    coeff_repr = 'c'
+                    coeff_repr = "c"
                 else:
-                    coeff_idx = self.value_idxs[i]  # look up the correct index of the coefficient
+                    coeff_idx = self.value_idxs[
+                        i
+                    ]  # look up the correct index of the coefficient
                     coeff_repr = coeff_fmt_str.format(coefficients[coeff_idx, 0])
 
                 monomial_repr = [coeff_repr]
                 for dim, exp in enumerate(exp_vect):
                     if exp > 0:
-                        monomial_repr.append(factor_fmt_str.format(**{'dim': dim + 1, 'exp': exp}))
+                        monomial_repr.append(
+                            factor_fmt_str.format(**{"dim": dim + 1, "exp": exp})
+                        )
 
-                monomial_representations.append(' '.join(monomial_repr))
-            return ' + '.join(monomial_representations)
+                monomial_representations.append(" ".join(monomial_repr))
+            return " + ".join(monomial_representations)
 
     def __str__(self):
         return self.get_string_representation()
@@ -257,7 +293,9 @@ class BasePolynomialNode:
             #     assert exponents1_fact.shape[0] + exponents2.shape[0] == self.num_monomials
 
         factor = (dim, exp)
-        child = self.factorisation_class(factor, node1_fact, node2, factorized_rows, non_factorized_rows)
+        child = self.factorisation_class(
+            factor, node1_fact, node2, factorized_rows, non_factorized_rows
+        )
         self.store_child(child)
 
     def store_child(self, child):
@@ -287,7 +325,9 @@ class BasePolynomialNode:
             # for evaluation the sum of all evaluated monomials multiplied with their coefficients has to be computed
             # p = c1 * mon1 + c2 * mon2 ...
             # create factors representing the remaining monomials
-            self.factors = factor_container.get_factors(self.exponents)  # retains the ordering!
+            self.factors = factor_container.get_factors(
+                self.exponents
+            )  # retains the ordering!
             # remember where in the coefficient array the coefficients of this polynomial are being stored
             self.value_idxs = coefficient_idxs
 
@@ -344,7 +384,12 @@ class OptimalPolynomialNode(BasePolynomialNode):
     """
 
     # prevent dynamic attribute assignment (-> safe memory)
-    __slots__ = ['options', 'cost_estimate', 'factorisation_measure', 'fully_factorized']
+    __slots__ = [
+        "options",
+        "cost_estimate",
+        "factorisation_measure",
+        "fully_factorized",
+    ]
 
     def __init__(self, exponents, *args, **kwargs):
 
@@ -422,10 +467,15 @@ class OptimalPolynomialNode(BasePolynomialNode):
 
         for dim, dim_unique_exponents in enumerate(self.unique_exponents):
             usage_vector = np.zeros(dim_unique_exponents.shape, dtype=UINT_DTYPE)
-            valid_option_vector = np.zeros(dim_unique_exponents.shape, dtype=bool)
+            valid_option_vector = np.zeros(dim_unique_exponents.shape, dtype=BOOL_DTYPE)
             # TODO test
-            valid_option_vector = compile_valid_options(dim, valid_option_vector, usage_vector, dim_unique_exponents,
-                                                        self.exponents)
+            compile_valid_options(
+                dim,
+                valid_option_vector,
+                usage_vector,
+                dim_unique_exponents,
+                self.exponents,
+            )
 
             for exp in dim_unique_exponents[valid_option_vector]:
                 options.append((dim, exp))
@@ -538,7 +588,7 @@ class OptimalFactorisationRoot(OptimalPolynomialNode):
         # the most promising factorisation (lowest cost estimate) is fully factorized now
         # collect all appearing factors in the best solution and assign ids (=idx in the value array) to the nodes
         # need to store which coefficient is being used where in the factorisation tree (coeff_id -> value_idx)
-        coefficient_idxs = np.arange(self.num_monomials, dtype=np.int)
+        coefficient_idxs = np.arange(self.num_monomials, dtype=int)
         self.compile_factors(factor_container, coefficient_idxs)
 
     def find_all_optimal(self):
@@ -565,7 +615,8 @@ class HeuristicFactorisationRoot(BasePolynomialNode):
         # polynomial is fully factorized now
         # collect all appearing factors in the factorisation tree and assign ids (=idx in the value array) to the nodes
         # need to store which coefficient is being used where in the factorisation tree (coeff_id -> value_idx)
-        coefficient_idxs = np.arange(self.num_monomials, dtype=np.int)
+        coefficient_idxs = np.arange(self.num_monomials, dtype=int)
         self.compile_factors(factor_container, coefficient_idxs)
+
 
 # TODO define factorisation taking the numerical stability (coefficients) into account

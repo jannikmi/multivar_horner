@@ -7,3 +7,15 @@ numba>=0.48
 
 pytest
 pytest-cov
+
+
+tox
+sphinx
+twine
+
+# not supported by conda?!
+pre-commit
+pip-tools
+sphinxcontrib-bibtex
+sphinx_rtd_theme
+rstcheck>=3.3.1

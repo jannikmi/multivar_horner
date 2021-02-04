@@ -6,13 +6,24 @@
 # cc.verbose = True
 
 
-# precompiled time critical helper functions
 import numpy as np
-from numba import b1, f8, jit, u4
+from numba import b1, f8, i8, njit, u4, void
+
+# DTYPES:
+F = f8
+F_1D = F[:]
+UINT = u4
+UINT_1D = UINT[:]
+UINT_2D = UINT[:, :]
+INT = i8
+BOOL_1D = b1[:]
 
 
-# TODO define and import dtypes globally
-# @jit(f8(f8[:], f8[:], u4[:, :]), nopython=True, cache=True)
+# time critical helper functions. just in time compiled
+# ATTENTION: due to `chace=True`
+
+
+@njit(F(F_1D, F_1D, UINT_2D), cache=True)
 def naive_eval(x, coefficients, exponents):
     nr_coeffs = len(coefficients)
     # nr_monomials,nr_dims = exponents.shape
@@ -28,9 +39,22 @@ def naive_eval(x, coefficients, exponents):
     # return np.sum(coefficients.T * np.prod(np.power(x, exponents), axis=1), axis=1)[0]
 
 
-# @cc.export('eval_compiled', 'f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :], u4[:, :], b1[:], u4)')
-@jit(f8(f8[:], f8[:], u4[:, :], u4[:, :], u4[:, :], u4[:, :], b1[:], u4), nopython=True, cache=True, debug=True)
-def eval_recipe(x, value_array, copy_recipe, scalar_recipe, monomial_recipe, tree_recipe, tree_ops, root_value_address):
+# @cc.export('eval_compiled', 'f8(f8[:], f8[:], UINT_2, UINT_2, UINT_2, UINT_2, b1[:], u4)')
+@njit(
+    F(F_1D, F_1D, UINT_2D, UINT_2D, UINT_2D, UINT_2D, BOOL_1D, UINT),
+    cache=True,
+    debug=True,
+)
+def eval_recipe(
+    x,
+    value_array,
+    copy_recipe,
+    scalar_recipe,
+    monomial_recipe,
+    tree_recipe,
+    tree_ops,
+    root_value_address,
+):
     # IMPORTANT: the order of following the recipes is not arbitrary!
     #   scalar factors need to be evaluated before monomial factors depending on them...
 
@@ -60,7 +84,9 @@ def eval_recipe(x, value_array, copy_recipe, scalar_recipe, monomial_recipe, tre
         # print('value[{}] = {} * {} (idx: {}, {})'.format(target, value_array[source1], value_array[source2], source1,
         #                                                 source2))
         # value_array[target] = value_array[source1] * value_array[source2]
-        value_array[monomial_recipe[i, 0]] = value_array[monomial_recipe[i, 1]] * value_array[monomial_recipe[i, 2]]
+        value_array[monomial_recipe[i, 0]] = (
+            value_array[monomial_recipe[i, 1]] * value_array[monomial_recipe[i, 2]]
+        )
 
         # # DEBUG:
         # accessed_idxs.add(monomial_recipe[i, 1])
@@ -103,7 +129,7 @@ def eval_recipe(x, value_array, copy_recipe, scalar_recipe, monomial_recipe, tre
     return value_array[root_value_address]  # return value of the root node
 
 
-@jit(u4(u4[:]), nopython=True, cache=True)
+@njit(UINT(UINT_1D), cache=True)
 def num_ops_1D_horner(unique_exponents):
     """
     :param unique_exponents: np array of unique exponents sorted in increasing order without 0
@@ -124,7 +150,7 @@ def num_ops_1D_horner(unique_exponents):
 
     # one MUL operation is required !between! all factors in the factorisation chain
     # the amount of factors (= "length of factorisation chain") is equal to the amount of unique existing exponents
-    num_ops = - 1
+    num_ops = -1
 
     # start with exponent 0 (not in unique exponents)
     # the difference between one and the next exponent determines if a POW operation is needed to evaluate a factor
@@ -142,9 +168,9 @@ def num_ops_1D_horner(unique_exponents):
     return num_ops
 
 
-@jit(u4(u4[:, :]), nopython=True, cache=True)
+@njit(UINT(UINT_2D), cache=True)
 def count_num_ops(exponent_matrix):
-    """ counts the amount of multiplications required during evaluation
+    """counts the amount of multiplications required during evaluation
 
     under the assumption: this polynomial representation does not get factorised any further
     do not count additions and exponentiations
@@ -158,7 +184,7 @@ def count_num_ops(exponent_matrix):
     return np.sum(exponent_matrix)
 
 
-@jit(u4(u4, u4), nopython=True, cache=True)
+@njit(UINT(UINT, UINT), cache=True)
 def factor_num_ops(dim, exp):
     """
     NOTE: all factors are scalars: x^i
@@ -169,10 +195,10 @@ def factor_num_ops(dim, exp):
     return exp - 1
 
 
-@jit(u4[:](u4, u4[:], u4[:], u4[:, :]), nopython=True, cache=True)
+@njit(void(INT, UINT_1D, UINT_1D, UINT_2D), cache=True)
 def compile_usage(dim, usage_vector, unique_exponents, exponent_matrix):
     """
-    :return: a vector with the usage count of every unique exponent
+    computes the vector with the usage count of every unique exponent
     """
 
     for i in range(exponent_matrix.shape[0]):
@@ -182,16 +208,24 @@ def compile_usage(dim, usage_vector, unique_exponents, exponent_matrix):
                 break
             usage_vector[j] += 1
 
-    return usage_vector
 
+@njit(void(INT, BOOL_1D, UINT_1D, UINT_1D, UINT_2D), cache=True)
+def compile_valid_options(
+    dim, valid_option_vector, usage_vector, unique_exponents, exponent_matrix
+):
+    """compute the vector of valid options
 
-@jit(b1[:](u4, b1[:], u4[:], u4[:], u4[:, :]), nopython=True, cache=True)
-def compile_valid_options(dim, valid_option_vector, usage_vector, unique_exponents, exponent_matrix):
+    :param dim:
+    :param valid_option_vector:
+    :param usage_vector:
+    :param unique_exponents:
+    :param exponent_matrix:
+    """
     if len(valid_option_vector) == 0:
         # there are no unique exponents
-        return valid_option_vector
+        return
 
-    usage_vector = compile_usage(dim, usage_vector, unique_exponents, exponent_matrix)
+    compile_usage(dim, usage_vector, unique_exponents, exponent_matrix)
 
     for exp_idx in range(usage_vector.size):
         # stop at the highest exponent having a usage >=2
@@ -201,10 +235,8 @@ def compile_valid_options(dim, valid_option_vector, usage_vector, unique_exponen
             # all higher exponents have a lower usage!
             break
 
-    return valid_option_vector
 
-
-@jit(u4(u4, u4, u4[:, :]), nopython=True, cache=True)
+@njit(UINT(UINT, UINT, UINT_2D), cache=True)
 def count_usage(dim, exp, exponent_matrix):
     """
     :return: the amount of times a scalar factor appears in the monomials
