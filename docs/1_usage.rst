@@ -70,7 +70,6 @@ the found factorisation is :math:`p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x
 
 
 pass ``rectify_input=True`` to automatically try converting the input to the required ``numpy`` data structures
-pass ``validate_input=True`` to check if input data is valid (e.g. only non negative exponents)
 
 .. note::
 
@@ -87,7 +86,7 @@ pass ``validate_input=True`` to check if input data is valid (e.g. only non nega
     coefficients = [5.0, 1.0, 2.0, 3.0]
     exponents = [[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]]
     horner_polynomial = HornerMultivarPolynomial(
-        coefficients, exponents, rectify_input=True, validate_input=True
+        coefficients, exponents, rectify_input=True
     )
 
 
@@ -220,7 +219,6 @@ with ``in_place=False`` a new polygon object is being generated
     new_polynomial = horner_polynomial.change_coefficients(
         new_coefficients,
         rectify_input=True,
-        validate_input=True,
         compute_representation=True,
         in_place=False,
     )
@@ -256,7 +254,6 @@ See :ref:`this chapter <optimal>` for further information.
         find_optimal=True,
         compute_representation=True,
         rectify_input=True,
-        validate_input=True,
     )
 
 
@@ -311,11 +308,11 @@ or
 .. code-block:: python
 
     x = [-2.0, 3.0, 1.0]
-    p_x = polynomial.eval(x, rectify_input=True, validate_input=True)  # -29.0
+    p_x = polynomial.eval(x, rectify_input=True)  # -29.0
 
 
 As during construction of a polynomial instance, pass ``rectify_input=True`` to automatically try converting the input to the required ``numpy`` data structure.
-Pass ``validate_input=True`` to check if input data is valid (e.g. matching dtype, shape, etc.).
+
 
 .. note::
 
