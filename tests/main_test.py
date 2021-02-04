@@ -73,7 +73,7 @@ class MainTest(unittest.TestCase):
         # converting the input to the required numpy data structures
         coefficients = [5.0, 1.0, 2.0, 3.0]
         exponents = [[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]]
-        horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True, validate_input=True,
+        horner_polynomial = HornerMultivarPolynomial(coefficients, exponents, rectify_input=True,
                                                      compute_representation=True, keep_tree=True)
 
         # search for an optimal factorisation
@@ -101,11 +101,11 @@ class MainTest(unittest.TestCase):
             for inp, expected_output in data:
                 coeff, exp, x = inp
                 with pytest.raises(expected_error):
-                    MultivarPolynomial(coeff, exp, rectify_input=False, validate_input=True, )
+                    MultivarPolynomial(coeff, exp, rectify_input=False, )
                 with pytest.raises(expected_error):
-                    HornerMultivarPolynomial(coeff, exp, rectify_input=False, validate_input=True, find_optimal=False)
+                    HornerMultivarPolynomial(coeff, exp, rectify_input=False, find_optimal=False)
                 with pytest.raises(expected_error):
-                    HornerMultivarPolynomial(coeff, exp, rectify_input=False, validate_input=True, find_optimal=True)
+                    HornerMultivarPolynomial(coeff, exp, rectify_input=False, find_optimal=True)
 
         construction_should_raise(INPUT_DATA_INVALID_TYPES_CONSTRUCTION, TypeError)
         construction_should_raise(INPUT_DATA_INVALID_VALUES_CONSTRUCTION, ValueError)
@@ -114,25 +114,25 @@ class MainTest(unittest.TestCase):
         coeff = [3.2]
         exp = [[0, 3, -4]]
         with pytest.raises(ValueError):
-            HornerMultivarPolynomial(coeff, exp, rectify_input=True, validate_input=False, find_optimal=True)
+            HornerMultivarPolynomial(coeff, exp, rectify_input=True, find_optimal=True)
         with pytest.raises(ValueError):
-            MultivarPolynomial(coeff, exp, rectify_input=True, validate_input=False)
+            MultivarPolynomial(coeff, exp, rectify_input=True)
         with pytest.raises(ValueError):
-            HornerMultivarPolynomial(coeff, exp, rectify_input=True, validate_input=False, find_optimal=False)
+            HornerMultivarPolynomial(coeff, exp, rectify_input=True, find_optimal=False)
 
         def query_should_raise(data, expected_error):
             for inp, expected_output in data:
                 coeff, exp, x = inp
                 # NOTE: construction must not raise an error:
-                p = MultivarPolynomial(coeff, exp, rectify_input=False, validate_input=True)
+                p = MultivarPolynomial(coeff, exp, rectify_input=False)
                 with pytest.raises(expected_error):
-                    p(x, rectify_input=False, validate_input=True)
-                p = HornerMultivarPolynomial(coeff, exp, rectify_input=False, validate_input=True)
+                    p(x, rectify_input=False)
+                p = HornerMultivarPolynomial(coeff, exp, rectify_input=False)
                 with pytest.raises(expected_error):
-                    p(x, rectify_input=False, validate_input=True)
-                p = HornerMultivarPolynomial(coeff, exp, rectify_input=False, validate_input=True, find_optimal=True)
+                    p(x, rectify_input=False)
+                p = HornerMultivarPolynomial(coeff, exp, rectify_input=False, find_optimal=True)
                 with pytest.raises(expected_error):
-                    p(x, rectify_input=False, validate_input=True)
+                    p(x, rectify_input=False)
 
         query_should_raise(INPUT_DATA_INVALID_TYPES_QUERY, TypeError)
         query_should_raise(INPUT_DATA_INVALID_VALUES_QUERY, ValueError)
@@ -142,20 +142,20 @@ class MainTest(unittest.TestCase):
         def cmp_value_fct(inp):
             coeff, exp, x = inp
             x = np.array(x).T
-            poly = MultivarPolynomial(coeff, exp, rectify_input=True, validate_input=True,
+            poly = MultivarPolynomial(coeff, exp, rectify_input=True,
                                       compute_representation=True)
-            res1 = poly.eval(x, rectify_input=True, validate_input=False)
+            res1 = poly.eval(x, rectify_input=True)
             print('MultivarPolynomial', poly)
 
-            horner_poly = HornerMultivarPolynomial(coeff, exp, rectify_input=True, validate_input=True,
+            horner_poly = HornerMultivarPolynomial(coeff, exp, rectify_input=True,
                                                    compute_representation=True, find_optimal=False)
-            res2 = poly.eval(x, rectify_input=True, validate_input=False)
+            res2 = poly.eval(x, rectify_input=True)
 
             print('HornerMultivarPolynomial', horner_poly)
             # print('x=',x.tolist())
-            horner_poly_opt = HornerMultivarPolynomial(coeff, exp, rectify_input=True, validate_input=True,
+            horner_poly_opt = HornerMultivarPolynomial(coeff, exp, rectify_input=True,
                                                        compute_representation=True, find_optimal=True)
-            res3 = poly.eval(x, rectify_input=True, validate_input=False)
+            res3 = poly.eval(x, rectify_input=True)
 
             print('HornerMultivarPolynomial (optimal)', horner_poly_opt)
             # print('x=',x.tolist())
@@ -233,31 +233,31 @@ class MainTest(unittest.TestCase):
             coeffs1, exp, x, coeffs2 = inp
             # x = np.array(x).T
             print(x)
-            poly = MultivarPolynomial(coeffs1, exp, rectify_input=True, validate_input=True,
+            poly = MultivarPolynomial(coeffs1, exp, rectify_input=True,
                                       compute_representation=True)
             print(poly)
-            poly = poly.change_coefficients(coeffs2, rectify_input=True, validate_input=True,
+            poly = poly.change_coefficients(coeffs2, rectify_input=True,
                                             compute_representation=True, )
             print(poly)
-            res1 = poly.eval(x, rectify_input=True, validate_input=True)
+            res1 = poly.eval(x, rectify_input=True)
 
             print('\n')
-            horner_poly = HornerMultivarPolynomial(coeffs1, exp, rectify_input=True, validate_input=True,
+            horner_poly = HornerMultivarPolynomial(coeffs1, exp, rectify_input=True,
                                                    compute_representation=True, keep_tree=True, find_optimal=False)
             print(horner_poly)
-            horner_poly = horner_poly.change_coefficients(coeffs2, rectify_input=True, validate_input=True,
+            horner_poly = horner_poly.change_coefficients(coeffs2, rectify_input=True,
                                                           compute_representation=True, )
-            res2 = horner_poly.eval(x, rectify_input=True, validate_input=True)
+            res2 = horner_poly.eval(x, rectify_input=True)
             print(horner_poly)
             # print('x=',x.tolist())
 
             print('\n')
-            horner_poly_opt = HornerMultivarPolynomial(coeffs1, exp, rectify_input=True, validate_input=True,
+            horner_poly_opt = HornerMultivarPolynomial(coeffs1, exp, rectify_input=True,
                                                        compute_representation=True, keep_tree=True, find_optimal=True)
             print(horner_poly_opt)
-            horner_poly_opt = horner_poly_opt.change_coefficients(coeffs2, rectify_input=True, validate_input=True,
+            horner_poly_opt = horner_poly_opt.change_coefficients(coeffs2, rectify_input=True,
                                                                   compute_representation=True, )
-            res3 = horner_poly_opt.eval(x, rectify_input=True, validate_input=True)
+            res3 = horner_poly_opt.eval(x, rectify_input=True)
             print(horner_poly_opt)
             # print('x=',x.tolist())
 
@@ -279,27 +279,27 @@ class MainTest(unittest.TestCase):
             # (reuse test data)
             coeff, exp, x = inp
             # x = np.array(x).T
-            poly = MultivarPolynomial(coeff, exp, rectify_input=True, validate_input=True,
+            poly = MultivarPolynomial(coeff, exp, rectify_input=True,
                                       compute_representation=True)
-            poly = poly.change_coefficients(coeff, rectify_input=True, validate_input=True,
+            poly = poly.change_coefficients(coeff, rectify_input=True,
                                             compute_representation=True, )
             print(poly)
-            res1 = poly.eval(x, rectify_input=True, validate_input=True)
+            res1 = poly.eval(x, rectify_input=True)
 
-            horner_poly = HornerMultivarPolynomial(coeff, exp, rectify_input=True, validate_input=True,
+            horner_poly = HornerMultivarPolynomial(coeff, exp, rectify_input=True,
                                                    compute_representation=True, find_optimal=False, keep_tree=True)
-            horner_poly = horner_poly.change_coefficients(coeff, rectify_input=True, validate_input=True,
+            horner_poly = horner_poly.change_coefficients(coeff, rectify_input=True,
                                                           compute_representation=True, )
             print(horner_poly)
-            res2 = horner_poly.eval(x, rectify_input=True, validate_input=True)
+            res2 = horner_poly.eval(x, rectify_input=True)
             # print('x=',x.tolist())
 
-            horner_poly_opt = HornerMultivarPolynomial(coeff, exp, rectify_input=True, validate_input=True,
+            horner_poly_opt = HornerMultivarPolynomial(coeff, exp, rectify_input=True,
                                                        compute_representation=True, keep_tree=True, find_optimal=True)
-            horner_poly_opt = horner_poly_opt.change_coefficients(coeff, rectify_input=True, validate_input=True,
+            horner_poly_opt = horner_poly_opt.change_coefficients(coeff, rectify_input=True,
                                                                   compute_representation=True, )
             print(horner_poly_opt)
-            res3 = horner_poly_opt.eval(x, rectify_input=True, validate_input=True)
+            res3 = horner_poly_opt.eval(x, rectify_input=True)
             # print('x=',x.tolist())
 
             if res1 != res2 or res2 != res3:
