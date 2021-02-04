@@ -72,17 +72,6 @@ def load_pickle(path: str = DEFAULT_PICKLE_FILE_NAME) -> 'AbstractPolynomial':
 
 # TODO properties: num ops...
 
-class DummyClass:
-    """ a class
-
-    Attributes:
-        a: test attribute
-    """
-
-    # FIXME: creates duplicate entries in Sphinx autodoc
-    __slots__ = ['a']
-
-
 # TODO docstring attributes in parent class, automatic inheritance in sphinx autodoc api docu
 #   -> prevent duplicate docstring in MultivarPolynomial
 class AbstractPolynomial(ABC):
@@ -95,13 +84,12 @@ class AbstractPolynomial(ABC):
                  'dim', 'maximal_degree', 'total_degree', 'unused_variables', 'representation']
 
     def __init__(self, coefficients: TYPE_1D_FLOAT, exponents: TYPE_2D_INT, rectify_input: bool = False,
-                 validate_input: bool = False, compute_representation: bool = False):
+                 compute_representation: bool = False):
 
         if rectify_input:
             coefficients, exponents = rectify_construction_parameters(coefficients, exponents)
 
-        if validate_input:
-            validate_construction_parameters(coefficients, exponents)
+        validate_construction_parameters(coefficients, exponents)
 
         self.coefficients: np.ndarray = coefficients
         self.exponents: np.ndarray = exponents
@@ -197,14 +185,13 @@ class AbstractPolynomial(ABC):
         return [self.get_partial_derivative(i, *args, **kwargs) for i in range(1, self.dim + 1)]
 
     def change_coefficients(self, coefficients: TYPE_1D_FLOAT, rectify_input: bool = False,
-                            validate_input: bool = False, compute_representation: bool = False, in_place: bool = False,
+                            compute_representation: bool = False, in_place: bool = False,
                             *args, **kwargs) -> 'AbstractPolynomial':
 
         if rectify_input:
             coefficients = rectify_coefficients(coefficients)
 
-        if validate_input:
-            validate_coefficients(coefficients)
+        validate_coefficients(coefficients)
 
         assert len(coefficients) == self.num_monomials
 
@@ -220,7 +207,7 @@ class AbstractPolynomial(ABC):
         return updated_poly
 
     @abstractmethod
-    def eval(self, x: TYPE_1D_FLOAT, validate_input=True) -> float:
+    def eval(self, x: TYPE_1D_FLOAT, rectify_input: bool = False, ) -> float:
         pass
 
 
@@ -239,8 +226,6 @@ class MultivarPolynomial(AbstractPolynomial):
         rectify_input: bool, default=False
             whether to convert coefficients and exponents into compatible numpy arrays
             with this set to True, coefficients and exponents can be given in standard python arrays
-        validate_input: bool, default=False
-            whether to check if coefficients and exponents fulfill the requirements (shape, data type etc.)
         compute_representation: bool, default=False
             whether to compute a string representation of the polynomial
 
@@ -253,17 +238,16 @@ class MultivarPolynomial(AbstractPolynomial):
         representation: a human readable string visualising the polynomial representation
 
     Raises:
-        TypeError: if ``validate_input=True`` and coefficients or exponents are not given as ndarrays
+        TypeError: if coefficients or exponents are not given as ndarrays
             of the required dtype
-        ValueError: if ``validate_input=True`` and coefficients or exponents do not have the required shape or
+        ValueError: if coefficients or exponents do not have the required shape or
             do not fulfill the other requirements or ``rectify_input=True`` and there are negative exponents
     """
 
     def __init__(self, coefficients: TYPE_1D_FLOAT, exponents: TYPE_2D_INT, rectify_input: bool = False,
-                 validate_input: bool = False, compute_representation: bool = False, *args, **kwargs):
+                 compute_representation: bool = False, *args, **kwargs):
 
-        super(MultivarPolynomial, self).__init__(coefficients, exponents, rectify_input, validate_input,
-                                                 compute_representation)
+        super(MultivarPolynomial, self).__init__(coefficients, exponents, rectify_input, compute_representation)
 
         # NOTE: count the number of multiplications of the representation
         # not the actual amount of operations required by the naive evaluation with numpy arrays
@@ -289,7 +273,7 @@ class MultivarPolynomial(AbstractPolynomial):
         self.representation = representation
         return self.representation
 
-    def eval(self, x: TYPE_1D_FLOAT, rectify_input: bool = False, validate_input: bool = False, ) -> float:
+    def eval(self, x: TYPE_1D_FLOAT, rectify_input: bool = False) -> float:
         """ computes the value of the polynomial at query point x
 
         makes use of fast ``Numba`` just in time compiled functions
@@ -299,23 +283,20 @@ class MultivarPolynomial(AbstractPolynomial):
             rectify_input: bool, default=False
                 whether to convert coefficients and exponents into compatible numpy arrays
                 with this set to True, the query point x can be given in standard python arrays
-            validate_input: check if the query point x fulfills the requirements
 
         Returns:
              the value of the polynomial at point x
 
         Raises:
-            TypeError: if ``validate_input=True`` and x is not given as ndarray of dtype float
-            ValueError: if ``validate_input=True`` and x does not have the shape ``[self.dim]``
+            TypeError: if x is not given as ndarray of dtype float
+            ValueError: if x does not have the shape ``[self.dim]``
         """
 
         if rectify_input:
             x = rectify_query_point(x)
-        if validate_input:
-            validate_query_point(x)
+        validate_query_point(x)
         if x.shape[0] != self.dim:
             raise ValueError(f'the query point x does not have the required dimensionality {self.dim}')
-
         return naive_eval(x, self.coefficients.flatten(), self.exponents)
 
 
@@ -337,8 +318,6 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         rectify_input: bool, default=False
             whether to convert coefficients and exponents into compatible numpy arrays
             with this set to True, coefficients and exponents can be given in standard python arrays
-        validate_input: bool, default=False
-            whether to check if coefficients and exponents fulfill the requirements (shape, data type etc.)
         compute_representation: bool, default=False
             whether to compute a string representation of the polynomial
 
@@ -387,9 +366,9 @@ class HornerMultivarPolynomial(AbstractPolynomial):
             since only the two operations ADD & MUL need to be encoded.
 
     Raises:
-        TypeError: if ``validate_input=True`` and coefficients or exponents are not given as ndarrays
+        TypeError: if coefficients or exponents are not given as ndarrays
             of the required dtype
-        ValueError: if ``validate_input=True`` and coefficients or exponents do not have the required shape or
+        ValueError: if coefficients or exponents do not have the required shape or
             do not fulfill the other requirements
     """
     # __slots__ declared in parents are available in child classes. However, child subclasses will get a __dict__
@@ -398,11 +377,10 @@ class HornerMultivarPolynomial(AbstractPolynomial):
     __slots__ = ['copy_recipe', 'factorisation_tree', 'factor_container', 'monomial_recipe', 'root_value_idx',
                  'tree_recipe', 'tree_ops', 'scalar_recipe', 'value_array_length']
 
-    def __init__(self, coefficients, exponents, rectify_input=False, validate_input=False, keep_tree=False,
+    def __init__(self, coefficients, exponents, rectify_input=False, keep_tree=False,
                  compute_representation=False, find_optimal=False, *args, **kwargs):
 
-        super(HornerMultivarPolynomial, self).__init__(coefficients, exponents, rectify_input, validate_input,
-                                                       compute_representation)
+        super(HornerMultivarPolynomial, self).__init__(coefficients, exponents, rectify_input, compute_representation)
 
         self.value_array_length = None
         self.representation = None
@@ -516,7 +494,7 @@ class HornerMultivarPolynomial(AbstractPolynomial):
                 np.array(tree_recipe, dtype=UINT_DTYPE).reshape((-1, 2)),
                 tree_ops)
 
-    def eval(self, x: TYPE_1D_FLOAT, rectify_input: bool = False, validate_input: bool = False, ) -> float:
+    def eval(self, x: TYPE_1D_FLOAT, rectify_input: bool = False) -> float:
         """ computes the value of the polynomial at query point x
 
         makes use of fast ``Numba`` just in time compiled functions
@@ -526,20 +504,18 @@ class HornerMultivarPolynomial(AbstractPolynomial):
             rectify_input: bool, default=False
                 whether to convert coefficients and exponents into compatible numpy arrays
                 with this set to True, the query point x can be given in standard python arrays
-            validate_input: check if the query point x fulfills the requirements
 
         Returns:
              the value of the polynomial at point x
 
         Raises:
-            TypeError: if ``validate_input=True`` and x is not given as ndarray of dtype float
-            ValueError: if ``validate_input=True`` and x does not have the shape ``[self.dim]``
+            TypeError: if x is not given as ndarray of dtype float
+            ValueError: if x does not have the shape ``[self.dim]``
         """
 
         if rectify_input:
             x = rectify_query_point(x)
-        if validate_input:
-            validate_query_point(x)
+        validate_query_point(x)
         if x.shape[0] != self.dim:
             raise ValueError(f'the query point x does not have the required dimensionality {self.dim}')
 
