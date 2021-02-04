@@ -221,4 +221,3 @@ Acknowledgements
 Thanks to:
 
 `Steve <https://github.com/elcorto>`__ for valuable feedback and writing tests.
-

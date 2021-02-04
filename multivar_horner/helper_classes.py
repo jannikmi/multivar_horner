@@ -81,13 +81,13 @@ class PriorityQueue2D:
     def get_all(self):
         all_items = []
         for lvl2_heap in self.id2heap.values():
-            for (cost, item) in lvl2_heap.elements:
+            for (_cost, item) in lvl2_heap.elements:
                 all_items.append(item)
         return all_items
 
 
 class AbstractFactor(ABC):
-    __slots__ = ['value_idx']
+    __slots__ = ["value_idx"]
 
     @abstractmethod
     def __str__(self, *args, **kwargs):
@@ -124,19 +124,24 @@ class ScalarFactor(AbstractFactor):
     """
     a factor depending on just one variable: :math:`f(x) = x_d^e`
     """
-    __slots__ = ['dimension', 'exponent']
+
+    __slots__ = ["dimension", "exponent"]
 
     def __init__(self, factor_dimension, factor_exponent):
         self.dimension = factor_dimension
         self.exponent = factor_exponent
-        self.value_idx = None  # initialize the idx with None to catch faulty evaluation tries
+        self.value_idx = (
+            None  # initialize the idx with None to catch faulty evaluation tries
+        )
 
-    def __str__(self, factor_fmt_str='x_{dim}^{exp}', *args, **kwargs):
+    def __str__(self, factor_fmt_str="x_{dim}^{exp}", *args, **kwargs):
         # NOTE: variable numbering starts with 1: x_1, x_2, ...
         # if self.exponent == 1:
         #     return 'x_{}'.format(self.dimension + 1)
 
-        return factor_fmt_str.format(**{'dim': self.dimension + 1, 'exp': self.exponent})
+        return factor_fmt_str.format(
+            **{"dim": self.dimension + 1, "exp": self.exponent}
+        )
 
     def __repr__(self, *args, **kwargs):
         return self.__str__(*args, **kwargs)
@@ -179,16 +184,19 @@ class MonomialFactor(AbstractFactor):
         cannot be set at construction time, because all scalar factors need to receive their index first,
         but not all required scalar factors might exist
     """
-    __slots__ = ['scalar_factors', 'factorisation_idxs']
 
-    def __init__(self, scalar_factors: List['ScalarFactor']):
+    __slots__ = ["scalar_factors", "factorisation_idxs"]
+
+    def __init__(self, scalar_factors: List["ScalarFactor"]):
 
         # assert len(scalar_factors) > 1, 'a monomial must consist of at least two scalar factors' # DEBUG
         self.scalar_factors = scalar_factors
-        self.value_idx = None  # initialize the idx with None to catch faulty evaluation tries
+        self.value_idx = (
+            None  # initialize the idx with None to catch faulty evaluation tries
+        )
 
     def __str__(self):
-        return ' '.join([f.__str__() for f in self.scalar_factors])
+        return " ".join([f.__str__() for f in self.scalar_factors])
 
     def __repr__(self):
         return self.__str__()
@@ -212,7 +220,11 @@ class MonomialFactor(AbstractFactor):
         """
         # target = source1 * source2
         # instruction encoding: target, source1, source2
-        target, source1, source2 = self.value_idx, self.factorisation_idxs[0], self.factorisation_idxs[1]
+        target, source1, source2 = (
+            self.value_idx,
+            self.factorisation_idxs[0],
+            self.factorisation_idxs[1],
+        )
         monomial_recipe = [(target, source1, source2)]
 
         source1 = target  # always take the previously computed value
@@ -298,9 +310,13 @@ class FactorContainer:
             if len(scalar_factors) == 0:
                 factor = None  # monomial consists of no factors
             elif len(scalar_factors) == 1:
-                factor = scalar_factors[0]  # monomial consists of a single scalar factor
+                factor = scalar_factors[
+                    0
+                ]  # monomial consists of a single scalar factor
             else:
-                factor = self.get_factor(property_list)  # monomial consists of a multiple scalar factors
+                factor = self.get_factor(
+                    property_list
+                )  # monomial consists of a multiple scalar factors
 
             all_factors.append(factor)
 

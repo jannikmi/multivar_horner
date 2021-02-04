@@ -7,8 +7,7 @@
 
 
 import numpy as np
-
-from numba import b1, f8, u4, i8, void, njit
+from numba import b1, f8, i8, njit, u4, void
 
 # DTYPES:
 F = f8
@@ -22,6 +21,7 @@ BOOL_1D = b1[:]
 
 # time critical helper functions. just in time compiled
 # ATTENTION: due to `chace=True`
+
 
 @njit(F(F_1D, F_1D, UINT_2D), cache=True)
 def naive_eval(x, coefficients, exponents):
@@ -40,8 +40,21 @@ def naive_eval(x, coefficients, exponents):
 
 
 # @cc.export('eval_compiled', 'f8(f8[:], f8[:], UINT_2, UINT_2, UINT_2, UINT_2, b1[:], u4)')
-@njit(F(F_1D, F_1D, UINT_2D, UINT_2D, UINT_2D, UINT_2D, BOOL_1D, UINT), cache=True, debug=True)
-def eval_recipe(x, value_array, copy_recipe, scalar_recipe, monomial_recipe, tree_recipe, tree_ops, root_value_address):
+@njit(
+    F(F_1D, F_1D, UINT_2D, UINT_2D, UINT_2D, UINT_2D, BOOL_1D, UINT),
+    cache=True,
+    debug=True,
+)
+def eval_recipe(
+    x,
+    value_array,
+    copy_recipe,
+    scalar_recipe,
+    monomial_recipe,
+    tree_recipe,
+    tree_ops,
+    root_value_address,
+):
     # IMPORTANT: the order of following the recipes is not arbitrary!
     #   scalar factors need to be evaluated before monomial factors depending on them...
 
@@ -71,7 +84,9 @@ def eval_recipe(x, value_array, copy_recipe, scalar_recipe, monomial_recipe, tre
         # print('value[{}] = {} * {} (idx: {}, {})'.format(target, value_array[source1], value_array[source2], source1,
         #                                                 source2))
         # value_array[target] = value_array[source1] * value_array[source2]
-        value_array[monomial_recipe[i, 0]] = value_array[monomial_recipe[i, 1]] * value_array[monomial_recipe[i, 2]]
+        value_array[monomial_recipe[i, 0]] = (
+            value_array[monomial_recipe[i, 1]] * value_array[monomial_recipe[i, 2]]
+        )
 
         # # DEBUG:
         # accessed_idxs.add(monomial_recipe[i, 1])
@@ -135,7 +150,7 @@ def num_ops_1D_horner(unique_exponents):
 
     # one MUL operation is required !between! all factors in the factorisation chain
     # the amount of factors (= "length of factorisation chain") is equal to the amount of unique existing exponents
-    num_ops = - 1
+    num_ops = -1
 
     # start with exponent 0 (not in unique exponents)
     # the difference between one and the next exponent determines if a POW operation is needed to evaluate a factor
@@ -155,7 +170,7 @@ def num_ops_1D_horner(unique_exponents):
 
 @njit(UINT(UINT_2D), cache=True)
 def count_num_ops(exponent_matrix):
-    """ counts the amount of multiplications required during evaluation
+    """counts the amount of multiplications required during evaluation
 
     under the assumption: this polynomial representation does not get factorised any further
     do not count additions and exponentiations
@@ -195,8 +210,10 @@ def compile_usage(dim, usage_vector, unique_exponents, exponent_matrix):
 
 
 @njit(void(INT, BOOL_1D, UINT_1D, UINT_1D, UINT_2D), cache=True)
-def compile_valid_options(dim, valid_option_vector, usage_vector, unique_exponents, exponent_matrix):
-    """ compute the vector of valid options
+def compile_valid_options(
+    dim, valid_option_vector, usage_vector, unique_exponents, exponent_matrix
+):
+    """compute the vector of valid options
 
     :param dim:
     :param valid_option_vector:

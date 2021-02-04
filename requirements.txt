@@ -1,4 +1,4 @@
+numba>=0.48
 # basic dependencies:
 # python3.6+
 numpy>=1.16
-numba>=0.48

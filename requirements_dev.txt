@@ -16,6 +16,8 @@ bleach==3.3.0
     # via readme-renderer
 certifi==2020.12.5
     # via requests
+cfgv==3.2.0
+    # via pre-commit
 chardet==4.0.0
     # via requests
 click==7.1.2
@@ -37,6 +39,8 @@ filelock==3.0.12
     # via
     #   tox
     #   virtualenv
+identify==1.5.13
+    # via pre-commit
 idna==2.10
     # via requests
 imagesize==1.2.0
@@ -53,6 +57,8 @@ llvmlite==0.35.0
     # via numba
 markupsafe==1.1.1
     # via jinja2
+nodeenv==1.5.0
+    # via pre-commit
 numba==0.52.0
     # via -r requirements_dev.in
 numpy==1.20.0
@@ -73,6 +79,8 @@ pluggy==0.13.1
     # via
     #   pytest
     #   tox
+pre-commit==2.10.0
+    # via -r requirements_dev.in
 py==1.10.0
     # via
     #   pytest
@@ -98,7 +106,9 @@ pytest==6.2.2
 pytz==2021.1
     # via babel
 pyyaml==5.4.1
-    # via pybtex
+    # via
+    #   pre-commit
+    #   pybtex
 readme-renderer==28.0
     # via twine
 requests-toolbelt==0.9.1
@@ -145,6 +155,7 @@ sphinxcontrib-serializinghtml==1.1.4
     # via sphinx
 toml==0.10.2
     # via
+    #   pre-commit
     #   pytest
     #   tox
 tox==3.21.4
@@ -156,7 +167,9 @@ twine==3.3.0
 urllib3==1.26.3
     # via requests
 virtualenv==20.4.2
-    # via tox
+    # via
+    #   pre-commit
+    #   tox
 webencodings==0.5.1
     # via bleach
 

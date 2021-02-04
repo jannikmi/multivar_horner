@@ -6,6 +6,10 @@ include CONTRIBUTING.rst
 include LICENSE
 include README.rst
 include VERSION
+include .editorconfig
+include tox.ini
+include requirements*
+include runtests.py
 
 recursive-include tests *.py
 

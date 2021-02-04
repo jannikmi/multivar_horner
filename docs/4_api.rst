@@ -16,8 +16,3 @@ HornerMultivarPolynomial
 MultivarPolynomial
 ------------------------
 .. autoclass:: MultivarPolynomial
-
-
-
-
-

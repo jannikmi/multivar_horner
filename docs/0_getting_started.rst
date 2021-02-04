@@ -50,16 +50,13 @@ and evaluating :math:`p` at a point :math:`x`:
     from multivar_horner.multivar_horner import HornerMultivarPolynomial
 
     coefficients = np.array([[5.0], [1.0], [2.0], [3.0]], dtype=np.float64)  # shape: (M,1)
-    exponents = np.array([
-            [0, 0, 0],
-            [3, 1, 0],
-            [2, 0, 1],
-            [1, 1, 1]
-        ], dtype=np.uint32)  # shape: (M,N)
+    exponents = np.array(
+        [[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=np.uint32
+    )  # shape: (M,N)
     p = HornerMultivarPolynomial(coefficients, exponents)
 
     x = np.array([-2.0, 3.0, 1.0], dtype=np.float64)  # shape: (1,N)
-    p_x = p(x) # -29.0
+    p_x = p(x)  # -29.0
 
 
 
@@ -76,4 +73,3 @@ With the class ``MultivarPolynomial`` a polynomial can be represented in :ref:`c
 All available features of this package are explained :ref:`HERE <usage>`.
 
 The API documentation can be found :ref:`HERE <api>`.
-
