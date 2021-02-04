@@ -1,6 +1,15 @@
 Changelog
 =========
 
+
+2.2.0 (2021-02-04)
+__________________
+
+ATTENTION: API changes:
+* removed ``validate_input`` arguments. input will now always be validated (otherwise the numba jit compiled functions will fail with cryptic error messages)
+* black code style
+* pre-commit checks
+
 2.1.1 (2020-10-01)
 __________________
 
@@ -8,15 +17,6 @@ Post-JOSS paper review release:
 
 * Changed the method of counting the amount of operations of the polynomial representations. Only the multiplications are being counted. Exponentiations count as (exponent-1) operations.
 * the numerical tests compute the relative average error with an increased precision now
-
-
-2.2.0 (2021-02-04)
-
-
-ATTENTION: API changes:
-* removed ``validate_input`` arguments. input will now always be validated (otherwise the numba jit compiled functions will fail with cryptic error messages)
-* black code style
-* pre-commit checks
 
 
 2.1.0 (2020-06-15)
