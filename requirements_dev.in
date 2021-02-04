@@ -1,0 +1,20 @@
+# Test dependencies
+# will be pinned by pip-compile in 'requirements_tests.txt'
+# python3.6+
+
+numpy>=1.16
+numba>=0.48
+
+pytest
+pytest-cov
+
+
+tox
+sphinx
+twine
+
+# not supported by conda?!
+pip-tools
+sphinxcontrib-bibtex
+sphinx_rtd_theme
+rstcheck>=3.3.1
