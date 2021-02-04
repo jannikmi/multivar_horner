@@ -2,6 +2,15 @@ Changelog
 =========
 
 
+2.2.0 (2021-02-04)
+
+
+ATTENTION: API changes:
+* removed ``validate_input`` arguments. input will now always be validated (otherwise the numba jit compiled functions will fail with cryptic error messages)
+* black code style
+* pre-commit checks
+
+
 2.1.0 (2020-06-15)
 __________________
 
@@ -108,4 +117,3 @@ __________________
 __________________
 
 * birth of this package
-
