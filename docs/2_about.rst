@@ -43,9 +43,9 @@ Also see:
 Dependencies
 ------------
 
-(``python3.6+``),
-``numpy``,
-``numba``
+``python>=3.6``,
+``numpy>=1.16``,
+``numba>=0.48``
 
 
 
