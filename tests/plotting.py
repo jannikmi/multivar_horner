@@ -630,7 +630,7 @@ def plot_numerical_error():
         with open(TEST_RESULTS_PICKLE, 'rb') as f:
             results = pickle.load(f)
     except FileNotFoundError:
-        print('no data of numerical errors found. run the numerical tests in test_it.py first')
+        print('no data of numerical errors found. run the numerical tests first')
         return
 
     # results_filtered_naive = filter_results(has_nonzero_err_naive, results)

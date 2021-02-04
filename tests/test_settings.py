@@ -12,9 +12,6 @@ EXPORT_SIZE_Y = 11.0  # inch
 SHOW_PLOTS = False
 PLOTTING_DIR = abspath(join(__file__, pardir, 'plots'))
 
-ALPHA = 0.8
-
-
 NR_TEST_POLYNOMIALS = 5  # repetitions
 MAX_COEFF_MAGNITUDE = 1e0
 MAX_INP_MAGNITUDE = MAX_COEFF_MAGNITUDE  # max magnitude of evaluation points x

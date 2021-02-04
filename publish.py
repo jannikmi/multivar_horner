@@ -4,21 +4,26 @@ import sys
 from os.path import abspath, isfile, join, pardir
 
 """
+
+
 required packages
 numpy
-(numba)
+numba
 
+requirements_dev.txt
 
 these packages have to be installed in virtual environment in use:
 
 right python version! (will influence the tox environments!)
 for testing:
 conda install pytest
-conda install isort
 conda install twine
 conda install tox
 
 pip install rstcheck pip-tools
+
+pip-tools v 2.0.2
+with with pip 20.1
 
 rstcheck>=3.3.1
 twine for uploading securely
@@ -42,8 +47,9 @@ compile a new requirements file (with the latest versions)
 conda activate tzEnv
 pip-compile --upgrade
 same as?!:
-pip-compile --output-file=requirements.txt requirements_tests.in
-pip-compile --output-file requirements.txt requirements_tests.in
+pip-compile --output-file=requirements.txt requirements.in
+pip-compile --output-file requirements_tests.txt requirements_tests.in
+pip-compile --output-file requirements_dev.txt requirements_dev.in
 
 only update the flask package:
 pip-compile --upgrade-package flask
@@ -61,10 +67,6 @@ tox -r -e codestyle
 tox -r -e py37
 tox -r -e py37-numba
 
-automatically update imports: isort -rc .
-dont use for example.py
-
-
 Use the Makefile to build the docs, like so:
 cd ./docs
 make html
@@ -75,6 +77,9 @@ use bandit to check for vulnerabilities:
 conda install bandit
 bandit ./multivar_horner/*.py
 
+
+conda create -n hornerEnv python=3.8
+pip install -r requirements_dev.txt
 
 """
 
