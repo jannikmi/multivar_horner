@@ -1,6 +1,7 @@
 import pickle
 import sys
 import unittest
+import warnings
 from itertools import product
 
 import numpy as np
@@ -100,6 +101,10 @@ def evaluate_numerical_error(dim, max_degree):
 class NumericalTest(unittest.TestCase):
 
     def test_numerical_stability(self):
+        if FLOAT_DTYPE is not DTYPE_HIGH_PREC:
+            warnings.warn(f'the numerical tests can only be performed when "DTYPE_HIGH_PREC" is set to {DTYPE_HIGH_PREC} '
+                          f'and jit compilation ot the eval functions disabled')
+            return
         print('\nevaluating the numerical error:')
         results = []
         for dim, max_degree in product(DIM_RANGE, DEGREE_RANGE):
