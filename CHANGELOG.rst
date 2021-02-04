@@ -6,6 +6,7 @@ Changelog
 __________________
 
 ATTENTION: API changes:
+
 * removed ``validate_input`` arguments. input will now always be validated (otherwise the numba jit compiled functions will fail with cryptic error messages)
 * black code style
 * pre-commit checks
