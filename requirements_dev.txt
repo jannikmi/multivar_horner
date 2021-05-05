@@ -83,6 +83,7 @@ pre-commit==2.10.0
     # via -r requirements_dev.in
 py==1.10.0
     # via
+    #   -r requirements_dev.in
     #   pytest
     #   tox
 pybtex-docutils==1.0.0
@@ -164,8 +165,10 @@ tqdm==4.56.0
     # via twine
 twine==3.3.0
     # via -r requirements_dev.in
-urllib3==1.26.3
-    # via requests
+urllib3==1.26.4
+    # via
+    #   -r requirements_dev.in
+    #   requests
 virtualenv==20.4.2
     # via
     #   pre-commit

@@ -19,3 +19,7 @@ pip-tools
 sphinxcontrib-bibtex
 sphinx_rtd_theme
 rstcheck>=3.3.1
+
+# fix vulnerabilities:
+py>=1.10.0
+urllib3>=1.26.4
