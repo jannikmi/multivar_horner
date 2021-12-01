@@ -14,7 +14,7 @@ repos:
             -   id: check-docstring-first
             -   id: requirements-txt-fixer
             -   id: detect-private-key
-#            -   id: check-executables-have-shebangs
+            -   id: check-executables-have-shebangs
 
     -   repo: https://github.com/pycqa/isort
         rev: 5.10.1
