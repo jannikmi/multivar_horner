@@ -3,7 +3,7 @@ repos:
         rev: v4.0.1
         hooks:
             -   id: check-ast  # Is it valid Python?
-            -   id: debug-statements # no debbuging statements used
+            -   id: debug-statements # no debugging statements used
             -   id: trailing-whitespace
             -   id: end-of-file-fixer
             -   id: check-yaml
