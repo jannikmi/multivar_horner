@@ -46,7 +46,7 @@ setup(
         "numpy>=1.16",
         "numba>=0.48",
     ],
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     # TODO
     # extras_require={'pytorch': [...]},
 )
