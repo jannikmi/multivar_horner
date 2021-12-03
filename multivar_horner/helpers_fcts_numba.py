@@ -84,9 +84,7 @@ def eval_recipe(
         # print('value[{}] = {} * {} (idx: {}, {})'.format(target, value_array[source1], value_array[source2], source1,
         #                                                 source2))
         # value_array[target] = value_array[source1] * value_array[source2]
-        value_array[monomial_recipe[i, 0]] = (
-            value_array[monomial_recipe[i, 1]] * value_array[monomial_recipe[i, 2]]
-        )
+        value_array[monomial_recipe[i, 0]] = value_array[monomial_recipe[i, 1]] * value_array[monomial_recipe[i, 2]]
 
         # # DEBUG:
         # accessed_idxs.add(monomial_recipe[i, 1])
@@ -103,11 +101,11 @@ def eval_recipe(
         if tree_ops[i]:  # ADDITION: 1
             # print('value[{}] = {} + {}'.format(target, value_array[target], value_array[source1]))
             # value_array[target] = value_array[target] + value_array[source1]
-            value_array[target] = value_array[target] + value_array[source]
+            value_array[target] += value_array[source]
         else:  # MULTIPLICATION: 0
             # print('value[{}] = {} * {}'.format(target, value_array[target], value_array[source1]))
             # value_array[target] = value_array[target] * value_array[source1]
-            value_array[target] = value_array[target] * value_array[source]
+            value_array[target] *= value_array[source]
 
         # # DEBUG:
         # accessed_idxs.add(target)
@@ -210,9 +208,7 @@ def compile_usage(dim, usage_vector, unique_exponents, exponent_matrix):
 
 
 @njit(void(INT, BOOL_1D, UINT_1D, UINT_1D, UINT_2D), cache=True)
-def compile_valid_options(
-    dim, valid_option_vector, usage_vector, unique_exponents, exponent_matrix
-):
+def compile_valid_options(dim, valid_option_vector, usage_vector, unique_exponents, exponent_matrix):
     """compute the vector of valid options
 
     :param dim:

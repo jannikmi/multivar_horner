@@ -19,9 +19,7 @@ from os.path import abspath, isfile, join, pardir
 PACKAGE = "multivar_horner"
 VERSION_FILE = "VERSION"
 VIRT_ENV_NAME = PACKAGE
-VIRT_ENV_COMMAND = (
-    f". ~/miniconda3/etc/profile.d/conda.sh; conda activate {VIRT_ENV_NAME}; "
-)
+VIRT_ENV_COMMAND = f". ~/miniconda3/etc/profile.d/conda.sh; conda activate {VIRT_ENV_NAME}; "
 PY_VERSION_IDS = [
     "37",
     "38",
@@ -163,9 +161,7 @@ if __name__ == "__main__":
     # IMPORTANT: -r flag to rebuild tox virtual env
     # only when dependencies have changed!
     rebuild_flag = ""
-    print(
-        "when the dependencies (in requirements_tests.txt) have changed enter 1 (-> rebuild tox)"
-    )
+    print("when the dependencies (in requirements_tests.txt) have changed enter 1 (-> rebuild tox)")
     try:
         inp = int(input())
         if inp == 1:
@@ -210,13 +206,9 @@ if __name__ == "__main__":
     )
 
     path = abspath(join(__file__, pardir, "dist"))
-    all_archives_this_version = [
-        f for f in os.listdir(path) if isfile(join(path, f)) and version_str in f
-    ]
+    all_archives_this_version = [f for f in os.listdir(path) if isfile(join(path, f)) and version_str in f]
     paths2archives = [abspath(join(path, f)) for f in all_archives_this_version]
-    command = "twine upload --repository-url https://test.pypi.org/legacy/ " + " ".join(
-        paths2archives
-    )
+    command = "twine upload --repository-url https://test.pypi.org/legacy/ " + " ".join(paths2archives)
 
     # upload all archives of this version
     routine(VIRT_ENV_COMMAND + command, "testing if upload works.")
@@ -226,7 +218,5 @@ if __name__ == "__main__":
 
     # tag erstellen
     routine(None, "Do you want to create a git release tag?", "Yes", "No")
-    routine(
-        f"git tag -a v{version} -m 'Version {version}'; git push --tags", "Creating tag"
-    )
+    routine(f"git tag -a v{version} -m 'Version {version}'; git push --tags", "Creating tag")
     print(f"______________\nCongrats! Published version {version}.")

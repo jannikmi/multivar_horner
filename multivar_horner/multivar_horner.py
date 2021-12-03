@@ -1,6 +1,4 @@
 # -*- coding:utf-8 -*-
-
-
 """
     TODO
     POSSIBLE IMPROVEMENTS:
@@ -43,15 +41,20 @@
     - the evaluation of subtrees is independent and could theoretically be done in parallel
         probably not worth the effort. more reasonable to just evaluate multiple polynomials in parallel
 """
-
+import abc
+import ctypes
 import pickle
+import shutil
+import subprocess
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from pathlib import Path
 from typing import List
 
 import numpy as np
 
 from multivar_horner.factorisation_classes import (
+    BasePolynomialNode,
     HeuristicFactorisationRoot,
     OptimalFactorisationRoot,
 )
@@ -64,7 +67,7 @@ from multivar_horner.global_settings import (
     TYPE_2D_INT,
     UINT_DTYPE,
 )
-from multivar_horner.helper_classes import FactorContainer
+from multivar_horner.helper_classes import FactorContainer, MonomialFactor, ScalarFactor
 from multivar_horner.helper_fcts import (
     rectify_coefficients,
     rectify_construction_parameters,
@@ -74,6 +77,8 @@ from multivar_horner.helper_fcts import (
     validate_query_point,
 )
 from multivar_horner.helpers_fcts_numba import count_num_ops, eval_recipe, naive_eval
+
+PATH2C_FILES = Path(__file__).parent / "__pycache__"
 
 
 # is not a helper function to make it an importable part of the package
@@ -115,29 +120,23 @@ class AbstractPolynomial(ABC):
     ):
 
         if rectify_input:
-            coefficients, exponents = rectify_construction_parameters(
-                coefficients, exponents
-            )
+            coefficients, exponents = rectify_construction_parameters(coefficients, exponents)
 
         validate_construction_parameters(coefficients, exponents)
 
         self.coefficients: np.ndarray = coefficients
         self.exponents: np.ndarray = exponents
-        self.compute_representation = compute_representation
+        self.compute_representation: bool = compute_representation
 
         self.num_monomials: int = self.exponents.shape[0]
         self.dim: int = self.exponents.shape[1]
-        self.unused_variables = np.where(
-            ~np.any(self.exponents.astype(BOOL_DTYPE), axis=1)
-        )[0]
+        self.unused_variables = np.where(~np.any(self.exponents.astype(BOOL_DTYPE), axis=1))[0]
         self.total_degree: int = np.max(np.sum(self.exponents, axis=0))
-        self.euclidean_degree: float = np.max(
-            np.linalg.norm(self.exponents, ord=2, axis=0)
-        )
+        self.euclidean_degree: float = np.max(np.linalg.norm(self.exponents, ord=2, axis=0))
         self.maximal_degree: int = np.max(self.exponents)
 
         self.num_ops: int = 0
-        self.representation: str = "p(x)"
+        self.representation: str
 
     def __str__(self):
         return self.representation
@@ -151,14 +150,14 @@ class AbstractPolynomial(ABC):
     def get_num_ops(self) -> int:
         return self.num_ops
 
+    @abc.abstractmethod
     def compute_string_representation(self, *args, **kwargs) -> str:
         """computes a string representation of the polynomial and sets self.representation
 
         Returns:
             a string representing this polynomial instance
         """
-        # self.representation has already been set during construction
-        return self.representation
+        ...
 
     def export_pickle(self, path: str = DEFAULT_PICKLE_FILE_NAME):
         print('storing polynomial in file "{}" ...'.format(path))
@@ -199,9 +198,7 @@ class AbstractPolynomial(ABC):
         # multiply the coefficients with the exponent of the i-th coordinate
         # f(x) = a x^b
         # f'(x) = ab x^(b-1)
-        new_coefficients = np.multiply(
-            new_coefficients.flatten(), new_exponents[:, coord_index]
-        )
+        new_coefficients = np.multiply(new_coefficients.flatten(), new_exponents[:, coord_index])
         new_coefficients = new_coefficients.reshape(-1, 1)
 
         # reduce the the exponent of the i-th coordinate by 1
@@ -218,10 +215,7 @@ class AbstractPolynomial(ABC):
         Returns:
              the list of all partial derivatives
         """
-        return [
-            self.get_partial_derivative(i, *args, **kwargs)
-            for i in range(1, self.dim + 1)
-        ]
+        return [self.get_partial_derivative(i, *args, **kwargs) for i in range(1, self.dim + 1)]
 
     def change_coefficients(
         self,
@@ -303,9 +297,7 @@ class MultivarPolynomial(AbstractPolynomial):
         **kwargs,
     ):
 
-        super(MultivarPolynomial, self).__init__(
-            coefficients, exponents, rectify_input, compute_representation
-        )
+        super(MultivarPolynomial, self).__init__(coefficients, exponents, rectify_input, compute_representation)
 
         # NOTE: count the number of multiplications of the representation
         # not the actual amount of operations required by the naive evaluation with numpy arrays
@@ -327,9 +319,7 @@ class MultivarPolynomial(AbstractPolynomial):
                 monomial = [coeff_fmt_str.format(self.coefficients[i, 0])]
                 for dim, exp in enumerate(exp_vect):
                     # show all operations, even 1 * x_i^0
-                    monomial.append(
-                        factor_fmt_str.format(**{"dim": dim + 1, "exp": exp})
-                    )
+                    monomial.append(factor_fmt_str.format(**{"dim": dim + 1, "exp": exp}))
 
                 monomials.append(" ".join(monomial))
 
@@ -356,14 +346,10 @@ class MultivarPolynomial(AbstractPolynomial):
             TypeError: if x is not given as ndarray of dtype float
             ValueError: if x does not have the shape ``[self.dim]``
         """
-
         if rectify_input:
             x = rectify_query_point(x)
-        validate_query_point(x)
-        if x.shape[0] != self.dim:
-            raise ValueError(
-                f"the query point x does not have the required dimensionality {self.dim}"
-            )
+        validate_query_point(x, self.dim)
+
         return naive_eval(x, self.coefficients.flatten(), self.exponents)
 
 
@@ -452,6 +438,11 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         "tree_ops",
         "scalar_recipe",
         "value_array_length",
+        "find_optimal",
+        "keep_tree",
+        "_hash_val",
+        "use_c_eval",
+        "num_ops",
     ]
 
     def __init__(
@@ -465,48 +456,71 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         *args,
         **kwargs,
     ):
-
-        super(HornerMultivarPolynomial, self).__init__(
-            coefficients, exponents, rectify_input, compute_representation
-        )
-
+        super(HornerMultivarPolynomial, self).__init__(coefficients, exponents, rectify_input, compute_representation)
+        self.find_optimal: bool = find_optimal
+        self.keep_tree: bool = keep_tree
         self.value_array_length = None
         self.representation = None
+        self._hash_val: int
 
+        self._configure_evaluation()
+        self.compute_string_representation(*args, **kwargs)
+
+        if not self.keep_tree:
+            try:
+                del self.factorisation_tree
+                del self.factor_container
+            except AttributeError:
+                pass
+
+    def _configure_evaluation(self):
+        # by default use faster C evaluation
+        self.use_c_eval: bool = True
+        try:
+            self._compile_c_file()
+        except ValueError as exc:
+            print(exc)
+            # if C compilation does not work, use recipe (numpy+Numba based) evaluation as a fallback
+            self.use_c_eval = False
+            self._compile_recipes()
+
+    def _compute_factorisation(self):
+        print("computing factorisation...")
         # NOTE: do NOT automatically create all scalar factors with exponent 1
         # (they might be unused, since the polynomial must not actually depend on all variables)
         self.factor_container = FactorContainer()
-
-        if find_optimal:
-            self.factorisation_tree = OptimalFactorisationRoot(
-                self.exponents, self.factor_container
-            )
+        if self.find_optimal:
+            root_class = OptimalFactorisationRoot
         else:
-            self.factorisation_tree = HeuristicFactorisationRoot(
-                self.exponents, self.factor_container
-            )
+            root_class = HeuristicFactorisationRoot
+        self.factorisation_tree: BasePolynomialNode = root_class(self.exponents, self.factor_container)
+        self.root_value_idx = self.factorisation_tree.value_idx
+        self.value_array_length = self.num_monomials + len(self.factor_container)
 
-        (
-            self.copy_recipe,
-            self.scalar_recipe,
-            self.monomial_recipe,
-            self.tree_recipe,
-            self.tree_ops,
-        ) = self._compile_recipes()
+    def __hash__(self):
+        """
+        compare polynomials (including their factorisation) based on their properties
+        NOTE: coefficients can be changed
+        without affecting the fundamental properties of the polynomial (factorisation)
+        NOTE: optimal factorisations might be different from the ones found with the default approach
 
-        self.value_array_length = (
-            self.num_monomials
-            + len(self.factor_container.scalar_factors)
-            + len(self.factor_container.monomial_factors)
-        )
+        Returns: an integer encoding the fundamental properties of the polynomial including its factorisation
+        """
+        try:
+            return self._hash_val
+        except AttributeError:
+            props = (self.dim, self.num_monomials, self.find_optimal, *self.exponents.flatten())
+            self._hash_val = hash(props)
+        return self._hash_val
 
-        self.root_value_idx = self.factorisation_tree.value_idxs[0]
-
-        self.compute_string_representation(*args, **kwargs)  # uses num_ops!
-
-        if not keep_tree:
-            del self.factorisation_tree
-            del self.factor_container
+    def __eq__(self, other):
+        """
+        Returns: true when ``other`` is of the same class and has equal properties (encoded by hash)
+        """
+        if not isinstance(other, self.__class__):
+            return False
+        # we consider polynomials equal when they share their properties (-> hash)
+        return hash(self) == hash(other)
 
     def compute_string_representation(
         self,
@@ -515,25 +529,23 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         *args,
         **kwargs,
     ) -> str:
-        representation = "[#ops={}] p(x)".format(self.num_ops)
-        if self.compute_representation:
-            try:
-                representation += (
-                    " = "
-                    + self.factorisation_tree.get_string_representation(
-                        self.coefficients, coeff_fmt_str, factor_fmt_str
-                    )
-                )
-                # exponentiation with 1 won't cause an operation in this representation
-                # but are present in the string representation due to string formatting restrictions
-                # -> they should not be displayed (misleading)
-                representation = representation.replace(
-                    "^1", ""
-                )  # <- workaround for the default string format
-            except AttributeError:
-                pass  # self.factorisation_tree does not exist
+        repre = ""
+        if not self.compute_representation:
+            self.representation = repre
+            return repre
+        repre = f"[#ops={self.num_ops}] p(x)"
+        try:
+            repre += " = " + self.factorisation_tree.get_string_representation(
+                self.coefficients, coeff_fmt_str, factor_fmt_str
+            )
+            # exponentiation with 1 won't cause an operation in this representation
+            # but are present in the string representation due to string formatting restrictions
+            # -> they should not be displayed (misleading)
+            repre = repre.replace("^1", "")  # <- workaround for the default string format
+        except AttributeError:
+            pass  # self.factorisation_tree does not exist
 
-        self.representation = representation
+        self.representation = repre
         return self.representation
 
     def _compile_recipes(self):
@@ -559,6 +571,9 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         Returns:
             the compiled recipes (numpy ndarrays)
         """
+        # TODO pickle. check if present
+        # for compiling the recipes the factorisation must be computed first
+        self._compute_factorisation()
         # the values of the factors are being stored after the coefficients
         # start the address assignment with the correct offset
         value_idx = self.num_monomials
@@ -567,10 +582,10 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         copy_recipe = []  # skip computing factors with exp 1, just copy x value
         scalar_recipe = []
         monomial_recipe = []
+        self.num_ops = 0
 
         # count the amount of multiplications encoded by the recipes
         # NOTE: count exponentiations as exponent-1 multiplications, e.g. x^3 <-> 2 operations
-        self.num_ops = 0
 
         # -> IMPORTANT: value idx assignment must happen first for the scalar factors
         for scalar_factor in self.factor_container.scalar_factors:
@@ -586,9 +601,7 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         for monomial_factor in self.factor_container.monomial_factors:
             monomial_factor.value_idx = value_idx
             value_idx += 1
-            monomial_factor.factorisation_idxs = [
-                f.value_idx for f in monomial_factor.scalar_factors
-            ]
+            monomial_factor.factorisation_idxs = [f.value_idx for f in monomial_factor.scalar_factors]
             monomial_instr = monomial_factor.get_recipe()
             monomial_recipe += monomial_instr
             self.num_ops += 1  # every monomial instruction encodes one multiplication
@@ -598,27 +611,22 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         # convert the recipes into the data types expected by the jit compiled functions
         # and store them
         tree_ops = np.array(tree_ops, dtype=BOOL_DTYPE)
-        self.num_ops += len(tree_ops) - np.count_nonzero(
-            tree_ops
-        )  # every 0/False encodes a multiplication
+        self.num_ops += len(tree_ops) - np.count_nonzero(tree_ops)  # every 0/False encodes a multiplication
+        self.tree_ops = tree_ops
 
-        return (
-            np.array(copy_recipe, dtype=UINT_DTYPE).reshape((-1, 2)),
-            np.array(scalar_recipe, dtype=UINT_DTYPE).reshape((-1, 3)),
-            np.array(monomial_recipe, dtype=UINT_DTYPE).reshape((-1, 3)),
-            np.array(tree_recipe, dtype=UINT_DTYPE).reshape((-1, 2)),
-            tree_ops,
-        )
+        self.copy_recipe = np.array(copy_recipe, dtype=UINT_DTYPE).reshape((-1, 2))
+        self.scalar_recipe = np.array(scalar_recipe, dtype=UINT_DTYPE).reshape((-1, 3))
+        self.monomial_recipe = np.array(monomial_recipe, dtype=UINT_DTYPE).reshape((-1, 3))
+        self.tree_recipe = np.array(tree_recipe, dtype=UINT_DTYPE).reshape((-1, 2))
 
-    def eval(self, x: TYPE_1D_FLOAT, rectify_input: bool = False) -> float:
+    def eval(self, x: TYPE_1D_FLOAT, rectify_input: bool = False, validate_input: bool = False) -> float:
         """computes the value of the polynomial at query point x
 
-        makes use of fast ``Numba`` just in time compiled functions
+        either uses C  or numpy+Numba evaluation
 
         Args:
             x: ndarray of floats with shape = [self.dim] representing the query point
-            rectify_input: bool, default=False
-                whether to convert coefficients and exponents into compatible numpy arrays
+            rectify_input: whether to convert coefficients and exponents into compatible numpy arrays
                 with this set to True, the query point x can be given in standard python arrays
 
         Returns:
@@ -628,21 +636,29 @@ class HornerMultivarPolynomial(AbstractPolynomial):
             TypeError: if x is not given as ndarray of dtype float
             ValueError: if x does not have the shape ``[self.dim]``
         """
-
         if rectify_input:
             x = rectify_query_point(x)
-        validate_query_point(x)
-        if x.shape[0] != self.dim:
-            raise ValueError(
-                f"the query point x does not have the required dimensionality {self.dim}"
-            )
+        if self.use_c_eval:
+            if validate_input:
+                validate_query_point(x, self.dim)
+            return self._eval_c(x)
 
+        # use numpy+Numba recipe evaluation as fallback
+        # input type and shape should always be validated.
+        #   otherwise the numba jit compiled functions may fail with cryptic error messages
+        validate_query_point(x, self.dim)
+        return self._eval_recipe(x)
+
+    def _eval_recipe(self, x: TYPE_1D_FLOAT) -> float:
+        """computes the value of the polynomial at query point x
+
+        makes use of fast ``Numba`` just in time compiled functions
+        """
         value_array = np.empty(self.value_array_length, dtype=FLOAT_DTYPE)
         # the coefficients are being stored at the beginning of the value array
         # TODO remove flatten, always store coefficients as a 1D array (also for horner fact.)?!
         #   also in MultivarPolynomial.eval()
         value_array[: self.num_monomials] = self.coefficients.flatten()
-
         return eval_recipe(
             x,
             value_array,
@@ -653,3 +669,129 @@ class HornerMultivarPolynomial(AbstractPolynomial):
             self.tree_ops,
             self.root_value_idx,
         )
+
+    def _eval_c(self, x: TYPE_1D_FLOAT) -> float:
+        dim = self.dim
+        compiled_file = self.c_file_compiled
+        if not compiled_file.exists():
+            raise ValueError(f"missing compiled C file: {compiled_file}")
+        cdll = ctypes.CDLL(str(compiled_file))
+        double = ctypes.c_double
+        type_x = double * dim
+        type_coeffs = double * self.num_monomials
+        x_typed = type_x(*x)
+        coeffs = self.coefficients.flatten()
+        coeffs_typed = type_coeffs(*coeffs)
+        func_name = "eval"
+        function = getattr(cdll, func_name)
+        function.argtypes = (type_x, type_coeffs)
+        function.restype = double
+        p_x = function(x_typed, coeffs_typed)
+        return p_x
+
+    def get_c_file_name(self, ending: str = ".c") -> str:
+        return f"eval_poly_{hash(self)}{ending}"
+
+    @property
+    def c_file(self) -> Path:
+        return PATH2C_FILES / self.get_c_file_name()
+
+    @property
+    def c_file_compiled(self):
+        return PATH2C_FILES / self.get_c_file_name(ending=".so")
+
+    def _write_c_file(self):
+        path_out = self.c_file
+        if path_out.exists():
+            return
+        # for compiling the instructions the factorisation must be computed first
+        self._compute_factorisation()
+        print("compiling C instructions ...")
+        try:
+            tree = self.factorisation_tree
+            factor_container = self.factor_container
+        except AttributeError:
+            raise ValueError(
+                "need a stored factorisation tree, but the reference to it has already been deleted. "
+                "initialise class with 'keep_tree=True`"
+            )
+        f_type = "double"
+        # scalar and monomial factors together
+        factor_array = "f"
+        coeff_array = "c"
+        func_name = "eval"
+        instr = "#include <math.h>\n"
+
+        nr_coeffs = self.num_monomials
+        nr_dims = self.dim
+        self.num_ops = 0
+
+        func_def = f"{f_type} {func_name}({f_type} x[{nr_dims}], {f_type} {coeff_array}[{nr_coeffs}])"
+        # declare function
+        instr += f"{func_def};\n"
+        instr += f"{func_def}"
+        instr += "{\n"
+
+        # NOTE: the order of computing the values important: scalar factors, monomial factors, monomials,...
+        scalar: ScalarFactor
+        monomial: MonomialFactor
+        scalars = factor_container.scalar_factors
+        monomials = factor_container.monomial_factors
+        nr_factors = len(factor_container)
+
+        # initialise arrays to capture the intermediary results of factor evaluation to 0
+        if nr_factors > 0:
+            instr += f"{f_type} {factor_array}[{nr_factors}]= {{0.0}};\n"
+        idx: int = 0
+        # set the index of each factor in order to remember it for later reference
+        # ATTENTION: different from the ones used in the recipes!
+        for idx, scalar in enumerate(scalars):
+            scalar.value_idx = idx
+            instr += scalar.get_instructions(factor_array)
+            self.num_ops += scalar.num_ops
+
+        for monomial in monomials:
+            idx += 1
+            monomial.value_idx = idx
+            monomial.factorisation_idxs = [f.value_idx for f in monomial.scalar_factors]
+            instr += monomial.get_instructions(factor_array)
+            self.num_ops += monomial.num_ops
+
+        # compile the instructions for evaluating the Horner factorisation tree
+        instr += tree.get_instructions(coeff_array, factor_array)
+        self.num_ops += tree.num_ops
+
+        # return the entry of the coefficient array corresponding to the root node of the factorisation tree
+        root_idx = tree.value_idx
+        instr += f"return {coeff_array}[{root_idx}];\n"
+        instr += "}\n"
+        print(f"writing in file {path_out}")
+        with open(path_out, "w") as c_file:
+            c_file.write(instr)
+
+    def get_c_instructions(self) -> str:
+        path = self.c_file
+        print(f"reading C instructions from file {path}")
+        with open(path) as c_file:
+            instr = c_file.read()
+        return instr
+
+    def _compile_c_file(self):
+        path_out = self.c_file_compiled
+        if path_out.exists():
+            print(f"using existing compiled C file {path_out}")
+            return
+
+        compiler = "gcc"
+        if shutil.which(compiler) is None:
+            compiler = "cc"
+            if shutil.which(compiler) is None:
+                raise ValueError("compiler (`gcc` or `cc`) not present. install one first.")
+
+        self._write_c_file()
+        path_in = self.c_file
+        print(f"compiling to file {path_out}")
+        cmd = [compiler, "-shared", "-o", str(path_out), "-fPIC", str(path_in)]
+        subprocess.call(cmd)
+        if not path_out.exists():
+            raise ValueError(f"expected compiled file missing: {path_out}")

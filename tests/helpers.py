@@ -21,9 +21,7 @@ def proto_test_case(data, fct):
     assert all_good
 
 
-def get_rnd_poly_properties(
-    all_exponents, degree, max_abs_coeff=1.0, integer_coeffs=False, enforce_degree=False
-):
+def get_rnd_poly_properties(all_exponents, degree, max_abs_coeff=1.0, integer_coeffs=False, enforce_degree=False):
     """
     for meaningful test results uniformly distributed random test polynomials are required
     -> every possible polynomial should appear with equal probability
@@ -63,9 +61,7 @@ def get_rnd_poly_properties(
 
     exponents = all_exponents[row_idxs, :]
     nr_monomials = exponents.shape[0]
-    coefficients = (np.random.rand(nr_monomials, 1) - 0.5) * (
-        2 * max_abs_coeff
-    )  # [ -max_abs_coeff; max_abs_coeff]
+    coefficients = (np.random.rand(nr_monomials, 1) - 0.5) * (2 * max_abs_coeff)  # [ -max_abs_coeff; max_abs_coeff]
     coefficients = coefficients.astype(FLOAT_DTYPE)
     if integer_coeffs:
         coefficients = np.round(coefficients)
@@ -109,10 +105,7 @@ def all_possible_exponents(dim, deg):
 
 def rnd_settings_list(length, dim, degree, *args, **kwargs):
     all_exponent_vect = all_possible_exponents(dim, degree)
-    settings_list = [
-        get_rnd_poly_properties(all_exponent_vect, degree, *args, **kwargs)
-        for i in range(length)
-    ]
+    settings_list = [get_rnd_poly_properties(all_exponent_vect, degree, *args, **kwargs) for i in range(length)]
 
     # # random settings should have approx. half the amount of maximal entries on average
     # num_monomial_entries = 0
@@ -135,6 +128,4 @@ def vectorize(obj):
 
 # vectorised version of naive_eval() in multivar_horner.helpers_fcts_numba
 def naive_eval_reference(X, exponents, coefficients):
-    return np.dot(
-        np.array([[(x ** ex).prod() for ex in exponents] for x in X]), coefficients
-    )
+    return np.dot(np.array([[(x ** ex).prod() for ex in exponents] for x in X]), coefficients)

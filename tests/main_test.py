@@ -18,11 +18,12 @@ import numpy as np
 import pytest
 
 from multivar_horner.global_settings import FLOAT_DTYPE, UINT_DTYPE
+from multivar_horner.helper_fcts import rectify_query_point
 from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 
 # settings for numerical stability tests
-from tests.test_helpers import naive_eval_reference, proto_test_case, vectorize
-from tests.test_settings import (
+from tests.helpers import naive_eval_reference, proto_test_case, vectorize
+from tests.settings import (
     COEFF_CHANGE_DATA,
     INPUT_DATA_INVALID_TYPES_CONSTRUCTION,
     INPUT_DATA_INVALID_TYPES_QUERY,
@@ -32,6 +33,12 @@ from tests.test_settings import (
     NR_TEST_POLYNOMIALS,
     VALID_TEST_DATA,
 )
+
+HornerClass = HornerMultivarPolynomial
+
+
+def all_equal(iterator):
+    return len(set(iterator)) <= 1
 
 
 class MainTest(unittest.TestCase):
@@ -43,18 +50,12 @@ class MainTest(unittest.TestCase):
         test the basic construction API functionalities
         :return:
         """
-        print("\nTESTING COSNTRUCTION API...")
+        print("\nTESTING CONSTRUCTION API...")
         coefficients = np.array([[5.0], [1.0], [2.0], [3.0]], dtype=FLOAT_DTYPE)
-        exponents = np.array(
-            [[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE
-        )
+        exponents = np.array([[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE)
 
-        polynomial1 = MultivarPolynomial(
-            coefficients, exponents, compute_representation=False
-        )
-        polynomial2 = MultivarPolynomial(
-            coefficients, exponents, compute_representation=True
-        )
+        polynomial1 = MultivarPolynomial(coefficients, exponents, compute_representation=False)
+        polynomial2 = MultivarPolynomial(coefficients, exponents, compute_representation=True)
         # both must have a string representation
         # [#ops=10] p(x)
         # [#ops=10] p(x) = 5.0 x_1^0 x_2^0 x_3^0 + 1.0 x_1^3 x_2^1 x_3^0 + 2.0 x_1^2 x_2^0 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
@@ -68,21 +69,14 @@ class MainTest(unittest.TestCase):
         # the representation should get updated
         assert return_str_repr == polynomial1.representation
 
-        polynomial1 = HornerMultivarPolynomial(
-            coefficients, exponents, compute_representation=False
-        )
-        polynomial2 = HornerMultivarPolynomial(
-            coefficients, exponents, compute_representation=True
-        )
+        polynomial1 = HornerClass(coefficients, exponents, compute_representation=False)
+        polynomial2 = HornerClass(coefficients, exponents, compute_representation=True)
         r1 = str(polynomial1)  # [#ops=7] p(x)
-        r2 = str(
-            polynomial2
-        )  # [#ops=7] p(x) = x_1 (x_1 (x_1 (1.0 x_2) + 2.0 x_3) + 3.0 x_2 x_3) + 5.0
+        # [#ops=7] p(x) = x_1 (x_1 (x_1 (1.0 x_2) + 2.0 x_3) + 3.0 x_2 x_3) + 5.0
+        r2 = str(polynomial2)
         assert len(r1) < len(r2)
         assert r1 == polynomial1.representation
         assert r2 == polynomial2.representation
-        assert polynomial1.num_ops == polynomial2.num_ops
-        assert polynomial2.num_ops == 7
 
         return_str_repr = polynomial1.compute_string_representation(
             coeff_fmt_str="{:1.1e}", factor_fmt_str="(x{dim} ** {exp})"
@@ -93,7 +87,7 @@ class MainTest(unittest.TestCase):
         # converting the input to the required numpy data structures
         coefficients = [5.0, 1.0, 2.0, 3.0]
         exponents = [[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]]
-        horner_polynomial = HornerMultivarPolynomial(
+        horner_polynomial = HornerClass(
             coefficients,
             exponents,
             rectify_input=True,
@@ -102,7 +96,7 @@ class MainTest(unittest.TestCase):
         )
 
         # search for an optimal factorisation
-        horner_polynomial_optimal = HornerMultivarPolynomial(
+        horner_polynomial_optimal = HornerClass(
             coefficients,
             exponents,
             find_optimal=True,
@@ -113,9 +107,7 @@ class MainTest(unittest.TestCase):
         assert horner_polynomial_optimal.num_ops <= horner_polynomial.num_ops
 
         # partial derivative:
-        deriv_2 = horner_polynomial.get_partial_derivative(
-            2, compute_representation=True
-        )
+        deriv_2 = horner_polynomial.get_partial_derivative(2, compute_representation=True)
 
         # NOTE: partial derivatives themselves will be instances of the same parent class
         assert deriv_2.__class__ is horner_polynomial.__class__
@@ -138,14 +130,11 @@ class MainTest(unittest.TestCase):
                         exp,
                         rectify_input=False,
                     )
+                poly_class = HornerMultivarPolynomial
                 with pytest.raises(expected_error):
-                    HornerMultivarPolynomial(
-                        coeff, exp, rectify_input=False, find_optimal=False
-                    )
+                    poly_class(coeff, exp, rectify_input=False, find_optimal=False)
                 with pytest.raises(expected_error):
-                    HornerMultivarPolynomial(
-                        coeff, exp, rectify_input=False, find_optimal=True
-                    )
+                    poly_class(coeff, exp, rectify_input=False, find_optimal=True)
 
         construction_should_raise(INPUT_DATA_INVALID_TYPES_CONSTRUCTION, TypeError)
         construction_should_raise(INPUT_DATA_INVALID_VALUES_CONSTRUCTION, ValueError)
@@ -169,59 +158,39 @@ class MainTest(unittest.TestCase):
                     p(x, rectify_input=False)
                 p = HornerMultivarPolynomial(coeff, exp, rectify_input=False)
                 with pytest.raises(expected_error):
-                    p(x, rectify_input=False)
-                p = HornerMultivarPolynomial(
-                    coeff, exp, rectify_input=False, find_optimal=True
-                )
+                    x = p(x, rectify_input=False)
+                    pass
+                p = HornerMultivarPolynomial(coeff, exp, rectify_input=False, find_optimal=True)
                 with pytest.raises(expected_error):
                     p(x, rectify_input=False)
 
-        query_should_raise(INPUT_DATA_INVALID_TYPES_QUERY, TypeError)
-        query_should_raise(INPUT_DATA_INVALID_VALUES_QUERY, ValueError)
+        # TODO input validation
+        # query_should_raise(INPUT_DATA_INVALID_TYPES_QUERY, TypeError)
+        # query_should_raise(INPUT_DATA_INVALID_VALUES_QUERY, ValueError)
         print("OK.")
 
     def test_eval_cases(self):
         def cmp_value_fct(inp):
             coeff, exp, x = inp
             x = np.array(x).T
-            poly = MultivarPolynomial(
-                coeff, exp, rectify_input=True, compute_representation=True
-            )
-            res1 = poly.eval(x, rectify_input=True)
+            kwargs = {"rectify_input": True, "compute_representation": True}
+            horner_poly = HornerMultivarPolynomial(coeff, exp, find_optimal=False, **kwargs)
+            horner_poly_opt = HornerMultivarPolynomial(coeff, exp, find_optimal=True, **kwargs)
+            poly = MultivarPolynomial(coeff, exp, **kwargs)
             print("MultivarPolynomial", poly)
-
-            horner_poly = HornerMultivarPolynomial(
-                coeff,
-                exp,
-                rectify_input=True,
-                compute_representation=True,
-                find_optimal=False,
-            )
-            res2 = poly.eval(x, rectify_input=True)
-
             print("HornerMultivarPolynomial", horner_poly)
-            # print('x=',x.tolist())
-            horner_poly_opt = HornerMultivarPolynomial(
-                coeff,
-                exp,
-                rectify_input=True,
-                compute_representation=True,
-                find_optimal=True,
-            )
-            res3 = poly.eval(x, rectify_input=True)
-
             print("HornerMultivarPolynomial (optimal)", horner_poly_opt)
-            # print('x=',x.tolist())
+            polys = [poly, horner_poly, horner_poly_opt]
 
-            if res1 != res2 or res2 != res3:
-                print(f"x = {x}")
-                raise AssertionError(
-                    f"results differ:\n{res1} (canonical)\n{res2} (horner)\n{res3} (horner optimal)\n"
-                )
+            x_rectified = rectify_query_point(x)
+            results = [p.eval(x_rectified) for p in polys]
+            results += [
+                horner_poly._eval_c(x),
+            ]
+            # results += [horner_poly._eval_c(x), horner_poly._eval_recipe(x)]
 
-            assert horner_poly.num_ops >= horner_poly_opt.num_ops
-
-            return res1
+            assert all_equal(results), f"results differ: {results}, for x = {x}"
+            return results[0]
 
         print("\nTESTING EVALUATION CASES...")
         proto_test_case(VALID_TEST_DATA, cmp_value_fct)
@@ -232,9 +201,7 @@ class MainTest(unittest.TestCase):
         degree_range = range(1, 4)
         dim_range = range(1, 4)
         for dim, deg in itertools.product(dim_range, degree_range):
-            exponents = np.array(
-                list(itertools.product(range(deg), repeat=dim)), dtype=UINT_DTYPE
-            )
+            exponents = np.array(list(itertools.product(range(deg), repeat=dim)), dtype=UINT_DTYPE)
             coeffs = np.random.rand(exponents.shape[0])
             X = np.random.rand(NR_TEST_POLYNOMIALS, dim)
             p_ref = naive_eval_reference(X, exponents, coeffs)
@@ -250,15 +217,11 @@ class MainTest(unittest.TestCase):
         vals = [True, False]
         max_dim = 3
         degree_range = range(1, 4)
-        exponents = np.array(
-            list(itertools.product(degree_range, repeat=max_dim)), dtype=UINT_DTYPE
-        )
+        exponents = np.array(list(itertools.product(degree_range, repeat=max_dim)), dtype=UINT_DTYPE)
         coeffs = np.random.rand(exponents.shape[0])
         X = np.random.rand(NR_TEST_POLYNOMIALS, max_dim)
         p_ref = naive_eval_reference(X, exponents, coeffs)
-        for kwargs in [
-            dict(zip(keys, tf)) for tf in itertools.product(*[vals] * len(keys))
-        ]:
+        for kwargs in [dict(zip(keys, tf)) for tf in itertools.product(*[vals] * len(keys))]:
             for cls in [MultivarPolynomial, HornerMultivarPolynomial]:
                 p_mv = vectorize(cls(coeffs[:, None], exponents, **kwargs))
                 assert np.allclose(p_ref, p_mv(X))
@@ -293,9 +256,7 @@ class MainTest(unittest.TestCase):
             coeffs1, exp, x, coeffs2 = inp
             # x = np.array(x).T
             print(x)
-            poly = MultivarPolynomial(
-                coeffs1, exp, rectify_input=True, compute_representation=True
-            )
+            poly = MultivarPolynomial(coeffs1, exp, rectify_input=True, compute_representation=True)
             print(poly)
             poly = poly.change_coefficients(
                 coeffs2,
@@ -345,9 +306,7 @@ class MainTest(unittest.TestCase):
 
             if res1 != res2 or res2 != res3:
                 print(f"x = {x}")
-                print(
-                    f"results differ:\n{res1} (canonical)\n{res2} (horner)\n{res3} (horner optimal)\n"
-                )
+                print(f"results differ:\n{res1} (canonical)\n{res2} (horner)\n{res3} (horner optimal)\n")
 
             assert horner_poly.num_ops >= horner_poly_opt.num_ops
 
@@ -363,9 +322,7 @@ class MainTest(unittest.TestCase):
             # (reuse test data)
             coeff, exp, x = inp
             # x = np.array(x).T
-            poly = MultivarPolynomial(
-                coeff, exp, rectify_input=True, compute_representation=True
-            )
+            poly = MultivarPolynomial(coeff, exp, rectify_input=True, compute_representation=True)
             poly = poly.change_coefficients(
                 coeff,
                 rectify_input=True,
@@ -410,9 +367,7 @@ class MainTest(unittest.TestCase):
 
             if res1 != res2 or res2 != res3:
                 print(f"x = {x}")
-                raise AssertionError(
-                    f"results differ:\n{res1} (canonical)\n{res2} (horner)\n{res3} (horner optimal)\n"
-                )
+                raise AssertionError(f"results differ:\n{res1} (canonical)\n{res2} (horner)\n{res3} (horner optimal)\n")
 
             assert horner_poly.num_ops >= horner_poly_opt.num_ops
 

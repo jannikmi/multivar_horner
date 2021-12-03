@@ -2,6 +2,40 @@ Changelog
 =========
 
 
+
+2.3.0 (2021-12)
+__________________
+
+ATTENTION: API changes:
+
+verbose option.
+try if creation works.
+store eval method
+run tests, use both functions. improve refactor
+
+file endings: windows .dll?! test different OS
+define deepcopy
+
+opt:
+pointer input
+store coeff ctyped
+refactor into own module
+verbose flag
+
+
+catch errors
+tests
+
+
+
+* dropping official python3.6 support because ``numba`` does so (supporting Python3.7+)
+
+
+
+internal:
+* using poetry for dependency management
+
+
 2.2.0 (2021-02-04)
 __________________
 

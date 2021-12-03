@@ -130,24 +130,25 @@ class ScalarFactor(AbstractFactor):
     def __init__(self, factor_dimension, factor_exponent):
         self.dimension = factor_dimension
         self.exponent = factor_exponent
-        self.value_idx = (
-            None  # initialize the idx with None to catch faulty evaluation tries
-        )
+        self.value_idx = None  # initialize the idx with None to catch faulty evaluation tries
 
     def __str__(self, factor_fmt_str="x_{dim}^{exp}", *args, **kwargs):
         # NOTE: variable numbering starts with 1: x_1, x_2, ...
         # if self.exponent == 1:
         #     return 'x_{}'.format(self.dimension + 1)
 
-        return factor_fmt_str.format(
-            **{"dim": self.dimension + 1, "exp": self.exponent}
-        )
+        return factor_fmt_str.format(**{"dim": self.dimension + 1, "exp": self.exponent})
 
     def __repr__(self, *args, **kwargs):
         return self.__str__(*args, **kwargs)
 
-    def num_ops(self):
-        return 1  # the number of instructions required for computing the value
+    @property
+    def num_ops(self) -> int:
+        # the number of instructions required for computing the value
+        if self.exponent > 1:
+            return 2
+        else:
+            return 1
 
     def compute(self, x, value_array):
         value_array[self.value_idx] = x[self.dimension] ** self.exponent
@@ -165,6 +166,19 @@ class ScalarFactor(AbstractFactor):
             # instruction encoding: target, source, exponent
             # values[target] = x[source] ** exponent
             return [], [(self.value_idx, self.dimension, self.exponent)]
+
+    def get_instructions(self, array_name: str) -> str:
+        """
+        :return: the instructions for computing the value of this factor in C syntax
+        """
+        dim = self.dimension
+        exp = self.exponent
+        idx = self.value_idx
+        instr = f"x[{dim}]"
+        if exp > 1:
+            instr = f"pow({instr},{exp})"
+        instr = f"{array_name}[{idx}] = {instr};\n"
+        return instr
 
 
 class MonomialFactor(AbstractFactor):
@@ -191,9 +205,7 @@ class MonomialFactor(AbstractFactor):
 
         # assert len(scalar_factors) > 1, 'a monomial must consist of at least two scalar factors' # DEBUG
         self.scalar_factors = scalar_factors
-        self.value_idx = (
-            None  # initialize the idx with None to catch faulty evaluation tries
-        )
+        self.value_idx = None  # initialize the idx with None to catch faulty evaluation tries
 
     def __str__(self):
         return " ".join([f.__str__() for f in self.scalar_factors])
@@ -201,6 +213,7 @@ class MonomialFactor(AbstractFactor):
     def __repr__(self):
         return self.__str__()
 
+    @property
     def num_ops(self):
         # count the number of instructions done during compute (during eval() only looks up the computed value)
         return len(self.scalar_factors) - 1  # product of all scalar factors
@@ -234,6 +247,23 @@ class MonomialFactor(AbstractFactor):
 
         return monomial_recipe
 
+    def get_instructions(self, array_name: str) -> str:
+        """
+        :return: the instructions for computing the value of this factor in C syntax
+        """
+        idx = self.value_idx
+        # target = source1 * source2
+        target = f"{array_name}[{idx}]"
+
+        # first instruction: copy the value of the first scalar factor
+        source = self.factorisation_idxs[0]
+        instr = f"{target} = {array_name}[{source}];\n"
+        # always take the previously computed value
+        for source in self.factorisation_idxs[1:]:
+            # and multiply it with the value of the next scalar factor
+            instr += f"{target} *= {array_name}[{source}];\n"
+        return instr
+
 
 class FactorContainer:
     """
@@ -241,10 +271,16 @@ class FactorContainer:
     """
 
     def __init__(self):
-        self.scalar_factors = []
-        self.monomial_factors = []
+        self.scalar_factors: List[ScalarFactor] = []
+        self.monomial_factors: List[MonomialFactor] = []
         self.property2idx_scalar = {}
         self.property2idx_monomial = {}
+
+    def __len__(self):
+        """
+        :return: the total amount of factors
+        """
+        return len(self.scalar_factors) + len(self.monomial_factors)
 
     def get_factor(self, property_list):
         """
@@ -257,7 +293,6 @@ class FactorContainer:
         assert len(property_list) > 0  # TODO DEBUG
         # create all required scalar factors
         scalar_factors = []
-        monomial_id = 1
         for prop in property_list:
             d, e = prop
             try:
@@ -310,13 +345,9 @@ class FactorContainer:
             if len(scalar_factors) == 0:
                 factor = None  # monomial consists of no factors
             elif len(scalar_factors) == 1:
-                factor = scalar_factors[
-                    0
-                ]  # monomial consists of a single scalar factor
+                factor = scalar_factors[0]  # monomial consists of a single scalar factor
             else:
-                factor = self.get_factor(
-                    property_list
-                )  # monomial consists of a multiple scalar factors
+                factor = self.get_factor(property_list)  # monomial consists of a multiple scalar factors
 
             all_factors.append(factor)
 
