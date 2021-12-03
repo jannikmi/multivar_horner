@@ -34,6 +34,7 @@ tests
 
 internal:
 * using poetry for dependency management
+* TODO using GitHub Actions for CI instead of travis
 
 
 2.2.0 (2021-02-04)
