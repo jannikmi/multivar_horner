@@ -61,7 +61,6 @@ class MainTest(unittest.TestCase):
         # [#ops=10] p(x) = 5.0 x_1^0 x_2^0 x_3^0 + 1.0 x_1^3 x_2^1 x_3^0 + 2.0 x_1^2 x_2^0 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
         assert len(str(polynomial1)) < len(str(polynomial2))
         assert str(polynomial1) == polynomial1.representation
-        assert polynomial1.num_ops == 10
 
         return_str_repr = polynomial1.compute_string_representation(
             coeff_fmt_str="{:1.1e}", factor_fmt_str="(x{dim} ** {exp})"
@@ -104,7 +103,6 @@ class MainTest(unittest.TestCase):
             rectify_input=True,
             validate_input=True,
         )
-        assert horner_polynomial_optimal.num_ops <= horner_polynomial.num_ops
 
         # partial derivative:
         deriv_2 = horner_polynomial.get_partial_derivative(2, compute_representation=True)
@@ -299,8 +297,6 @@ class MainTest(unittest.TestCase):
             if res1 != res2 or res2 != res3:
                 print(f"x = {x}")
                 print(f"results differ:\n{res1} (canonical)\n{res2} (horner)\n{res3} (horner optimal)\n")
-
-            assert horner_poly.num_ops >= horner_poly_opt.num_ops
 
             return res1
 
