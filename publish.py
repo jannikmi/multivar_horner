@@ -19,7 +19,7 @@ from os.path import abspath, isfile, join, pardir
 PACKAGE = "multivar_horner"
 VERSION_FILE = "VERSION"
 VIRT_ENV_NAME = PACKAGE
-VIRT_ENV_COMMAND = f". ~/miniconda3/etc/profile.d/conda.sh; conda activate {VIRT_ENV_NAME}; "
+VIRT_ENV_COMMAND = "poetry run"
 PY_VERSION_IDS = [
     "37",
     "38",
@@ -89,21 +89,6 @@ def routine(cmd=None, message="", option1="next", option2="exit"):
 
 
 if __name__ == "__main__":
-
-    print('Do you want to switch to the "dev" branch? Commit before switching branch!')
-    print("1) yes, change now.")
-    print("2) no, exit")
-    print("anything else skip.")
-    try:
-        inp = int(input())
-        if inp == 1:
-            os.system("git checkout dev")
-            print("==============")
-        if inp == 2:
-            sys.exit()
-    except ValueError:
-        pass
-
     old_version = get_version()
 
     print("The actual version number is:", old_version)
@@ -127,16 +112,12 @@ if __name__ == "__main__":
 
     routine(
         None,
-        "Remember to properly specify all supported python versions in publish.py and setup.py",
+        f"Current py versions: {PY_VERSION_IDS}\n"
+        "Remember to properly specify all supported python versions in this file and setup.py",
     )
     routine(
         None,
-        "Maybe re-pin the test dependencies (requirements.txt) with pip-compile!"
-        " Commands are written in the beginning of this script",
-    )
-    routine(
-        None,
-        "Have all pinned dependencies been listed in setup.py and the Documentation?",
+        "Have all pinned dependencies been listed in setup.py",
     )
     routine(None, "Have all (new) features been documented?")
     routine(None, f"Remember to write a changelog for version {version}")
@@ -156,27 +137,17 @@ if __name__ == "__main__":
     )
 
     print("generating documentation now...")
-    os.system("(cd ./docs && exec make html)")
+    routine("make docs", "run tests")
+
     print("done.")
 
-    # IMPORTANT: -r flag to rebuild tox virtual env
-    # only when dependencies have changed!
-    rebuild_flag = ""
-    print("when the dependencies (in requirements_tests.txt) have changed enter 1 (-> rebuild tox)")
-    try:
-        inp = int(input())
-        if inp == 1:
-            rebuild_flag = "-r"
-    except ValueError:
-        pass
-
-    routine(f"{VIRT_ENV_COMMAND} tox {rebuild_flag} -e py37", "run tests")
+    routine(f"{VIRT_ENV_COMMAND} tox", "run tests")
     print("Tests finished.")
 
     routine(
         None,
-        "Please commit your changes, push and wait if Travis tests build successfully. "
-        "Only then merge them into the master.",
+        "Please commit your changes, push, raise PR and wait if the GHA workflow is successful. "
+        "Only then merge PR into the master.",
         "CI tests passed & merge into master complete. Build and upload now.",
     )
 
@@ -218,6 +189,5 @@ if __name__ == "__main__":
     routine(VIRT_ENV_COMMAND + command, "real upload to PyPI.")
 
     # tag erstellen
-    routine(None, "Do you want to create a git release tag?", "Yes", "No")
     routine(f"git tag -a v{version} -m 'Version {version}'; git push --tags", "Creating tag")
     print(f"______________\nCongrats! Published version {version}.")
