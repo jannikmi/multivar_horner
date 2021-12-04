@@ -167,7 +167,7 @@ def num_ops_1D_horner(unique_exponents):
 
 
 @njit(UINT(UINT_2D), cache=True)
-def count_num_ops(exponent_matrix):
+def count_num_ops_naive(exponent_matrix):
     """counts the amount of multiplications required during evaluation
 
     under the assumption: this polynomial representation does not get factorised any further

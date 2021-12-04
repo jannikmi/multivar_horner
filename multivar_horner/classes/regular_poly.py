@@ -1,7 +1,7 @@
 from multivar_horner.classes.horner_poly import AbstractPolynomial
 from multivar_horner.global_settings import TYPE_1D_FLOAT, TYPE_2D_INT
 from multivar_horner.helper_fcts import rectify_query_point, validate_query_point
-from multivar_horner.helpers_fcts_numba import count_num_ops, naive_eval
+from multivar_horner.helpers_fcts_numba import count_num_ops_naive, naive_eval
 
 
 class MultivarPolynomial(AbstractPolynomial):
@@ -21,6 +21,8 @@ class MultivarPolynomial(AbstractPolynomial):
             with this set to True, coefficients and exponents can be given in standard python arrays
         compute_representation: bool, default=False
             whether to compute a string representation of the polynomial
+        verbose: bool, default=False
+            whether to print status statements
 
     Attributes:
         num_monomials: the amount of coefficients/monomials N of the polynomial
@@ -47,13 +49,14 @@ class MultivarPolynomial(AbstractPolynomial):
         *args,
         **kwargs,
     ):
+
         super(MultivarPolynomial, self).__init__(
             coefficients, exponents, rectify_input, compute_representation, verbose
         )
 
         # NOTE: count the number of multiplications of the representation
         # not the actual amount of operations required by the naive evaluation with numpy arrays
-        self.num_ops = count_num_ops(self.exponents)
+        self.num_ops = count_num_ops_naive(self.exponents)
         self.compute_string_representation(*args, **kwargs)
 
     def compute_string_representation(

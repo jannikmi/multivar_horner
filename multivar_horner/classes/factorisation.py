@@ -4,7 +4,7 @@ from multivar_horner.classes.helpers import AbstractFactor, FactorContainer, Pri
 from multivar_horner.global_settings import BOOL_DTYPE, ID_ADD, ID_MULT, UINT_DTYPE
 from multivar_horner.helpers_fcts_numba import (
     compile_valid_options,
-    count_num_ops,
+    count_num_ops_naive,
     count_usage,
     factor_num_ops,
     num_ops_1D_horner,
@@ -513,7 +513,7 @@ class OptimalPolynomialNode(BasePolynomialNode):
         """
         if self.fully_factorized:
             # the actual operation count can be computed:
-            self.cost_estimate = count_num_ops(self.exponents)
+            self.cost_estimate = count_num_ops_naive(self.exponents)
         else:
             # count one multiplication with the coefficients for each monomial
             heuristic = np.count_nonzero(np.any(self.exponents, axis=1))
