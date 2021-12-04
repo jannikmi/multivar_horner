@@ -3,14 +3,24 @@ Getting started
 ===============
 
 
-
 Installation
 ------------
+
 Installation with pip:
 
 ::
 
     pip install multivar_horner
+
+
+
+For efficiency this package is compiling the instructions required for polynomial evaluation to C by default.
+If you don't have a C compiler (``gcc`` or ``cc``) installed you also need to install numba for using an alternative method:
+
+::
+
+
+    pip install multivar_horner[numba]
 
 
 
@@ -66,6 +76,8 @@ and evaluating :math:`p` at a point :math:`x`:
 
 
 With the class ``HornerMultivarPolynomial`` a polynomial can be represented in :ref:`Horner factorisation <horner_usage>`.
+
+With the class ``HornerMultivarPolynomialOpt`` a polynomial can be represented in an :ref:`optimal Horner factorisation <optimal_usage>`.
 
 With the class ``MultivarPolynomial`` a polynomial can be represented in :ref:`canonical form <canonical_usage>`.
 

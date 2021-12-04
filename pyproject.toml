@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "multivar_horner"
+version = "2.3.0"
+description = ""
+authors = ["jannikmi <github@michelfe.it>"]
+
+[tool.poetry.dependencies]
+python = ">=3.7,<3.10"
+numpy = "^1.20"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+pytest-cov = "^3.0.0"
+tox = "^3.24.4"
+Sphinx = "^4.3.1"
+twine = "^3.6.0"
+pre-commit = "^2.15.0"
+sphinxcontrib-bibtex = "^2.4.1"
+sphinx-rtd-theme = "^1.0.0"
+rstcheck = "^3.3.1"
+numba = "^0.54.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.7", "poetry==1.1.11"]
+build-backend = "poetry.core.masonry.api"

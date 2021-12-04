@@ -1,87 +1,13 @@
+#!/usr/bin/env python
 """
-required packages: see
+in order to create virtual environment with the required (dev) dependencies:
 
-requirements_dev.txt
+    make venv
 
-these packages have to be installed in virtual environment in use:
-
-conda create -n hornerEnv python=3.8
-pip install -r requirements_dev.txt
-
-right python version! (will influence the tox environments!)
-for testing:
-conda install pytest
-conda install twine
-conda install tox
-
-pip install rstcheck pip-tools
-
-pip-tools v 2.0.2
-with with pip 20.1
-
-rstcheck>=3.3.1
-twine for uploading securely
-
-
-conda install -c conda-forge pre-commit
-
-PRE COMMIT COMMANDS
-pre-commit run --all-files
-pre-commit run <hook_id>
-# update all hook versions:
-pre-commit autoupdate
-
-
-
-documentation generation:
-conda install sphinx
-https://docs.readthedocs.io/en/stable/intro/getting-started-with-sphinx.html
-
-Use the Makefile to build the docs, like so:
-make html
-
-
---cov-config=tox.ini
-
-pip-tools package:
-TODO write bash script for this
-its important to pin requirements to get reproducible errors!
-compile a new requirements file (with the latest versions)
-
-conda activate tzEnv
-pip-compile --upgrade
-same as?!:
-pip-compile --output-file=requirements.txt requirements.in
-pip-compile --output-file requirements_tests.txt requirements_tests.in
-pip-compile --output-file requirements_dev.txt requirements_dev.in
-
-only update the flask package:
-pip-compile --upgrade-package flask
-compile a new requirements file (with versions currently used in the virtual env )
-pip-compile --generate-hashes requirements_numba.in
-
-do NOT sync. will install ONLY the packages specified! (tox etc. would not be installed any more!)
-pip-sync
-
-commands
-tox -r to rebuild your tox virtualenvs when you've made changes to requirements setup
-# rstcheck will complain about non referenced hyperlinks in doc .rst files! (cannot detect cross file references!)
-rstcheck *.rst
-tox -r -e codestyle
-tox -r -e py37
-tox -r -e py37-numba
-
-Use the Makefile to build the docs, like so:
-cd ./docs
-make html
-# for online build of docs, release tag must be created!
-
-use bandit to check for vulnerabilities:
+TODO use bandit to check for vulnerabilities:
 
 conda install bandit
 bandit ./multivar_horner/*.py
-
-
 
 """
 
@@ -92,14 +18,12 @@ from os.path import abspath, isfile, join, pardir
 
 PACKAGE = "multivar_horner"
 VERSION_FILE = "VERSION"
-VIRT_ENV_NAME = "py37Env"
-VIRT_ENV_COMMAND = (
-    f". ~/miniconda3/etc/profile.d/conda.sh; conda activate {VIRT_ENV_NAME}; "
-)
+VIRT_ENV_NAME = PACKAGE
+VIRT_ENV_COMMAND = f". ~/miniconda3/etc/profile.d/conda.sh; conda activate {VIRT_ENV_NAME}; "
 PY_VERSION_IDS = [
-    "36",
     "37",
     "38",
+    "39",
 ]  # the supported python versions to create wheels for
 PYTHON_TAG = ".".join([f"py{v}" for v in PY_VERSION_IDS])
 
@@ -237,9 +161,7 @@ if __name__ == "__main__":
     # IMPORTANT: -r flag to rebuild tox virtual env
     # only when dependencies have changed!
     rebuild_flag = ""
-    print(
-        "when the dependencies (in requirements_tests.txt) have changed enter 1 (-> rebuild tox)"
-    )
+    print("when the dependencies (in requirements_tests.txt) have changed enter 1 (-> rebuild tox)")
     try:
         inp = int(input())
         if inp == 1:
@@ -284,13 +206,9 @@ if __name__ == "__main__":
     )
 
     path = abspath(join(__file__, pardir, "dist"))
-    all_archives_this_version = [
-        f for f in os.listdir(path) if isfile(join(path, f)) and version_str in f
-    ]
+    all_archives_this_version = [f for f in os.listdir(path) if isfile(join(path, f)) and version_str in f]
     paths2archives = [abspath(join(path, f)) for f in all_archives_this_version]
-    command = "twine upload --repository-url https://test.pypi.org/legacy/ " + " ".join(
-        paths2archives
-    )
+    command = "twine upload --repository-url https://test.pypi.org/legacy/ " + " ".join(paths2archives)
 
     # upload all archives of this version
     routine(VIRT_ENV_COMMAND + command, "testing if upload works.")
@@ -300,7 +218,5 @@ if __name__ == "__main__":
 
     # tag erstellen
     routine(None, "Do you want to create a git release tag?", "Yes", "No")
-    routine(
-        f"git tag -a v{version} -m 'Version {version}'; git push --tags", "Creating tag"
-    )
+    routine(f"git tag -a v{version} -m 'Version {version}'; git push --tags", "Creating tag")
     print(f"______________\nCongrats! Published version {version}.")

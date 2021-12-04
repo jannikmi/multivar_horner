@@ -1,10 +1,10 @@
 import numpy as np
 
-from .global_settings import BOOL_DTYPE, ID_ADD, ID_MULT, UINT_DTYPE
-from .helper_classes import PriorityQueue2D
-from .helpers_fcts_numba import (
+from multivar_horner.classes.helpers import AbstractFactor, FactorContainer, PriorityQueue2D
+from multivar_horner.global_settings import BOOL_DTYPE, ID_ADD, ID_MULT, UINT_DTYPE
+from multivar_horner.helpers_fcts_numba import (
     compile_valid_options,
-    count_num_ops,
+    count_num_ops_naive,
     count_usage,
     factor_num_ops,
     num_ops_1D_horner,
@@ -31,15 +31,17 @@ class FactorisationNode:
         "factorized_rows",
         "non_factorized_rows",
         "value_idx",
+        "num_ops",
     ]
 
     def __init__(self, factor, node1_fact, node2, factorized_rows, non_factorized_rows):
-        self.factor = factor
-        self.node1_fact = node1_fact
-        self.node2 = node2  # can be None if all monomials shared the factor
+        self.factor: AbstractFactor = factor
+        self.node1_fact: BasePolynomialNode = node1_fact
+        self.node2: BasePolynomialNode = node2  # can be None if all monomials shared the factor
         self.factorized_rows = factorized_rows
         self.non_factorized_rows = non_factorized_rows
-        self.value_idx = None
+        self.value_idx: int
+        self.num_ops: int
 
     def get_string_representation(self, *args, **kwargs):
         s = self.factor.__str__(*args, **kwargs)
@@ -80,10 +82,11 @@ class FactorisationNode:
         tree_recipe, op_recipe = self.node1_fact.get_recipe()
 
         # the value at values[node.idx] is the evaluated value of this node
+        target = self.node1_fact.value_idx
         tree_recipe += [
             # instruction encoding: target, source
             # multiply the value of the node1 with the value of the factor
-            (self.node1_fact.value_idxs[0], self.factor.value_idx),
+            (target, self.factor.value_idx),
         ]
         # separate: op (binary: 0/1)
         op_recipe += [ID_MULT]
@@ -95,20 +98,51 @@ class FactorisationNode:
 
             tree_recipe += [
                 # add the value of node2 to this value
-                (self.node1_fact.value_idxs[0], self.node2.value_idxs[0]),
+                (target, self.node2.value_idx),
             ]
             op_recipe += [ID_ADD]
 
+        self.num_ops = len(tree_recipe) + len(op_recipe)
         return tree_recipe, op_recipe
+
+    def get_instructions(self, coeff_array: str, factor_array: str) -> str:
+        """
+        :return: the instructions for computing the value
+        of the polynomial represented by this factorisation in C syntax
+        """
+        # eval node 1 -> the value will be stored at its first position
+        node1 = self.node1_fact
+        instr = node1.get_instructions(coeff_array, factor_array)
+        self.num_ops = node1.num_ops
+        # MULTIPLY the value of the node1 with the value of the factor
+        target = node1.value_idxs[0]
+        source = self.factor.value_idx
+        target_instr = f"{coeff_array}[{target}]"
+        instr += f"{target_instr} *= {factor_array}[{source}];\n"
+        self.num_ops += 1
+
+        node2 = self.node2
+        if node2 is not None:
+            # evaluate the node 2
+            instr += node2.get_instructions(coeff_array, factor_array)
+            self.num_ops += node2.num_ops
+
+            # ADD this value to the value of node 1
+            source = node2.value_idxs[0]
+            instr += f"{target_instr} += {coeff_array}[{source}];\n"
+            self.num_ops += 1
+
+        return instr
 
 
 class OptimalFactorisationNode(FactorisationNode):
     __slots__ = ["cost_estimate", "factorisation_measure", "fully_factorized"]
 
+    node1_fact: "OptimalPolynomialNode"
+    node2: "OptimalPolynomialNode"
+
     def __init__(self, factor, node1_fact, node2, factorized_rows, non_factorized_rows):
-        super(OptimalFactorisationNode, self).__init__(
-            factor, node1_fact, node2, factorized_rows, non_factorized_rows
-        )
+        super(OptimalFactorisationNode, self).__init__(factor, node1_fact, node2, factorized_rows, non_factorized_rows)
         self.cost_estimate: int = 0
         # IDEA: when different factorisations have the same cost estimate,
         # favour the one which is factorised the most already
@@ -117,17 +151,13 @@ class OptimalFactorisationNode(FactorisationNode):
         self.update_properties()
 
     def update_properties(self):
-        self.cost_estimate = (
-            factor_num_ops(*self.factor) + self.node1_fact.cost_estimate
-        )
+        self.cost_estimate = factor_num_ops(*self.factor) + self.node1_fact.cost_estimate
         self.factorisation_measure = self.node1_fact.factorisation_measure
 
         if self.node2 is not None:
             self.cost_estimate += self.node2.cost_estimate
             self.factorisation_measure += self.node2.factorisation_measure
-            self.fully_factorized = (
-                self.node1_fact.fully_factorized and self.node2.fully_factorized
-            )
+            self.fully_factorized = self.node1_fact.fully_factorized and self.node2.fully_factorized
         else:
             self.fully_factorized = self.node1_fact.fully_factorized
 
@@ -152,6 +182,7 @@ class BasePolynomialNode:
         "exponents",
         "unique_exponents",
         "num_monomials",
+        "num_ops",
         "dim",
         "children",
         "value_idxs",
@@ -164,6 +195,7 @@ class BasePolynomialNode:
     def __init__(self, exponents, *args, **kwargs):
         self.exponents = exponents
         self.num_monomials = self.exponents.shape[0]
+        self.num_ops: int
         self.dim = self.exponents.shape[1]
 
         self.unique_exponents = []
@@ -190,6 +222,10 @@ class BasePolynomialNode:
         self.children_class = None
         self.factorisation_class = None
         self.post_init()
+
+    @property
+    def value_idx(self) -> int:
+        return self.value_idxs[0]
 
     def post_init(self):
         self.children_class = BasePolynomialNode
@@ -227,9 +263,7 @@ class BasePolynomialNode:
 
         return max_usage_option
 
-    def get_string_representation(
-        self, coefficients=None, coeff_fmt_str="{:.2}", factor_fmt_str="x_{dim}^{exp}"
-    ):
+    def get_string_representation(self, coefficients=None, coeff_fmt_str="{:.2}", factor_fmt_str="x_{dim}^{exp}"):
 
         if self.has_children:
             return self.get_child().get_string_representation(
@@ -243,17 +277,13 @@ class BasePolynomialNode:
                 if coefficients is None:
                     coeff_repr = "c"
                 else:
-                    coeff_idx = self.value_idxs[
-                        i
-                    ]  # look up the correct index of the coefficient
+                    coeff_idx = self.value_idxs[i]  # look up the correct index of the coefficient
                     coeff_repr = coeff_fmt_str.format(coefficients[coeff_idx, 0])
 
                 monomial_repr = [coeff_repr]
                 for dim, exp in enumerate(exp_vect):
                     if exp > 0:
-                        monomial_repr.append(
-                            factor_fmt_str.format(**{"dim": dim + 1, "exp": exp})
-                        )
+                        monomial_repr.append(factor_fmt_str.format(**{"dim": dim + 1, "exp": exp}))
 
                 monomial_representations.append(" ".join(monomial_repr))
             return " + ".join(monomial_representations)
@@ -293,18 +323,16 @@ class BasePolynomialNode:
             #     assert exponents1_fact.shape[0] + exponents2.shape[0] == self.num_monomials
 
         factor = (dim, exp)
-        child = self.factorisation_class(
-            factor, node1_fact, node2, factorized_rows, non_factorized_rows
-        )
+        child = self.factorisation_class(factor, node1_fact, node2, factorized_rows, non_factorized_rows)
         self.store_child(child)
 
-    def store_child(self, child):
+    def store_child(self, child: "BasePolynomialNode"):
         self.children = child  # allow only one factorisation
 
     def get_child(self):
         return self.children
 
-    def compile_factors(self, factor_container, coefficient_idxs):
+    def compile_factors(self, factor_container: FactorContainer, coefficient_idxs):
         """
         factorisation has been done (fixed)
         now "collect" all existing factors and link value addresses correctly
@@ -325,9 +353,7 @@ class BasePolynomialNode:
             # for evaluation the sum of all evaluated monomials multiplied with their coefficients has to be computed
             # p = c1 * mon1 + c2 * mon2 ...
             # create factors representing the remaining monomials
-            self.factors = factor_container.get_factors(
-                self.exponents
-            )  # retains the ordering!
+            self.factors = factor_container.get_factors(self.exponents)  # retains the ordering!
             # remember where in the coefficient array the coefficients of this polynomial are being stored
             self.value_idxs = coefficient_idxs
 
@@ -337,7 +363,7 @@ class BasePolynomialNode:
         """
         if self.has_children:
             # the own recipe is the recipe of its factorisation
-            return self.get_child().get_recipe()
+            tree_recipe, op_recipe = self.get_child().get_recipe()
         else:
             # this node has not been factorized (represents a regular polynomial)
             # for evaluation, the sum of all evaluated monomials (='factors')
@@ -346,15 +372,14 @@ class BasePolynomialNode:
             # the value of the coefficients in the value array are only being used once
             # -> their address can be reused for storing intermediary results
             # the final evaluated value of this node must be stored at the first of its value indices
-            # this
             initial_coeff_value_idx = self.value_idxs[0]
             factor = self.factors[0]
             tree_recipe = []
             op_recipe = []
 
             if factor is not None:
-                # multiply the first coefficients with the value of the first factor
-                tree_recipe += [(initial_coeff_value_idx, self.factors[0].value_idx)]
+                # multiply the first coefficient with the value of the first factor
+                tree_recipe += [(initial_coeff_value_idx, factor.value_idx)]
                 op_recipe += [ID_MULT]
 
             for i in range(1, len(self.value_idxs)):
@@ -372,7 +397,53 @@ class BasePolynomialNode:
                     (initial_coeff_value_idx, coeff_value_idx),
                 ]
                 op_recipe += [ID_ADD]
-            return tree_recipe, op_recipe
+
+        self.num_ops = len(tree_recipe) + len(op_recipe)
+        return tree_recipe, op_recipe
+
+    def get_instructions(self, coeff_array: str, factor_array: str) -> str:
+        """
+        :return: the instructions for computing the value
+        of the polynomial represented by this factorisation in C syntax
+        """
+        if self.has_children:
+            # the own recipe is the recipe of its factorisation
+            child = self.get_child()
+            instr = child.get_instructions(coeff_array, factor_array)
+            # only after the isntructions have been compiled the num_ops is available
+            self.num_ops = child.num_ops
+            return instr
+
+        # this node has not been factorized (represents a regular polynomial)
+        # for evaluation, the sum of all evaluated monomials (='factors')
+        # multiplied with their coefficients has to be computed
+        # p = c1 * mon1 + c2 * mon2 ...
+        # the value of the coefficients in the value array are only being used once
+        # -> their address can be reused for storing intermediary results
+        # the final evaluated value of this node must be stored at the first of its value indices
+        instr = ""
+        self.num_ops = 0
+        first_target = self.value_idx
+        first_target_instr = f"{coeff_array}[{first_target}]"
+        factor = self.factors[0]
+        if factor is not None:
+            # multiply the first coefficient with the value of the first factor
+            source = factor.value_idx
+            instr += f"{first_target_instr} *= {factor_array}[{source}];\n"
+            self.num_ops += 1
+
+        for target, factor in zip(self.value_idxs[1:], self.factors[1:]):
+            if factor is not None:
+                # multiply each coefficient with the value of the factor
+                source = factor.value_idx
+                instr += f"{coeff_array}[{target}] *= {factor_array}[{source}];\n"
+                self.num_ops += 1
+
+            # add this value to the previously computed value (stored at the first coeff idx)
+            instr += f"{first_target_instr}  += {coeff_array}[{target}];\n"
+            self.num_ops += 1
+
+        return instr
 
 
 class OptimalPolynomialNode(BasePolynomialNode):
@@ -442,7 +513,7 @@ class OptimalPolynomialNode(BasePolynomialNode):
         """
         if self.fully_factorized:
             # the actual operation count can be computed:
-            self.cost_estimate = count_num_ops(self.exponents)
+            self.cost_estimate = count_num_ops_naive(self.exponents)
         else:
             # count one multiplication with the coefficients for each monomial
             heuristic = np.count_nonzero(np.any(self.exponents, axis=1))

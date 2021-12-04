@@ -14,5 +14,11 @@ HornerMultivarPolynomial
 
 
 MultivarPolynomial
-------------------------
+------------------
 .. autoclass:: MultivarPolynomial
+
+
+HornerMultivarPolynomialOpt
+---------------------------
+
+.. autoclass:: HornerMultivarPolynomialOpt
