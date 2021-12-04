@@ -44,10 +44,8 @@ setup(
     "for efficiently evaluating multivariate polynomials \n\n"
     "for more refer to the documentation: https://multivar_horner.readthedocs.io/en/latest/",
     install_requires=[
-        "numpy>=1.16",
-        "numba>=0.48",
+        "numpy>=1.20",
     ],
+    extras_require={"numba": ["numba>=0.54"]},
     python_requires=">=3.7",
-    # TODO
-    # extras_require={'pytorch': [...]},
 )
