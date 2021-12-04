@@ -151,19 +151,6 @@ if __name__ == "__main__":
         "CI tests passed & merge into master complete. Build and upload now.",
     )
 
-    # TODO do this automatically, problem are the commit messages <- often the same as changelog!
-    # git commit --message
-    # git push dev
-
-    # TODO wait for Travis to finish positively
-
-    # if not in master
-
-    # TODO ask to push in master
-    # git merge ...
-
-    # TODO switching to master
-
     print("=================")
     print("PUBLISHING:")
 
@@ -188,6 +175,5 @@ if __name__ == "__main__":
     command = "twine upload " + " ".join(paths2archives)
     routine(f"{VIRT_ENV_COMMAND} {command}", "real upload to PyPI.")
 
-    # tag erstellen
-    routine(f"git tag -a v{version} -m 'Version {version}'; git push --tags", "Creating tag")
+    # NOTE: tags and releases are being created automatically through GHA
     print(f"______________\nCongrats! Published version {version}.")
