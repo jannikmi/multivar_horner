@@ -186,7 +186,7 @@ if __name__ == "__main__":
     routine(f"{VIRT_ENV_COMMAND} {command}", "testing if upload works.")
 
     command = "twine upload " + " ".join(paths2archives)
-    routine(VIRT_ENV_COMMAND + command, "real upload to PyPI.")
+    routine(f"{VIRT_ENV_COMMAND} {command}", "real upload to PyPI.")
 
     # tag erstellen
     routine(f"git tag -a v{version} -m 'Version {version}'; git push --tags", "Creating tag")
