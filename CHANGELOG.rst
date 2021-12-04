@@ -7,8 +7,45 @@ TODOs
 docstring + documentation!
 
 
-optimisations:
-define deepcopy
+POSSIBLE IMPROVEMENTS:
+
+MultivarPoly:
+
+- also make use of the concept of 'recipes' for efficiently evaluating the polynomial
+    skipping the most unnecessary operations
+- add option to skip this optimisation
+
+HornerMultivarPoly:
+
+- optimise factor evaluation (save instructions, 'factor factorisation'):
+a monomial factor consists of scalar factors and in turn some monomial factors consist of other monomial factors
+-> the result of evaluating a factor can be reused for evaluating other factors containing it
+-> find the optimal 'factorisation' of the factors themselves
+-> set the factorisation_idxs of each factor in total_degree to link the evaluation appropriately
+idea:
+    choose  'Goedel IDs' as the monomial factor ids
+    then the id of a monomial is the product of the ids of its scalar factors
+    find the highest possible divisor among all factor ids
+    (corresponds to the 'largest' factor included in the monomial)
+    this leads to a minimal factorisation for evaluating the monomial values quickly
+
+- add option to skip this optimisation to save build time
+
+- optimise space requirement:
+ after building a factorisation tree for the factors themselves,
+ then use its structure to cleverly reuse storage space
+ -> use compiler construction theory: minimal assembler register assignment, 'graph coloring'...
+
+- optimise 'copy recipe': avoid copy operations for accessing values of x
+    problem: inserting x into the value array causes operations as well and
+        complicates address assigment and recipe compilation
+
+-  when the polynomial does not depend on all variables, build a wrapper to maintain the same "interface"
+    but internally reduce the dimensionality, this reduced the size of the numpy arrays -> speed, storage benefit
+
+- the evaluation of subtrees is independent and could theoretically be done in parallel
+    probably not worth the effort. more reasonable to just evaluate multiple polynomials in parallel
+
 
 
 
