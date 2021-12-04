@@ -24,4 +24,4 @@ docs:
 	(cd docs && make html)
 
 
-.PHONY: clean test venv vpn
+.PHONY: clean test venv vpn docs
