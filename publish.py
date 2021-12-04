@@ -139,7 +139,8 @@ if __name__ == "__main__":
         "Have all pinned dependencies been listed in setup.py and the Documentation?",
     )
     routine(None, "Have all (new) features been documented?")
-    routine(None, f"Remember to write a changelog now for version {version}")
+    routine(None, f"Remember to write a changelog for version {version}")
+    routine(None, "Remember to update MANIFEST.in if the packate content has chanted")
 
     print("___________")
     print("Running TESTS:")
