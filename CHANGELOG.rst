@@ -4,7 +4,11 @@ Changelog
 
 TODOs
 
-docstring + documentation!
+* integrate CD PyPI upload into GHA workflow. including authentication...
+* run speed and numerical tests with the new C evaluation method!
+* Improve tests
+* compare poly.num_ops of different factorisations. tests?
+* num_ops currently will be 0 when caching is used (no factorisation will be computed)
 
 
 POSSIBLE IMPROVEMENTS:
@@ -18,10 +22,14 @@ MultivarPoly:
 HornerMultivarPoly:
 
 - optimise factor evaluation (save instructions, 'factor factorisation'):
-a monomial factor consists of scalar factors and in turn some monomial factors consist of other monomial factors
+    a monomial factor consists of scalar factors and in turn some monomial factors consist of other monomial factors
+
 -> the result of evaluating a factor can be reused for evaluating other factors containing it
+
 -> find the optimal 'factorisation' of the factors themselves
+
 -> set the factorisation_idxs of each factor in total_degree to link the evaluation appropriately
+
 idea:
     choose  'Goedel IDs' as the monomial factor ids
     then the id of a monomial is the product of the ids of its scalar factors
@@ -32,9 +40,9 @@ idea:
 - add option to skip this optimisation to save build time
 
 - optimise space requirement:
- after building a factorisation tree for the factors themselves,
- then use its structure to cleverly reuse storage space
- -> use compiler construction theory: minimal assembler register assignment, 'graph coloring'...
+    after building a factorisation tree for the factors themselves,
+    then use its structure to cleverly reuse storage space
+    -> use compiler construction theory: minimal assembler register assignment, 'graph coloring'...
 
 - optimise 'copy recipe': avoid copy operations for accessing values of x
     problem: inserting x into the value array causes operations as well and
@@ -47,28 +55,28 @@ idea:
     probably not worth the effort. more reasonable to just evaluate multiple polynomials in parallel
 
 
-
-
-
-3.0.0 (2021-12)
+3.0.0 (2021-12-04)
 __________________
 
-ATTENTION: API changes:
+ATTENTION: major changes:
 
+* introduced the default behavior of compiling the evaluation instructions in C code (C compiler required)
+* the previous ``numpy+numba`` evaluation using "recipes" is the fallback option in case the C file could not be compiled
+* as a consequence dropping ``numba`` as a required dependency
+* added the "extra" ``numba`` to install on demand with: ``pip install multivar_horner[numba]``
+* introduced custom polynomial hashing and comparison operations
+* using hash to cache and reuse the instructions for evaluation (for both C and recipe instructions)
+* introduced constructions argument ``store_c_instr`` (``HornerMultivarPolynomial``) to force the storage of evaluation code in C for later usage
+* introduced constructions argument ``store_numpy_recipe`` (``HornerMultivarPolynomial``) to force the storage of the custom "recipe" data structure required for the evaluation using ``numpy`` and ``numba``
+* introduced class ``HornerMultivarPolynomialOpt`` for optimal Horner Factorisations to separate code and simplify tests
+* as a consequence dropped construction argument ``find_optimal`` of class ``HornerMultivarPolynomial``
 * introduced constructions argument ``verbose`` to show the output of status print statements
-* introduced constructions argument ``store_c_instr`` (``HornerMultivarPolynomial``) to force the compilation and storage of evaluation code in C for later usage
-* introduced constructions argument ``store_numpy_recipe`` (``HornerMultivarPolynomial``) to force the compilation and storage of the "recipe" data structure required evaluation using ``numpy`` ans ``numba``
-* dropping official python3.6 support because ``numba`` does so (supporting Python3.7+)
-
-
-
-
-
-
+* dropping official python3.6 support because ``numba`` did so (supporting Python3.7+)
 
 internal:
+
 * using poetry for dependency management
-* TODO using GitHub Actions for CI instead of travis
+* using GitHub Actions for CI instead of travis
 
 
 2.2.0 (2021-02-04)
@@ -79,6 +87,7 @@ ATTENTION: API changes:
 * removed ``validate_input`` arguments. input will now always be validated (otherwise the numba jit compiled functions will fail with cryptic error messages)
 * black code style
 * pre-commit checks
+
 
 2.1.1 (2020-10-01)
 __________________
@@ -173,16 +182,13 @@ __________________
 * averaged runtime in speed tests
 
 
-
 1.0.1 (2018-11-12)
 __________________
-
 
 * introducing option to only factor out single variables with the highest usage with the optional parameter ``univariate_factors=True``
 * compute the number of operations needed by the horner factorisation by the length of its recipe (instead of traversing the full tree)
 * instead of computing the value of scalar factors with exponent 1, just copy the values from the given x vector ("copy recipe")
 * compile the initial value array at construction time
-
 
 
 1.0.0 (2018-11-08)
