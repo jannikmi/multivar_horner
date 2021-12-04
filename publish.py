@@ -183,7 +183,7 @@ if __name__ == "__main__":
     command = "twine upload --repository-url https://test.pypi.org/legacy/ " + " ".join(paths2archives)
 
     # upload all archives of this version
-    routine(VIRT_ENV_COMMAND + command, "testing if upload works.")
+    routine(f"{VIRT_ENV_COMMAND} {command}", "testing if upload works.")
 
     command = "twine upload " + " ".join(paths2archives)
     routine(VIRT_ENV_COMMAND + command, "real upload to PyPI.")
