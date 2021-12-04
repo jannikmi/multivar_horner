@@ -8,8 +8,8 @@ import numpy as np
 
 from multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 from multivar_horner.global_settings import FLOAT_DTYPE
-from tests.test_helpers import rnd_settings_list
-from tests.test_settings import (
+from tests.helpers import rnd_settings_list
+from tests.settings import (
     DEGREE_RANGE,
     DIM_RANGE,
     DTYPE_HIGH_PREC,

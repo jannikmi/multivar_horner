@@ -13,17 +13,13 @@
 
 import itertools
 import unittest
-from typing import List
 
 import numpy as np
 import pytest
 
 from multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
-from multivar_horner.classes.abstract_poly import AbstractPolynomial
 from multivar_horner.global_settings import FLOAT_DTYPE, UINT_DTYPE
 from multivar_horner.helper_fcts import rectify_query_point
-
-# settings for numerical stability tests
 from tests.helpers import naive_eval_reference, proto_test_case, vectorize
 from tests.settings import (
     COEFF_CHANGE_DATA,

@@ -4,14 +4,11 @@ Changelog
 
 TODOs
 
-fix build
 docstring + documentation!
 
 
 optimisations:
 define deepcopy
-refactor into own module
-verbose flag
 
 
 
