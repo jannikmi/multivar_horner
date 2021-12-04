@@ -54,7 +54,7 @@ To represent polynomials this package requires the coefficients and the exponent
 .. _horner_usage:
 
 Horner factorisation
------------------------------------------------
+---------------------
 
 
 to create a representation of the multivariate polynomial :math:`p` in Horner factorisation:
@@ -69,15 +69,7 @@ to create a representation of the multivariate polynomial :math:`p` in Horner fa
 the found factorisation is :math:`p(x) = x_1^1 (x_1^1 (x_1^1 (1.0 x_2^1) + 2.0 x_3^1) + 3.0 x_2^1 x_3^1) + 5.0`.
 
 
-pass ``rectify_input=True`` to automatically try converting the input to the required ``numpy`` data structures
-
-.. note::
-
-    the default for both options is ``False`` for increased speed
-
-.. note::
-
-    the dtypes are fixed due to the just in time compiled ``Numba`` functions
+pass ``rectify_input=True`` to automatically try converting the input to the required ``numpy`` data structures and types
 
 
 .. code-block:: python
@@ -102,31 +94,37 @@ when its factorisation tree should be kept after the factorisation process
 
 
 
+.. note::
+
+    for increased efficiency the default for both options is ``False``
+
+
 .. _canonical_usage:
 
 canonical form
 --------------
 
-if ...
-
-* the Horner factorisation takes too long
-* the polynomial is going to be evaluated only a few times
-* fast polynomial evaluation is not required or
-* the numerical stability of the evaluation is not important
-
 it is possible to represent the polynomial without any factorisation (refered to as 'canonical form' or 'normal form'):
-
-.. note::
-
-    in the case of unfactorised polynomials many unnecessary operations are being done
-    (internally numpy matrix operations are being used)
-
 
 .. code-block:: python
 
     from multivar_horner.multivar_horner import MultivarPolynomial
 
     polynomial = MultivarPolynomial(coefficients, exponents)
+
+
+use this if ...
+
+* the Horner factorisation takes too long
+* the polynomial is going to be evaluated only a few times
+* fast polynomial evaluation is not required or
+* the numerical stability of the evaluation is not important
+
+
+.. note::
+
+    in the case of unfactorised polynomials many unnecessary operations are being done
+    (internally uses naive numpy matrix operations)
 
 
 
@@ -231,15 +229,10 @@ optimal Horner factorisations
 -----------------------------
 
 
-pass ``find_optimal=True`` during construction of a Horner factorised polynomial
-to start an adapted A* search through all possible factorisations.
+use the class ``HornerMultivarPolynomialOpt`` for the construction of the polynomial
+to trigger an adapted A* search to find the optimal factorisation.
 
 See :ref:`this chapter <optimal>` for further information.
-
-
-.. note::
-
-    BETA: untested feature
 
 
 .. note::
@@ -248,10 +241,11 @@ See :ref:`this chapter <optimal>` for further information.
 
 .. code-block:: python
 
-    horner_polynomial_optimal = HornerMultivarPolynomial(
+    from multivar_horner import HornerMultivarPolynomialOpt
+
+    horner_polynomial_optimal = HornerMultivarPolynomialOpt(
         coefficients,
         exponents,
-        find_optimal=True,
         compute_representation=True,
         rectify_input=True,
     )
@@ -259,11 +253,41 @@ See :ref:`this chapter <optimal>` for further information.
 
 
 
-caching polynomials
+Caching
 -------------------
 
+by default the instructions required for evaluating a Horner factorised polynomial will be cached either as ``.c`` file or ``.pickle`` file in the case of ``numpy+numba`` evaluation.
 
-export
+One can explicitly force the compilation of the instructions in the required format:
+
+.. code-block:: python
+
+    horner_polynomial = HornerMultivarPolynomial(
+        coefficients, exponents, store_c_instr=True, store_numpy_recipe=True
+    )
+
+
+If you construct a Horner polynomial with the same properties (= exponents) these cached instructions will be used for evaluation and a factorisation won't be computed again.
+Note that as a consequence you won't be able to access the factorisation tree and string representation in these cases.
+
+the cached files are being stored in ``<path/to/env/>multivar_horner/multivar_horner/__pychache__/``
+
+.. code-block:: python
+
+   horner_polynomial.c_file
+   horner_polynomial.c_file_compiled
+   horner_polynomial.recipe_file
+
+
+you can read the content of the cached C instructions:
+
+.. code-block:: python
+
+   instr = horner_polynomial.get_c_instructions()
+   print(instr)
+
+
+you can also export the whole polynomial class (including the string representation etc.):
 
 .. code-block:: python
 
@@ -271,14 +295,13 @@ export
     polynomial.export_pickle(path=path)
 
 
-import
+to load again:
 
 .. code-block:: python
 
-    from multivar_horner.multivar_horner import load_pickle
+    from multivar_horner import load_pickle
 
-    horner_polynomial = load_pickle(path)
-
+    polynomial = load_pickle(path)
 
 
 

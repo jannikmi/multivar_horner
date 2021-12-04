@@ -33,7 +33,6 @@ multivar_horner
 .. image:: https://zenodo.org/badge/155578190.svg
    :target: https://zenodo.org/badge/latestdoi/155578190
 
-
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/psf/black
 
@@ -51,6 +50,17 @@ Quick Guide:
     pip install multivar_horner
 
 
+For efficiency this package is compiling the instructions required for polynomial evaluation to C by default.
+If you don't have a C compiler (``gcc`` or ``cc``) installed you also need to install numba for using an alternative method:
+
+::
+
+
+    pip install multivar_horner[numba]
+
+
+Simple example:
+
 .. code-block:: python
 
     import numpy as np
@@ -60,7 +70,6 @@ Quick Guide:
     #   p(x) = 5.0 + 1.0 x_1^3 x_2^1 + 2.0 x_1^2 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1
     coefficients = np.array([[5.0], [1.0], [2.0], [3.0]], dtype=np.float64)
     exponents = np.array([[0, 0, 0], [3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=np.uint32)
-
 
     # [#ops=7] p(x) = x_1 (x_1 (x_1 (1.0 x_2) + 2.0 x_3) + 3.0 x_2 x_3) + 5.0
     horner_polynomial = HornerMultivarPolynomial(coefficients, exponents)

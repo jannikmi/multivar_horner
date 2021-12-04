@@ -4,7 +4,6 @@
 Optimal Horner Factorisations
 =============================
 
-
 See :ref:`this code <optimal_usage>` for an example usage.
 
 
@@ -26,7 +25,7 @@ A use case however is to compute and store a minimal representation of a polynom
 
 **NOTES:**
 
-* for the small polynomial examples in the current tests, the results were identical (in terms of #ops) with the approach of just trying one factorisation (further analysis needed)!
+* for the small polynomial examples in the current tests, the results were identical (in terms of #ops) with the approach of just using the default heuristic = trying one factorisation (further analysis needed)!
 * in some cases this approach currently is trying all possible factorisations, because the heuristic in use is too optimistic (= brute force, further analysis and improvements needed)
 * this requires MUCH more computational resources than just trying one factorisation (the number of possible factorisations is growing exponentially with the size of the polynomial!).
 * there are possibly many optimal Horner factorisations of a multivariate polynomial. one could easily adapt this approach to find all optimal Horner factorisations
