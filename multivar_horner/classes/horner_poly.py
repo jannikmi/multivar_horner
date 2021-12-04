@@ -248,8 +248,6 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         -> values must not be overwritten (reusing addresses), because they might be needed again by another factor
         -> (without further optimisation) each factor requires its own space in the value array
 
-        Returns:
-            the compiled recipes (numpy ndarrays)
         """
         # reuse pickled recipe if present
         try:
@@ -456,8 +454,10 @@ class HornerMultivarPolynomialOpt(HornerMultivarPolynomial):
     in comparison to other Horner factorisation (not other factorisatio/optimisation techniques).
 
     NOTES:
+
     * this requires MUCH more computational resources than just trying one factorisation
-    (the number of possible factorisations is growing exponentially with the size of the polynomial!).
+        (the number of possible factorisations is growing exponentially with the size of the polynomial!).
+
     * for the small polynomial examples in the current tests, the found factorisations were not superior
     """
 
