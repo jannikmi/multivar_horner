@@ -12,7 +12,8 @@ import seaborn as sns
 from matplotlib.patches import Rectangle
 from scipy.special import binom
 
-from multivar_horner.multivar_horner import AbstractPolynomial, HornerMultivarPolynomial, MultivarPolynomial
+from multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
+from multivar_horner.classes.multivar_horner import AbstractPolynomial
 from tests.helpers import rnd_input_list, rnd_settings_list
 from tests.settings import (
     DEGREE_RANGE,

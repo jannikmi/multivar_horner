@@ -2,33 +2,37 @@ Changelog
 =========
 
 
+TODOs
 
-2.3.0 (2021-12)
-__________________
 
-ATTENTION: API changes:
-
-verbose option.
-try if creation works.
 store eval method
-run tests, use both functions. improve refactor
+store coeff ctyped
 
 file endings: windows .dll?! test different OS
-define deepcopy
 
-opt:
-pointer input
-store coeff ctyped
+fix build
+
+optimisations:
+define deepcopy
 refactor into own module
 verbose flag
 
 
-catch errors
-tests
 
 
+3.0.0 (2021-12)
+__________________
 
+ATTENTION: API changes:
+
+* introduced constructions argument ``verbose`` to show the output of status print statements
+* introduced constructions argument ``store_c_instr`` (``HornerMultivarPolynomial``) to force the compilation and storage of evaluation code in C for later usage
+* introduced constructions argument ``store_numpy_recipe`` (``HornerMultivarPolynomial``) to force the compilation and storage of the "recipe" data structure required evaluation using ``numpy`` ans ``numba``
 * dropping official python3.6 support because ``numba`` does so (supporting Python3.7+)
+
+
+
+
 
 
 

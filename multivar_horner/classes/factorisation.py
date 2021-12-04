@@ -1,8 +1,14 @@
 import numpy as np
 
-from .global_settings import BOOL_DTYPE, ID_ADD, ID_MULT, UINT_DTYPE
-from .helper_classes import AbstractFactor, FactorContainer, PriorityQueue2D
-from .helpers_fcts_numba import compile_valid_options, count_num_ops, count_usage, factor_num_ops, num_ops_1D_horner
+from multivar_horner.classes.helpers import AbstractFactor, FactorContainer, PriorityQueue2D
+from multivar_horner.global_settings import BOOL_DTYPE, ID_ADD, ID_MULT, UINT_DTYPE
+from multivar_horner.helpers_fcts_numba import (
+    compile_valid_options,
+    count_num_ops,
+    count_usage,
+    factor_num_ops,
+    num_ops_1D_horner,
+)
 
 
 class FactorisationNode:

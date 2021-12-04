@@ -13,13 +13,15 @@
 
 import itertools
 import unittest
+from typing import List
 
 import numpy as np
 import pytest
 
+from multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
+from multivar_horner.classes.abstract_poly import AbstractPolynomial
 from multivar_horner.global_settings import FLOAT_DTYPE, UINT_DTYPE
 from multivar_horner.helper_fcts import rectify_query_point
-from multivar_horner.multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 
 # settings for numerical stability tests
 from tests.helpers import naive_eval_reference, proto_test_case, vectorize
@@ -35,6 +37,8 @@ from tests.settings import (
 )
 
 HornerClass = HornerMultivarPolynomial
+
+DEFAULT_CONSTR_KWARGS = {"rectify_input": True, "compute_representation": True, "verbose": True}
 
 
 def all_equal(iterator):
@@ -118,36 +122,28 @@ class MainTest(unittest.TestCase):
         print("OK.\n")
 
     def test_invalid_input_detection(self):
-
         print("\n\nTEST INVALID INPUT DETECTION...")
+
+        def construction_test(coeff, exp, expected_error, rectify: bool = False):
+            with pytest.raises(expected_error):
+                MultivarPolynomial(coeff, exp, rectify_input=rectify)
+            poly_class = HornerMultivarPolynomial
+            with pytest.raises(expected_error):
+                poly_class(coeff, exp, rectify_input=rectify, find_optimal=False)
+            with pytest.raises(expected_error):
+                poly_class(coeff, exp, rectify_input=rectify, find_optimal=True)
 
         def construction_should_raise(data, expected_error):
             for inp, _ in data:
                 coeff, exp, x = inp
-                with pytest.raises(expected_error):
-                    MultivarPolynomial(
-                        coeff,
-                        exp,
-                        rectify_input=False,
-                    )
-                poly_class = HornerMultivarPolynomial
-                with pytest.raises(expected_error):
-                    poly_class(coeff, exp, rectify_input=False, find_optimal=False)
-                with pytest.raises(expected_error):
-                    poly_class(coeff, exp, rectify_input=False, find_optimal=True)
+                construction_test(coeff, exp, expected_error)
 
         construction_should_raise(INPUT_DATA_INVALID_TYPES_CONSTRUCTION, TypeError)
         construction_should_raise(INPUT_DATA_INVALID_VALUES_CONSTRUCTION, ValueError)
 
         # input rectification with negative exponents should raise a ValueError:
-        coeff = [3.2]
-        exp = [[0, 3, -4]]
-        with pytest.raises(ValueError):
-            HornerMultivarPolynomial(coeff, exp, rectify_input=True, find_optimal=True)
-        with pytest.raises(ValueError):
-            MultivarPolynomial(coeff, exp, rectify_input=True)
-        with pytest.raises(ValueError):
-            HornerMultivarPolynomial(coeff, exp, rectify_input=True, find_optimal=False)
+        coeff, exp = [3.2], [[0, 3, -4]]
+        construction_test(coeff, exp, ValueError, rectify=True)
 
         def query_should_raise(data, expected_error):
             for inp, _ in data:
@@ -164,19 +160,22 @@ class MainTest(unittest.TestCase):
                 with pytest.raises(expected_error):
                     p(x, rectify_input=False)
 
-        # TODO input validation
-        # query_should_raise(INPUT_DATA_INVALID_TYPES_QUERY, TypeError)
-        # query_should_raise(INPUT_DATA_INVALID_VALUES_QUERY, ValueError)
+        query_should_raise(INPUT_DATA_INVALID_TYPES_QUERY, TypeError)
+        query_should_raise(INPUT_DATA_INVALID_VALUES_QUERY, ValueError)
         print("OK.")
 
     def test_eval_cases(self):
         def cmp_value_fct(inp):
             coeff, exp, x = inp
             x = np.array(x).T
-            kwargs = {"rectify_input": True, "compute_representation": True}
-            horner_poly = HornerMultivarPolynomial(coeff, exp, find_optimal=False, **kwargs)
-            horner_poly_opt = HornerMultivarPolynomial(coeff, exp, find_optimal=True, **kwargs)
-            poly = MultivarPolynomial(coeff, exp, **kwargs)
+            poly = MultivarPolynomial(coeff, exp, **DEFAULT_CONSTR_KWARGS)
+            horner_kwargs = {"store_c_instr": True, "store_numpy_recipe": True}
+            horner_poly = HornerMultivarPolynomial(
+                coeff, exp, find_optimal=False, **horner_kwargs, **DEFAULT_CONSTR_KWARGS
+            )
+            horner_poly_opt = HornerMultivarPolynomial(
+                coeff, exp, find_optimal=True, **horner_kwargs, **DEFAULT_CONSTR_KWARGS
+            )
             print("MultivarPolynomial", poly)
             print("HornerMultivarPolynomial", horner_poly)
             print("HornerMultivarPolynomial (optimal)", horner_poly_opt)
@@ -184,10 +183,7 @@ class MainTest(unittest.TestCase):
 
             x_rectified = rectify_query_point(x)
             results = [p.eval(x_rectified) for p in polys]
-            results += [
-                horner_poly._eval_c(x),
-            ]
-            # results += [horner_poly._eval_c(x), horner_poly._eval_recipe(x)]
+            results += [horner_poly._eval_c(x), horner_poly._eval_recipe(x)]
 
             assert all_equal(results), f"results differ: {results}, for x = {x}"
             return results[0]
