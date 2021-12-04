@@ -24,8 +24,12 @@ PATH2CACHE = Path(__file__).parent.parent / "__pycache__"
 class HornerMultivarPolynomial(AbstractPolynomial):
     """a representation of a multivariate polynomial using Horner factorisation
 
-    the polynomial is being evaluated by fast just in time compiled functions
-    using precompiled "recipes" of instructions.
+    after computing the factorised representation of the polynomial,
+    the instructions required for evaluation are being compiled and stored.
+    The default format is C instructions.
+    When there is no C compiler installed, the fallback option is encoding the required instructions
+    in numpy arrays (here referred to as "recipes"),
+    which can be processed by (``numba``) just in time compiled functions.
 
     Args:
         coefficients: ndarray of floats with shape (N,1)
@@ -41,11 +45,16 @@ class HornerMultivarPolynomial(AbstractPolynomial):
             with this set to True, coefficients and exponents can be given in standard python arrays
         compute_representation: bool, default=False
             whether to compute a string representation of the polynomial
+        verbose: bool, default=False
+            whether to print status statements
 
         keep_tree: whether the factorisation tree object should be kept in memory after finishing factorisation
-        find_optimal: whether a search over all possible factorisations should be done in total_degree to find
-            an optimal factorisation in the sense of a minimal amount required operations for evaluation
-
+        store_c_instr: whether a C file with all required evaluation instructions
+            should be created under any circumstances.
+            By default the class will use C based evaluation, but skip if no compiler (``gcc``/``cc``) is installed.
+        store_numpy_recipe: whether a pickle file with all required evaluation instructions
+            in the custom ``numpy+numba`` format should be created under any circumstances.
+            By default the class will use C based evaluation and only use this evaluation format as fallback.
 
     Attributes:
         num_monomials: the amount of coefficients/monomials N of the polynomial
@@ -66,6 +75,7 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         maximal_degree: the largest exponent in any of its monomials
             = the maximum l_infinity-norm of the exponent vectors of all monomials
 
+        factorisation: a tuple of factorisation_tree and factor_container. s. below
         factorisation_tree: the object oriented, recursive data structure representing the factorisation
             (only if keep_tree=True)
         factor_container: the object containing all (unique) factors of the factorisation (only if keep_tree=True)
@@ -99,14 +109,13 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         "factorisation",
         "root_value_idx",
         "value_array_length",
-        "find_optimal",
         "keep_tree",
-        "_hash_val",
         "use_c_eval",
         "recipe",
         "_c_eval_fct",
         "ctype_x",
         "ctype_coeff",
+        "root_class",
     ]
 
     # FIXME: creates duplicate entries in Sphinx autodoc
@@ -118,7 +127,6 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         compute_representation: bool = False,
         verbose: bool = False,
         keep_tree: bool = False,
-        find_optimal: bool = False,
         store_c_instr: bool = False,
         store_numpy_recipe: bool = False,
         *args,
@@ -127,10 +135,9 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         super(HornerMultivarPolynomial, self).__init__(
             coefficients, exponents, rectify_input, compute_representation, verbose
         )
-        self.find_optimal: bool = find_optimal
+        self.root_class = HeuristicFactorisationRoot
         self.keep_tree: bool = keep_tree
         self.value_array_length: int
-        self._hash_val: int
         self.recipe: Tuple
 
         self._c_eval_fct: Callable
@@ -184,39 +191,10 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         # NOTE: do NOT automatically create all scalar factors with exponent 1
         # (they might be unused, since the polynomial must not actually depend on all variables)
         factor_container = FactorContainer()
-        if self.find_optimal:
-            root_class = OptimalFactorisationRoot
-        else:
-            root_class = HeuristicFactorisationRoot
-        factorisation_tree: BasePolynomialNode = root_class(self.exponents, factor_container)
+        factorisation_tree: BasePolynomialNode = self.root_class(self.exponents, factor_container)
         self.root_value_idx = factorisation_tree.value_idx
         self.value_array_length = self.num_monomials + len(factor_container)
         self.factorisation: Tuple[BasePolynomialNode, FactorContainer] = (factorisation_tree, factor_container)
-
-    def __hash__(self):
-        """
-        compare polynomials (including their factorisation) based on their properties
-        NOTE: coefficients can be changed
-        without affecting the fundamental properties of the polynomial (factorisation)
-        NOTE: optimal factorisations might be different from the ones found with the default approach
-
-        Returns: an integer encoding the fundamental properties of the polynomial including its factorisation
-        """
-        try:
-            return self._hash_val
-        except AttributeError:
-            props = (self.dim, self.num_monomials, self.find_optimal, *self.exponents.flatten())
-            self._hash_val = hash(props)
-        return self._hash_val
-
-    def __eq__(self, other):
-        """
-        Returns: true when ``other`` is of the same class and has equal properties (encoded by hash)
-        """
-        if not isinstance(other, self.__class__):
-            return False
-        # we consider polynomials equal when they share their properties (-> hash)
-        return hash(self) == hash(other)
 
     @property
     def factorisation_tree(self) -> BasePolynomialNode:
@@ -469,3 +447,18 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         path_in = self.c_file
         self.print(f"compiling to file {path_out}")
         compile_c_file(compiler, path_in, path_out)
+
+
+class HornerMultivarPolynomialOpt(HornerMultivarPolynomial):
+    """a Horner factorised polynomial with an optimal factorisation found by searching all possible factorisations
+
+    Optimality in this context refers to the minimal amount of operations needed for evaluation
+    in comparison to other Horner factorisation (not other factorisatio/optimisation techniques).
+
+    NOTES:
+    * this requires MUCH more computational resources than just trying one factorisation
+    (the number of possible factorisations is growing exponentially with the size of the polynomial!).
+    * for the small polynomial examples in the current tests, the found factorisations were not superior
+    """
+
+    root_class = OptimalFactorisationRoot

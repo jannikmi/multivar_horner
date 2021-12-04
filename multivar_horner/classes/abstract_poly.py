@@ -37,6 +37,7 @@ class AbstractPolynomial(ABC):
         "unused_variables",
         "representation",
         "verbose",
+        "_hash_val",
     ]
 
     def __init__(
@@ -47,6 +48,7 @@ class AbstractPolynomial(ABC):
         compute_representation: bool = False,
         verbose: bool = False,
     ):
+        self._hash_val: int
         self.verbose: bool = verbose
         self.compute_representation: bool = compute_representation
 
@@ -73,6 +75,32 @@ class AbstractPolynomial(ABC):
 
     def __call__(self, *args, **kwargs) -> float:
         return self.eval(*args, **kwargs)
+
+    def __hash__(self):
+        """
+        compare polynomials (including their factorisation) based on their properties
+        NOTE: coefficients can be changed
+        without affecting the fundamental properties of the polynomial (factorisation)
+        NOTE: optimal factorisations might be different from the ones found with the default approach
+
+        Returns: an integer encoding the fundamental properties of the polynomial including its factorisation
+        """
+        try:
+            return self._hash_val
+        except AttributeError:
+            # lazy initialisation: compute the expensive hash value only once on demand
+            props = (self.dim, self.num_monomials, *self.exponents.flatten())
+            self._hash_val = hash(props)
+        return self._hash_val
+
+    def __eq__(self, other):
+        """
+        Returns: true when ``other`` is of the same class and has equal properties (encoded by hash)
+        """
+        if not isinstance(other, self.__class__):
+            return False
+        # we consider polynomials equal when they share their properties (-> hash)
+        return hash(self) == hash(other)
 
     def print(self, *args):
         if self.verbose:
