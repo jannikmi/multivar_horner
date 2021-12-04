@@ -365,8 +365,6 @@ class MainTest(unittest.TestCase):
                 print(f"x = {x}")
                 raise AssertionError(f"results differ:\n{res1} (canonical)\n{res2} (horner)\n{res3} (horner optimal)\n")
 
-            assert horner_poly.num_ops >= horner_poly_opt.num_ops
-
             return res1
 
         proto_test_case(VALID_TEST_DATA, cmp_value_changed_coeffs_fct)

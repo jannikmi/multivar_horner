@@ -1,19 +1,19 @@
 import ctypes
 import pickle
-import shutil
-import subprocess
 from pathlib import Path
-from typing import Tuple
+from typing import Callable, Tuple
 
 import numpy as np
 
+from multivar_horner import c_evaluation
+from multivar_horner.c_evaluation import COMPILED_C_ENDING, compile_c_file, get_compiler, write_c_file
 from multivar_horner.classes.abstract_poly import AbstractPolynomial
 from multivar_horner.classes.factorisation import (
     BasePolynomialNode,
     HeuristicFactorisationRoot,
     OptimalFactorisationRoot,
 )
-from multivar_horner.classes.helpers import FactorContainer, MonomialFactor, ScalarFactor
+from multivar_horner.classes.helpers import FactorContainer
 from multivar_horner.global_settings import BOOL_DTYPE, FLOAT_DTYPE, TYPE_1D_FLOAT, UINT_DTYPE
 from multivar_horner.helper_fcts import rectify_query_point, validate_query_point
 from multivar_horner.helpers_fcts_numba import eval_recipe
@@ -96,8 +96,7 @@ class HornerMultivarPolynomial(AbstractPolynomial):
     # __slots__ declared in parents are available in child classes. However, child subclasses will get a __dict__
     # and __weakref__ unless they also define __slots__ (which should only contain names of any additional slots).
     __slots__ = [
-        "factorisation_tree",
-        "factor_container",
+        "factorisation",
         "root_value_idx",
         "value_array_length",
         "find_optimal",
@@ -105,6 +104,9 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         "_hash_val",
         "use_c_eval",
         "recipe",
+        "_c_eval_fct",
+        "ctype_x",
+        "ctype_coeff",
     ]
 
     # FIXME: creates duplicate entries in Sphinx autodoc
@@ -131,13 +133,17 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         self._hash_val: int
         self.recipe: Tuple
 
+        self._c_eval_fct: Callable
+        double = c_evaluation.C_TYPE_DOUBLE
+        self.ctype_x = double * self.dim
+        self.ctype_coeff = double * self.num_monomials
+
         self._configure_evaluation(store_c_instr, store_numpy_recipe)
         self.compute_string_representation(*args, **kwargs)
 
         if not self.keep_tree:
             try:
-                del self.factorisation_tree
-                del self.factor_container
+                del self.factorisation
             except AttributeError:
                 pass
 
@@ -168,7 +174,8 @@ class HornerMultivarPolynomial(AbstractPolynomial):
     def _compute_factorisation(self):
         # do not compute the factorisation when it is already present
         try:
-            self.factorisation_tree
+            self.factorisation
+            self.print("factorisation already exists.")
             return
         except AttributeError:
             pass
@@ -176,14 +183,15 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         self.print("computing factorisation...")
         # NOTE: do NOT automatically create all scalar factors with exponent 1
         # (they might be unused, since the polynomial must not actually depend on all variables)
-        self.factor_container = FactorContainer()
+        factor_container = FactorContainer()
         if self.find_optimal:
             root_class = OptimalFactorisationRoot
         else:
             root_class = HeuristicFactorisationRoot
-        self.factorisation_tree: BasePolynomialNode = root_class(self.exponents, self.factor_container)
-        self.root_value_idx = self.factorisation_tree.value_idx
-        self.value_array_length = self.num_monomials + len(self.factor_container)
+        factorisation_tree: BasePolynomialNode = root_class(self.exponents, factor_container)
+        self.root_value_idx = factorisation_tree.value_idx
+        self.value_array_length = self.num_monomials + len(factor_container)
+        self.factorisation: Tuple[BasePolynomialNode, FactorContainer] = (factorisation_tree, factor_container)
 
     def __hash__(self):
         """
@@ -210,6 +218,14 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         # we consider polynomials equal when they share their properties (-> hash)
         return hash(self) == hash(other)
 
+    @property
+    def factorisation_tree(self) -> BasePolynomialNode:
+        return self.factorisation[0]
+
+    @property
+    def factor_container(self) -> FactorContainer:
+        return self.factorisation[1]
+
     def compute_string_representation(
         self,
         coeff_fmt_str: str = "{:.2}",
@@ -223,16 +239,14 @@ class HornerMultivarPolynomial(AbstractPolynomial):
             return repre
         repre = f"[#ops={self.num_ops}] p(x)"
         try:
-            repre += " = " + self.factorisation_tree.get_string_representation(
-                self.coefficients, coeff_fmt_str, factor_fmt_str
-            )
+            tree = self.factorisation_tree
+            repre += " = " + tree.get_string_representation(self.coefficients, coeff_fmt_str, factor_fmt_str)
             # exponentiation with 1 won't cause an operation in this representation
             # but are present in the string representation due to string formatting restrictions
             # -> they should not be displayed (misleading)
             repre = repre.replace("^1", "")  # <- workaround for the default string format
         except AttributeError:
             pass  # self.factorisation_tree does not exist
-
         self.representation = repre
         return self.representation
 
@@ -264,6 +278,7 @@ class HornerMultivarPolynomial(AbstractPolynomial):
             self._load_recipe()
             return
         except ValueError:
+            self.print("recipe does not exist yet.")
             pass
 
         # for compiling the recipes the factorisation must be computed first
@@ -327,7 +342,7 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         if not path.exists():
             raise ValueError("recipe pickle file does not exist.")
         self.print(f'loading recipe from file "{path}"')
-        with open(path, "r") as f:
+        with open(path, "rb") as f:
             pickle_obj = pickle.load(f)
         self.recipe, self.num_ops, self.value_array_length, self.root_value_idx = pickle_obj
 
@@ -378,23 +393,30 @@ class HornerMultivarPolynomial(AbstractPolynomial):
             self.root_value_idx,
         )
 
+    @property
+    def c_eval_fct(self):
+        try:
+            return self._c_eval_fct
+        except AttributeError:
+            compiled_file = self.c_file_compiled
+            cdll = ctypes.CDLL(str(compiled_file))
+            fct = getattr(cdll, c_evaluation.EVAL_FCT)
+            fct.argtypes = (self.ctype_x, self.ctype_coeff)
+            fct.restype = c_evaluation.C_TYPE_DOUBLE
+            self._c_eval_fct = fct
+
+        return self._c_eval_fct
+
     def _eval_c(self, x: TYPE_1D_FLOAT) -> float:
-        dim = self.dim
         compiled_file = self.c_file_compiled
         if not compiled_file.exists():
             raise ValueError(f"missing compiled C file: {compiled_file}")
-        cdll = ctypes.CDLL(str(compiled_file))
-        double = ctypes.c_double
-        type_x = double * dim
-        type_coeffs = double * self.num_monomials
-        x_typed = type_x(*x)
+
+        x_typed = self.ctype_x(*x)
         coeffs = self.coefficients.flatten()
-        coeffs_typed = type_coeffs(*coeffs)
-        func_name = "eval"
-        function = getattr(cdll, func_name)
-        function.argtypes = (type_x, type_coeffs)
-        function.restype = double
-        p_x = function(x_typed, coeffs_typed)
+        coeffs_typed = self.ctype_coeff(*coeffs)
+
+        p_x = self.c_eval_fct(x_typed, coeffs_typed)
         return p_x
 
     def get_c_file_name(self, ending: str = ".c") -> str:
@@ -406,7 +428,7 @@ class HornerMultivarPolynomial(AbstractPolynomial):
 
     @property
     def c_file_compiled(self):
-        return PATH2CACHE / self.get_c_file_name(ending=".so")
+        return PATH2CACHE / self.get_c_file_name(ending=COMPILED_C_ENDING)
 
     @property
     def recipe_file(self) -> Path:
@@ -420,69 +442,13 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         self._compute_factorisation()
         self.print("compiling C instructions ...")
         try:
-            tree = self.factorisation_tree
-            factor_container = self.factor_container
+            factorisation = self.factorisation
         except AttributeError:
             raise ValueError(
                 "need a stored factorisation tree, but the reference to it has already been deleted. "
                 "initialise class with 'keep_tree=True`"
             )
-        f_type = "double"
-        # scalar and monomial factors together
-        factor_array = "f"
-        coeff_array = "c"
-        func_name = "eval"
-        instr = "#include <math.h>\n"
-
-        nr_coeffs = self.num_monomials
-        nr_dims = self.dim
-        self.num_ops = 0
-
-        # NOTE: the coefficient array will be used to store intermediary results
-        # -> copy to use independent instance of array (NO pointer to external array!)
-        func_def = f"{f_type} {func_name}({f_type} x[{nr_dims}], {f_type} {coeff_array}[{nr_coeffs}])"
-        # declare function ("header")
-        instr += f"{func_def};\n"
-        # function definition
-        instr += f"{func_def}"
-        instr += "{\n"
-
-        # NOTE: the order of computing the values important: scalar factors, monomial factors, monomials,...
-        scalar: ScalarFactor
-        monomial: MonomialFactor
-        scalars = factor_container.scalar_factors
-        monomials = factor_container.monomial_factors
-        nr_factors = len(factor_container)
-
-        # initialise arrays to capture the intermediary results of factor evaluation to 0
-        if nr_factors > 0:
-            instr += f"{f_type} {factor_array}[{nr_factors}]= {{0.0}};\n"
-        idx: int = 0
-        # set the index of each factor in order to remember it for later reference
-        # ATTENTION: different from the ones used in the recipes!
-        for idx, scalar in enumerate(scalars):
-            scalar.value_idx = idx
-            instr += scalar.get_instructions(factor_array)
-            self.num_ops += scalar.num_ops
-
-        for monomial in monomials:
-            idx += 1
-            monomial.value_idx = idx
-            monomial.factorisation_idxs = [f.value_idx for f in monomial.scalar_factors]
-            instr += monomial.get_instructions(factor_array)
-            self.num_ops += monomial.num_ops
-
-        # compile the instructions for evaluating the Horner factorisation tree
-        instr += tree.get_instructions(coeff_array, factor_array)
-        self.num_ops += tree.num_ops
-
-        # return the entry of the coefficient array corresponding to the root node of the factorisation tree
-        root_idx = tree.value_idx
-        instr += f"return {coeff_array}[{root_idx}];\n"
-        instr += "}\n"
-        self.print(f"writing in file {path_out}")
-        with open(path_out, "w") as c_file:
-            c_file.write(instr)
+        self.num_ops = write_c_file(self.num_monomials, self.dim, path_out, factorisation, self.verbose)
 
     def get_c_instructions(self) -> str:
         path = self.c_file
@@ -497,16 +463,9 @@ class HornerMultivarPolynomial(AbstractPolynomial):
             self.print(f"using existing compiled C file {path_out}")
             return
 
-        compiler = "gcc"
-        if shutil.which(compiler) is None:
-            compiler = "cc"
-            if shutil.which(compiler) is None:
-                raise ValueError("compiler (`gcc` or `cc`) not present. install one first.")
-
+        # NOTE: skip compiling C instructions if no compiler is available
+        compiler = get_compiler()
         self._write_c_file()
         path_in = self.c_file
         self.print(f"compiling to file {path_out}")
-        cmd = [compiler, "-shared", "-o", str(path_out), "-fPIC", str(path_in)]
-        subprocess.call(cmd)
-        if not path_out.exists():
-            raise ValueError(f"expected compiled file missing: {path_out}")
+        compile_c_file(compiler, path_in, path_out)

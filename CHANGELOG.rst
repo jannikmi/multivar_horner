@@ -4,13 +4,9 @@ Changelog
 
 TODOs
 
-
-store eval method
-store coeff ctyped
-
-file endings: windows .dll?! test different OS
-
 fix build
+docstring + documentation!
+
 
 optimisations:
 define deepcopy
