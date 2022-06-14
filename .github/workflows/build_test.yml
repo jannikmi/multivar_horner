@@ -64,10 +64,6 @@ jobs:
           pip install setuptools wheel
           python setup.py sdist bdist_wheel --python-tag py37.py38.py39.py310
 
-      - name: Fetch version
-        id: fetch_version
-        run: echo "::set-output name=version_nr::$(cat VERSION)"
-
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
