@@ -33,7 +33,7 @@ DTYPE_HIGH_PREC = np.float128
 # n orders of magnitudes less than the coefficients
 # maximally the machine precision
 MAX_ERR_EXPONENT = max(-15, (int(log10(MAX_COEFF_MAGNITUDE)) - 10))
-MAX_NUMERICAL_ERROR = 10 ** MAX_ERR_EXPONENT
+MAX_NUMERICAL_ERROR = 10**MAX_ERR_EXPONENT
 
 # TEST CASES:
 
