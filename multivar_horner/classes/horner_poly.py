@@ -14,11 +14,9 @@ from multivar_horner.classes.factorisation import (
     OptimalFactorisationRoot,
 )
 from multivar_horner.classes.helpers import FactorContainer
-from multivar_horner.global_settings import BOOL_DTYPE, FLOAT_DTYPE, TYPE_1D_FLOAT, UINT_DTYPE
+from multivar_horner.global_settings import BOOL_DTYPE, FLOAT_DTYPE, PATH2CACHE, TYPE_1D_FLOAT, UINT_DTYPE
 from multivar_horner.helper_fcts import rectify_query_point, validate_query_point
 from multivar_horner.helpers_fcts_numba import eval_recipe
-
-PATH2CACHE = Path(__file__).parent.parent / "__pycache__"
 
 
 class HornerMultivarPolynomial(AbstractPolynomial):
