@@ -57,7 +57,8 @@ idea:
 3.0.2 (2022-06-14)
 __________________
 
-* bugfix optional ``numba`` dependency: numba imports were not optional
+* bugfix: optional ``numba`` dependency. numba imports were not optional
+* bugfix: create __cache__ dir if not exists
 * minor documentation improvements
 * bumping dependencies
 
