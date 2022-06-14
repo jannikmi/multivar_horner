@@ -22,3 +22,4 @@ DEFAULT_PICKLE_FILE_NAME = "multivar_polynomial.pickle"
 DEBUG = False
 # DEBUG = True
 PATH2CACHE = Path(__file__).parent.parent / "__pycache__"
+PATH2CACHE.mkdir(exist_ok=True)
