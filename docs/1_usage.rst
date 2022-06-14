@@ -6,7 +6,7 @@ Usage
 
 .. note::
 
-   Also check out the :ref:`API documentation <api>` or the `code <https://github.com/MrMinimal64/multivar_horner>`__.
+   Also check out the :ref:`API documentation <api>` or the `code <https://github.com/jannikmi/multivar_horner>`__.
 
 
 Let's look at the example multivariate polynomial:
@@ -61,7 +61,7 @@ to create a representation of the multivariate polynomial :math:`p` in Horner fa
 
 .. code-block:: python
 
-    from multivar_horner.multivar_horner import HornerMultivarPolynomial
+    from multivar_horner import HornerMultivarPolynomial
 
     horner_polynomial = HornerMultivarPolynomial(coefficients, exponents)
 
@@ -108,7 +108,7 @@ it is possible to represent the polynomial without any factorisation (refered to
 
 .. code-block:: python
 
-    from multivar_horner.multivar_horner import MultivarPolynomial
+    from multivar_horner import MultivarPolynomial
 
     polynomial = MultivarPolynomial(coefficients, exponents)
 

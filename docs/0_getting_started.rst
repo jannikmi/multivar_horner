@@ -57,7 +57,7 @@ and evaluating :math:`p` at a point :math:`x`:
 .. code-block:: python
 
     import numpy as np
-    from multivar_horner.multivar_horner import HornerMultivarPolynomial
+    from multivar_horner import HornerMultivarPolynomial
 
     coefficients = np.array([[5.0], [1.0], [2.0], [3.0]], dtype=np.float64)  # shape: (M,1)
     exponents = np.array(
