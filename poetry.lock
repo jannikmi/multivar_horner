@@ -872,7 +872,7 @@ numba = ["numba"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.11"
-content-hash = "ed1869bea73b252ec827d8175819c98c88c3ed20a78244345437a1b03901186d"
+content-hash = "9520d278549b5606b90cfb82e0fde27701efc874dc1076ee71e96364cbb31e6a"
 
 [metadata.files]
 alabaster = [

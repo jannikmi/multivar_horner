@@ -6,7 +6,7 @@ authors = ["jannikmi <github@michelfe.it>"]
 
 [tool.poetry.dependencies]
 python = ">=3.7,<3.11"
-numpy = "^1.20"
+numpy = "^1.21"
 numba = { version = "^0.55", optional = true }
 
 [tool.poetry.dev-dependencies]
