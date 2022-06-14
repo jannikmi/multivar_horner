@@ -7,7 +7,6 @@ on:
   push:
     branches:
       - master
-      - dev
 
 jobs:
   test:
@@ -22,7 +21,7 @@ jobs:
           - "3.7"
           - "3.8"
           - "3.9"
-    #          - "3.10"
+          - "3.10"
     env:
       TOXENV: ${{ matrix.tox-env }}
       TOX_SKIP_MISSING_INTERPRETERS: False
@@ -45,14 +44,26 @@ jobs:
 
   tag_release:
     name: tag current release
-    if: endsWith(github.ref, '/master') == true
+    if: endsWith(github.ref, '/master')
     needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
       - name: Fetch version
         id: fetch_version
         run: echo "::set-output name=version_nr::$(cat VERSION)"
+
+      - name: Build a binary wheel and a source tarball
+        run: |
+          pip install setuptools wheel
+          python setup.py sdist bdist_wheel --python-tag py37.py38.py39.py310
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -65,3 +76,8 @@ jobs:
           release_name: Release ${{env.VERSION}}
           draft: false
           prerelease: false
+
+      - name: PyPI Publishing
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_DEPLOYMENT_API_KEY }}

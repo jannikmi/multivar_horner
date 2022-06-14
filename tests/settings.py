@@ -33,7 +33,7 @@ DTYPE_HIGH_PREC = np.float128
 # n orders of magnitudes less than the coefficients
 # maximally the machine precision
 MAX_ERR_EXPONENT = max(-15, (int(log10(MAX_COEFF_MAGNITUDE)) - 10))
-MAX_NUMERICAL_ERROR = 10 ** MAX_ERR_EXPONENT
+MAX_NUMERICAL_ERROR = 10**MAX_ERR_EXPONENT
 
 # TEST CASES:
 
@@ -70,7 +70,7 @@ INPUT_DATA_INVALID_TYPES_CONSTRUCTION = [
     # incorrect dtype
     (
         (
-            a([[1.0], [2.0], [3.0]], dtype=np.int),
+            a([[1.0], [2.0], [3.0]], dtype=int),
             a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
             a([-2.0, 3.0, 1.0]),
         ),
@@ -79,7 +79,7 @@ INPUT_DATA_INVALID_TYPES_CONSTRUCTION = [
     (
         (
             a([[1.0], [2.0], [3.0]]),
-            a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=np.float),
+            a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=float),
             a([-2.0, 3.0, 1.0]),
         ),
         29.0,
@@ -109,7 +109,7 @@ INPUT_DATA_INVALID_TYPES_QUERY = [
         (
             a([[1.0], [2.0], [3.0]], dtype=FLOAT_DTYPE),
             a([[3, 1, 0], [2, 0, 1], [1, 1, 1]], dtype=UINT_DTYPE),
-            a([-2.0, 3.0, 1.0], dtype=np.int),
+            a([-2.0, 3.0, 1.0], dtype=int),
         ),  # wrong
         29.0,
     ),

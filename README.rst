@@ -64,7 +64,7 @@ Simple example:
 .. code-block:: python
 
     import numpy as np
-    from multivar_horner.multivar_horner import HornerMultivarPolynomial
+    from multivar_horner import HornerMultivarPolynomial
 
     # input parameters defining the polynomial
     #   p(x) = 5.0 + 1.0 x_1^3 x_2^1 + 2.0 x_1^2 x_3^1 + 3.0 x_1^1 x_2^1 x_3^1

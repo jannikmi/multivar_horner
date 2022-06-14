@@ -4,7 +4,6 @@ Changelog
 
 TODOs
 
-* integrate CD PyPI upload into GHA workflow. including authentication...
 * run speed and numerical tests with the new C evaluation method!
 * Improve tests
 * compare poly.num_ops of different factorisations. tests?
@@ -55,7 +54,16 @@ idea:
     probably not worth the effort. more reasonable to just evaluate multiple polynomials in parallel
 
 
-3.0.0 (2021-12-04)
+3.0.2 (2022-06-14)
+__________________
+
+* bugfix: optional ``numba`` dependency. numba imports were not optional
+* bugfix: create __cache__ dir if not exists
+* minor documentation improvements
+* bumping dependencies
+
+
+3.0.1 (2021-12-04)
 __________________
 
 ATTENTION: major changes:

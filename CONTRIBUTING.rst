@@ -105,4 +105,4 @@ Ready to contribute? Here's how to set up this package for local development.
 
 
 
-.. _Github Issues: https://github.com/MrMinimal64/multivar_horner/issues
+.. _Github Issues: https://github.com/jannikmi/multivar_horner/issues

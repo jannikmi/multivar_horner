@@ -194,8 +194,8 @@ Some intermediate operations to convert the parameters into the required format 
 # Further reading
 
 The documentation of the package is hosted on [readthedocs.io](https://multivar_horner.readthedocs.io/en/latest/).
-Any bugs or feature requests can be filed on [GitHub](https://github.com/MrMinimal64/multivar_horner/issues) [@github].
-The [contribution guidelines](https://github.com/MrMinimal64/multivar_horner/blob/master/CONTRIBUTING.rst) can be found there as well.
+Any bugs or feature requests can be filed on [GitHub](https://github.com/jannikmi/multivar_horner/issues) [@github].
+The [contribution guidelines](https://github.com/jannikmi/multivar_horner/blob/master/CONTRIBUTING.rst) can be found there as well.
 
 The underlying basic mathematical concepts are explained in numerical analysis textbooks like [@neumaier2001introduction].
 The Horner scheme at the core of `multivar_horner` has been theoretically outlined in [@greedyHorner].

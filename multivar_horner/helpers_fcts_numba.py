@@ -7,7 +7,14 @@
 
 
 import numpy as np
-from numba import b1, f8, i8, njit, u4, void
+
+using_numba = True
+try:
+    from numba import b1, f8, i8, njit, u4, void
+except ImportError:
+    using_numba = False
+    # replace numba functionality with "transparent" implementations
+    from multivar_horner._numba_replacements import b1, f8, i8, njit, u4, void
 
 # DTYPES:
 F = f8
