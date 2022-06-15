@@ -1,8 +1,39 @@
 [tool.poetry]
 name = "multivar_horner"
-version = "3.0.2"
-description = ""
+version = "3.0.3"
+license = "MIT"
+readme = "README.rst"
+repository = "https://github.com/jannikmi/multivar_horner"
+homepage = "https://multivar-horner.readthedocs.io/en/latest/"
+documentation = "https://multivar-horner.readthedocs.io/en/latest/"
+keywords = ["mathematics", "polynomials", "evaluation", "multivariate", "horner-scheme"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+description = "python package implementing a multivariate Horner scheme for efficiently evaluating multivariate polynomials"
 authors = ["jannikmi <github@michelfe.it>"]
+include = [
+    ".editorconfig",
+    ".pre-commit-config.yaml",
+    "CHANGELOG.rst",
+    "CONTRIBUTING.rst",
+    "LICENSE",
+    "Makefile",
+    "README.rst",
+    "runtests.py",
+    "tox.ini",
+    "tests/*.py",
+]
+#exclude = ["my_package/excluded.py"]
+
 
 [tool.poetry.dependencies]
 python = ">=3.7,<3.11"
@@ -19,6 +50,7 @@ pre-commit = "^2.15.0"
 sphinxcontrib-bibtex = "^2.4.1"
 sphinx-rtd-theme = "^1.0.0"
 rstcheck = "^3.3.1"
+build = "^0.8.0"
 
 [tool.poetry.extras]
 numba = ["numba"]

@@ -4,6 +4,7 @@ Changelog
 
 TODOs
 
+* build html docs and include with package:  "docs/_build/html/*"
 * run speed and numerical tests with the new C evaluation method!
 * Improve tests
 * compare poly.num_ops of different factorisations. tests?
@@ -52,6 +53,11 @@ idea:
 
 - the evaluation of subtrees is independent and could theoretically be done in parallel
     probably not worth the effort. more reasonable to just evaluate multiple polynomials in parallel
+
+3.0.3 (2022-06-15)
+__________________
+
+* bugfix: packaging. now completely based on pyproject.toml (poetry)
 
 
 3.0.2 (2022-06-14)
