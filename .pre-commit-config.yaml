@@ -10,11 +10,11 @@ repos:
       - id: check-added-large-files
       - id: check-case-conflict
       - id: check-merge-conflict
-#      - id: name-tests-test
+      #      - id: name-tests-test
       - id: check-docstring-first
       - id: requirements-txt-fixer
       - id: detect-private-key
-#      - id: check-executables-have-shebangs
+  #      - id: check-executables-have-shebangs
 
   - repo: https://github.com/pycqa/isort
     rev: 5.10.1
@@ -51,12 +51,12 @@ repos:
           - flake8-comprehensions
           - flake8-tidy-imports
 
-  #    -   repo: https://github.com/mgedmin/check-manifest
-  #        rev: "0.47"
-  #        hooks:
-  #            -   id: check-manifest
-  #                args: [ "--no-build-isolation", "--ignore", "*.png,.travis/*,docs/*,paper/*,build_n_install.py,publish.py,readthedocs.yml" ]
-  #                additional_dependencies: [ numpy ]
+  - repo: https://github.com/mgedmin/check-manifest
+    rev: "0.48"
+    hooks:
+      - id: check-manifest
+        args: [ "--no-build-isolation", "--ignore",  "*.png,docs/*,paper/*,setup.py,publish.py,readthedocs.yml,poetry.lock" ]
+        additional_dependencies: [ numpy, poetry==1.1.11 ]
 
   # TODO sphinx check
   #    -   repo: https://github.com/myint/rstcheck
