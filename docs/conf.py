@@ -20,7 +20,7 @@ import pkg_resources
 # Note: includes installing the project itself!
 # Note: includes installing the project development dependencies
 # -> no more requirement for separate requirement.txt for the docs dependencies!
-subprocess.run(["poetry", "install", ""])
+subprocess.run(["poetry", "install"])
 
 # Get the project root dir, which is the parent dir of this
 
