@@ -11,18 +11,13 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
 import os
-import subprocess
 import sys
 
 import pkg_resources
 
 # package needs to be installed (with dependencies) for auto documentation
-# Note: includes installing the project itself!
-# Note: includes installing the project development dependencies
-# -> no more requirement for separate requirement.txt for the docs dependencies!
-subprocess.run(["poetry", "install"])
-
 # Get the project root dir, which is the parent dir of this
+import toml
 
 cwd = os.getcwd()
 project_root = os.path.dirname(cwd)
@@ -40,7 +35,8 @@ copyright = "2018, Jannik Michelfeit"
 author = "Jannik Michelfeit"
 
 # The full version, including alpha/beta/rc tags.
-release = pkg_resources.get_distribution(project).version
+project_config = toml.load("pyproject.toml")
+release = project_config["tool"]["poetry"]["version"]
 
 print("release version:", release)
 print(multivar_horner)
