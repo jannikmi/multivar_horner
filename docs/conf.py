@@ -12,6 +12,7 @@
 
 import os
 import sys
+from pathlib import Path
 
 import pkg_resources
 
@@ -35,7 +36,8 @@ copyright = "2018, Jannik Michelfeit"
 author = "Jannik Michelfeit"
 
 # The full version, including alpha/beta/rc tags.
-project_config = toml.load("pyproject.toml")
+path2proj_conf = Path(__file__).parent.parent / "pyproject.toml"
+project_config = toml.load(str(path2proj_conf))
 release = project_config["tool"]["poetry"]["version"]
 
 print("release version:", release)
