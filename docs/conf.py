@@ -11,9 +11,16 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
 import os
+import subprocess
 import sys
 
 import pkg_resources
+
+# package needs to be installed (with dependencies) for auto documentation
+# Note: includes installing the project itself!
+# Note: includes installing the project development dependencies
+# -> no more requirement for separate requirement.txt for the docs dependencies!
+subprocess.run(["poetry", "install", ""])
 
 # Get the project root dir, which is the parent dir of this
 
@@ -24,7 +31,7 @@ project_root = os.path.dirname(cwd)
 # This ensures that the source package is importable
 sys.path.insert(0, os.path.join(project_root))
 
-import multivar_horner  # needed for auto document, ATTENTION: must then be installed during online build!
+import multivar_horner
 
 # -- Project information -----------------------------------------------------
 
@@ -33,7 +40,7 @@ copyright = "2018, Jannik Michelfeit"
 author = "Jannik Michelfeit"
 
 # The full version, including alpha/beta/rc tags.
-release = pkg_resources.get_distribution("multivar_horner").version
+release = pkg_resources.get_distribution(project).version
 
 print("release version:", release)
 print(multivar_horner)
