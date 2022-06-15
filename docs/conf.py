@@ -13,6 +13,8 @@
 import os
 import sys
 
+import pkg_resources
+
 # Get the project root dir, which is the parent dir of this
 
 cwd = os.getcwd()
@@ -30,13 +32,11 @@ project = "multivar_horner"
 copyright = "2018, Jannik Michelfeit"
 author = "Jannik Michelfeit"
 
-
-def get_version():
-    return open(os.path.join(project_root, "VERSION")).read()
-
-
 # The full version, including alpha/beta/rc tags.
-release = get_version()
+release = pkg_resources.get_distribution("multivar_horner").version
+
+print("release version:", release)
+print(multivar_horner)
 
 # -- General configuration ---------------------------------------------------
 
@@ -76,7 +76,6 @@ napoleon_use_admonition_for_references = False
 napoleon_use_ivar = False
 napoleon_use_param = True
 napoleon_use_rtype = True
-
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
