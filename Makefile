@@ -2,10 +2,12 @@
 pin:
 	@echo "pinning the dependencies specified in 'pyproject.toml':"
 	poetry update
+	# includes installing the current project
+	poetry install
 
 VENV_NAME=multivar_horner
 venv:
-	conda create -y -n ${VENV_NAME} python=3.7 poetry=1.1
+	conda create -y -n ${VENV_NAME} python=3.8 poetry
 	(conda activate ${VENV_NAME} && poetry install)
 
 hook:
