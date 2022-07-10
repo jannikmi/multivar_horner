@@ -11,14 +11,16 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
 import os
+import subprocess
 import sys
-from pathlib import Path
 
-import pkg_resources
+# needed for auto document, ATTENTION: must then be installed during online build!
+import multivar_horner
+
+print(multivar_horner)
 
 # package needs to be installed (with dependencies) for auto documentation
 # Get the project root dir, which is the parent dir of this
-import toml
 
 cwd = os.getcwd()
 project_root = os.path.dirname(cwd)
@@ -27,8 +29,6 @@ project_root = os.path.dirname(cwd)
 # This ensures that the source package is importable
 sys.path.insert(0, os.path.join(project_root))
 
-import multivar_horner
-
 # -- Project information -----------------------------------------------------
 
 project = "multivar_horner"
@@ -36,12 +36,8 @@ copyright = "2018, Jannik Michelfeit"
 author = "Jannik Michelfeit"
 
 # The full version, including alpha/beta/rc tags.
-path2proj_conf = Path(__file__).parent.parent / "pyproject.toml"
-project_config = toml.load(str(path2proj_conf))
-release = project_config["tool"]["poetry"]["version"]
-
+release = subprocess.getoutput("poetry version -s")
 print("release version:", release)
-print(multivar_horner)
 
 # -- General configuration ---------------------------------------------------
 

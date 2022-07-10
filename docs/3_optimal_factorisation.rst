@@ -20,7 +20,7 @@ Even though it missing to cover exponentiations, the branch-and-bound method sug
 
 
 Even with a good heuristic this method is only traceable for small polynomials because of its increased resource requirements.
-Since experiments show that factorisations obtained by choosing one factorisation according to a heuristic have the same or only a slightly higher amount of included operations:cite:`kojima2008efficient` (ch. 7), the computational effort of this approach is not justifiable in most cases.
+Since experiments show that factorisations obtained by choosing one factorisation according to a heuristic have the same or only a slightly higher amount of included operations :cite:`kojima2008efficient` (ch. 7), the computational effort of this approach is not justifiable in most cases.
 A use case however is to compute and store a minimal representation of a polynomial in advance if possible.
 
 **NOTES:**
