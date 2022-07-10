@@ -4,7 +4,7 @@ Changelog
 
 TODOs
 
-* build html docs and include with package:  "docs/_build/html/*"
+* build html docs and include with package: "docs/_build/html/*"
 * run speed and numerical tests with the new C evaluation method!
 * Improve tests
 * compare poly.num_ops of different factorisations. tests?
@@ -53,6 +53,14 @@ idea:
 
 - the evaluation of subtrees is independent and could theoretically be done in parallel
     probably not worth the effort. more reasonable to just evaluate multiple polynomials in parallel
+
+
+3.0.4 (2022-07-10)
+__________________
+
+* bump numpy dependency version to ``1.22`` (vulnerability fix)
+* officially supported python versions ``>=3.8,<3.11`` (due to numpy and numba constraints)
+
 
 3.0.3 (2022-06-15)
 __________________
