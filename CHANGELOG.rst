@@ -13,10 +13,10 @@ TODOs
 
 POSSIBLE IMPROVEMENTS:
 
-MultivarPoly:
+MultivarPoly (unfactorised):
 
 - also make use of the concept of 'recipes' for efficiently evaluating the polynomial
-    skipping the most unnecessary operations
+    skipping the most unnecessary operations (actually more fair comparison in terms of operations required for evaluation)
 - add option to skip this optimisation
 
 HornerMultivarPoly:
