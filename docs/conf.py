@@ -14,11 +14,6 @@ import os
 import subprocess
 import sys
 
-# needed for auto document, ATTENTION: must then be installed during online build!
-import multivar_horner
-
-print(multivar_horner)
-
 # package needs to be installed (with dependencies) for auto documentation
 # Get the project root dir, which is the parent dir of this
 
@@ -28,6 +23,11 @@ project_root = os.path.dirname(cwd)
 # Insert the project root dir as the first element in the PYTHONPATH.
 # This ensures that the source package is importable
 sys.path.insert(0, os.path.join(project_root))
+
+# needed for auto document, ATTENTION: must then be installed during online build!
+import multivar_horner
+
+print(multivar_horner)
 
 # -- Project information -----------------------------------------------------
 
