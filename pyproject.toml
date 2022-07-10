@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "multivar_horner"
-version = "3.0.3"
+version = "3.0.4"
 license = "MIT"
 readme = "README.rst"
 repository = "https://github.com/jannikmi/multivar_horner"
@@ -28,7 +28,6 @@ include = [
     "LICENSE",
     "Makefile",
     "README.rst",
-    "runtests.py",
     "tox.ini",
     "tests/*.py",
 ]
@@ -36,9 +35,9 @@ include = [
 
 
 [tool.poetry.dependencies]
-python = ">=3.7,<3.11"
-numpy = "^1.21"
-numba = { version = "^0.55", optional = true }
+python = ">=3.8,<3.11"
+numpy = "^1.22"
+numba = { version = "^0.55.2", optional = true }
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
@@ -50,7 +49,6 @@ rstcheck = "^3.3.1"
 build = "^0.8.0"
 # docs
 Sphinx = "^4.3.1"
-toml = "^0.10.2"
 sphinxcontrib-bibtex = "^2.4.1"
 sphinx-rtd-theme = "^1.0.0"
 
