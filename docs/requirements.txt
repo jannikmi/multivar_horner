@@ -2,4 +2,3 @@ numpy
 Sphinx
 sphinx-rtd-theme
 sphinxcontrib-bibtex
-toml
