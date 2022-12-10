@@ -54,6 +54,13 @@ idea:
 - the evaluation of subtrees is independent and could theoretically be done in parallel
     probably not worth the effort. more reasonable to just evaluate multiple polynomials in parallel
 
+3.0.5 (2022-12-10)
+__________________
+
+* bump pytest dependency version to ``>=7,<8`` (vulnerability fix)
+* less strict dependency pinning to support python 3.11
+* added python 3.11 tests (not yet supporting numba)
+* disabled numerical stability tests due to missing numpy support for high precision 128-bit float on arm64 architecture
 
 3.0.4 (2022-07-10)
 __________________
