@@ -12,13 +12,14 @@ from tests.helpers import rnd_settings_list
 from tests.settings import (
     DEGREE_RANGE,
     DIM_RANGE,
-    DTYPE_HIGH_PREC,
     MAX_COEFF_MAGNITUDE,
     MAX_NUMERICAL_ERROR,
     NR_COEFF_CHANGES,
     NR_TEST_POLYNOMIALS,
     TEST_RESULTS_PICKLE,
 )
+
+DTYPE_HIGH_PREC = np.float128
 
 
 def evaluate_numerical_error(dim, max_degree):

@@ -27,7 +27,6 @@ SPEED_RUN_PICKLE = "speed_results.pickle"
 # numercial tests
 NR_COEFF_CHANGES = 100  # controlling the noise for averaging the numerical error of a single polynomial run
 TEST_RESULTS_PICKLE = "test_results.pickle"
-DTYPE_HIGH_PREC = np.float128
 
 # max allowed numerical error
 # n orders of magnitudes less than the coefficients
