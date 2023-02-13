@@ -1,7 +1,7 @@
 import ctypes
 import pickle
 from pathlib import Path
-from typing import Callable, Tuple
+from typing import Callable, Tuple, Type, TypeVar
 
 import numpy as np
 
@@ -14,9 +14,18 @@ from multivar_horner.classes.factorisation import (
     OptimalFactorisationRoot,
 )
 from multivar_horner.classes.helpers import FactorContainer
-from multivar_horner.global_settings import BOOL_DTYPE, FLOAT_DTYPE, PATH2CACHE, TYPE_1D_FLOAT, UINT_DTYPE
+from multivar_horner.global_settings import (
+    BOOL_DTYPE,
+    COMPLEX_DTYPE,
+    FLOAT_DTYPE,
+    PATH2CACHE,
+    TYPE_1D_FLOAT,
+    UINT_DTYPE,
+)
 from multivar_horner.helper_fcts import rectify_query_point, validate_query_point
 from multivar_horner.helpers_fcts_numba import eval_recipe
+
+T = TypeVar("T")
 
 
 class HornerMultivarPolynomial(AbstractPolynomial):
@@ -130,10 +139,8 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         *args,
         **kwargs,
     ):
-        super(HornerMultivarPolynomial, self).__init__(
-            coefficients, exponents, rectify_input, compute_representation, verbose
-        )
-        self.root_class = HeuristicFactorisationRoot
+        super().__init__(coefficients, exponents, rectify_input, compute_representation, verbose)
+        self.root_class: Type = HeuristicFactorisationRoot
         self.keep_tree: bool = keep_tree
         self.value_array_length: int
         self.recipe: Tuple
@@ -348,14 +355,30 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         if self.use_c_eval:
             return self._eval_c(x)
 
-        return self._eval_recipe(x)
+        return self._eval_recipe(x, dtype=FLOAT_DTYPE)
 
-    def _eval_recipe(self, x: TYPE_1D_FLOAT) -> float:
+    def eval_complex(self, x: np.ndarray) -> COMPLEX_DTYPE:
+        """computes the value of the polynomial at a complex query point x
+
+        Args:
+            x: the query point given as numpy complex type
+
+        Returns:
+             the complex value of the polynomial at point x
+
+        Raises:
+            TypeError: if x is not given as ndarray of dtype complex
+            ValueError: if x does not have the shape ``[self.dim]``
+        """
+        validate_query_point(x, self.dim, dtype=COMPLEX_DTYPE)
+        return self._eval_recipe(x, dtype=COMPLEX_DTYPE)
+
+    def _eval_recipe(self, x: TYPE_1D_FLOAT, dtype: Type[T]) -> T:
         """computes the value of the polynomial at query point x
 
         makes use of fast ``Numba`` just in time compiled functions
         """
-        value_array = np.empty(self.value_array_length, dtype=FLOAT_DTYPE)
+        value_array = np.empty(self.value_array_length, dtype=dtype)
         # the coefficients are being stored at the beginning of the value array
         # TODO remove flatten, always store coefficients as a 1D array (also for horner fact.)?!
         #   also in MultivarPolynomial.eval()

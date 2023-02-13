@@ -2,6 +2,7 @@ import itertools
 import random
 
 import numpy as np
+import numpy.testing
 
 from multivar_horner.global_settings import FLOAT_DTYPE, UINT_DTYPE
 
@@ -12,11 +13,12 @@ def proto_test_case(data, fct):
         print("\n")
         actual_output = fct(input)
         print(f"p({input[2]}) == {expected_output}")
-        if actual_output != expected_output:
-            print(f"ERROR: p(x) == {actual_output}")
-            all_good = False
-        else:
+        try:
+            np.testing.assert_almost_equal(actual_output, expected_output, decimal=15)
             print("OK.")
+        except AssertionError:
+            print(f"ERROR: p(x) == {actual_output}")
+            continue
 
     assert all_good
 

@@ -81,13 +81,15 @@ class PriorityQueue2D:
     def get_all(self):
         all_items = []
         for lvl2_heap in self.id2heap.values():
-            for (_cost, item) in lvl2_heap.elements:
+            for _cost, item in lvl2_heap.elements:
                 all_items.append(item)
         return all_items
 
 
 class AbstractFactor(ABC):
     __slots__ = ["value_idx"]
+
+    value_idx: int
 
     @abstractmethod
     def __str__(self, *args, **kwargs):
@@ -101,8 +103,9 @@ class AbstractFactor(ABC):
     def compute(self, x, value_array):
         pass
 
+    @property
     @abstractmethod
-    def num_ops(self):
+    def num_ops(self) -> int:
         pass
 
     @abstractmethod
@@ -201,11 +204,11 @@ class MonomialFactor(AbstractFactor):
 
     __slots__ = ["scalar_factors", "factorisation_idxs"]
 
-    def __init__(self, scalar_factors: List["ScalarFactor"]):
+    factorisation_idxs: List[int]
 
+    def __init__(self, scalar_factors: List["ScalarFactor"]):
         # assert len(scalar_factors) > 1, 'a monomial must consist of at least two scalar factors' # DEBUG
         self.scalar_factors = scalar_factors
-        self.value_idx = None  # initialize the idx with None to catch faulty evaluation tries
 
     def __str__(self):
         return " ".join([f.__str__() for f in self.scalar_factors])

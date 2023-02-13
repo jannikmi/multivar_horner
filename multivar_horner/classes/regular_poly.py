@@ -1,5 +1,7 @@
+import numpy as np
+
 from multivar_horner.classes.horner_poly import AbstractPolynomial
-from multivar_horner.global_settings import TYPE_1D_FLOAT, TYPE_2D_INT
+from multivar_horner.global_settings import COMPLEX_DTYPE, TYPE_1D_FLOAT, TYPE_2D_INT
 from multivar_horner.helper_fcts import rectify_query_point, validate_query_point
 from multivar_horner.helpers_fcts_numba import count_num_ops_naive, naive_eval
 
@@ -49,10 +51,7 @@ class MultivarPolynomial(AbstractPolynomial):
         *args,
         **kwargs,
     ):
-
-        super(MultivarPolynomial, self).__init__(
-            coefficients, exponents, rectify_input, compute_representation, verbose
-        )
+        super().__init__(coefficients, exponents, rectify_input, compute_representation, verbose)
 
         # NOTE: count the number of multiplications of the representation
         # not the actual amount of operations required by the naive evaluation with numpy arrays
@@ -105,4 +104,20 @@ class MultivarPolynomial(AbstractPolynomial):
             x = rectify_query_point(x)
         validate_query_point(x, self.dim)
 
+        return naive_eval(x, self.coefficients.flatten(), self.exponents)
+
+    def eval_complex(self, x: np.ndarray) -> COMPLEX_DTYPE:
+        """computes the value of the polynomial at a complex query point x
+
+        Args:
+            x: the query point given as numpy complex type
+
+        Returns:
+             the complex value of the polynomial at point x
+
+        Raises:
+            TypeError: if x is not given as ndarray of dtype complex
+            ValueError: if x does not have the shape ``[self.dim]``
+        """
+        validate_query_point(x, self.dim, dtype=COMPLEX_DTYPE)
         return naive_eval(x, self.coefficients.flatten(), self.exponents)
