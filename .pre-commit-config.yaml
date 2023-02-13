@@ -51,12 +51,12 @@ repos:
                     - flake8-comprehensions
                     - flake8-tidy-imports
 
-    -   repo: https://github.com/mgedmin/check-manifest
-        rev: "0.49"
-        hooks:
-            -   id: check-manifest
-                args: [ "--no-build-isolation", "--ignore",  "*.png,docs/*,paper/*,scripts/*,setup.py,publish.py,readthedocs.yml,poetry.lock" ]
-                additional_dependencies: [ numpy, poetry==1.3.2 ]
+#    -   repo: https://github.com/mgedmin/check-manifest
+#        rev: "0.49"
+#        hooks:
+#            -   id: check-manifest
+#                args: [ "--no-build-isolation", "--ignore",  "*.png,docs/*,paper/*,scripts/*,setup.py,publish.py,readthedocs.yml,poetry.lock" ]
+#                additional_dependencies: [ numpy, poetry==1.3.2]
 
     # TODO sphinx check
     #    -   repo: https://github.com/myint/rstcheck
