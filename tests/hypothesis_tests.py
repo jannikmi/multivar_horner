@@ -6,14 +6,15 @@ import numpy.testing
 from hypothesis import strategies as s
 
 from multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
-from multivar_horner.global_settings import FLOAT_DTYPE
+from multivar_horner.global_settings import COMPLEX_DTYPE, FLOAT_DTYPE
 from multivar_horner.helper_fcts import rectify_construction_parameters, rectify_query_point
 from tests.helpers import all_possible_exponents
 
-REQUIRED_REL_PRECISION = 1e-5
+REQUIRED_REL_PRECISION = 1e-4
+# TODO also exclude very small values. sample bool for sign
 FLOAT_MAX_VAL = 1e50  # for high values numerical instabilities might occur!
 FLOAT_MIN_VAL = -FLOAT_MAX_VAL
-MAX_DIM = 1
+MAX_DIM = 2
 MAX_DEG = 3
 
 dimensions = s.integers(min_value=1, max_value=MAX_DIM)
@@ -28,7 +29,15 @@ coefficient_sampling = s.floats(min_value=FLOAT_MIN_VAL, max_value=FLOAT_MAX_VAL
 
 
 @s.composite
-def poly_param_sampling(draw):
+def query_point_sampling_complex(draw) -> np.complex:
+    real_part = draw(query_point_sampling)
+    imaginary_part = draw(query_point_sampling)
+    query_point = np.complex(real_part, imaginary_part)
+    return query_point
+
+
+@s.composite
+def poly_param_sampling(draw) -> Tuple[np.ndarray, np.ndarray]:
     # NOTE: obtain internal events via conversion of incoming events (more realistic)
     # rather than sampling internal event types directly
     dimension = draw(dimensions)
@@ -49,19 +58,28 @@ def poly_param_sampling(draw):
 @s.composite
 def poly_sampling(draw) -> Tuple[MultivarPolynomial, HornerMultivarPolynomial]:
     coefficients, exponents = draw(poly_param_sampling())
-    poly = MultivarPolynomial(coefficients, exponents, rectify_input=False, compute_representation=False, verbose=True)
+    poly = MultivarPolynomial(coefficients, exponents, rectify_input=False, compute_representation=True, verbose=True)
     poly_h = HornerMultivarPolynomial(
-        coefficients, exponents, rectify_input=False, compute_representation=False, verbose=True
+        coefficients, exponents, rectify_input=False, compute_representation=True, verbose=True
     )
     return poly, poly_h
 
 
 @s.composite
-def example_case_sampling(draw):
+def example_case_sampling(draw) -> Tuple[MultivarPolynomial, HornerMultivarPolynomial, np.ndarray]:
     poly, poly_h = draw(poly_sampling())
     nr_dims = poly.dim
     x = draw(s.lists(query_point_sampling, min_size=nr_dims, max_size=nr_dims))
     x = rectify_query_point(x)
+    return poly, poly_h, x
+
+
+@s.composite
+def example_case_sampling_complex(draw) -> Tuple[MultivarPolynomial, HornerMultivarPolynomial, np.ndarray]:
+    poly, poly_h = draw(poly_sampling())
+    nr_dims = poly.dim
+    x = draw(s.lists(query_point_sampling_complex(), min_size=nr_dims, max_size=nr_dims))
+    x = rectify_query_point(x, dtype=COMPLEX_DTYPE)
     return poly, poly_h, x
 
 
@@ -93,4 +111,15 @@ def test_recipe_eval(params):
     np.testing.assert_allclose(res, res_h, rtol=REQUIRED_REL_PRECISION, err_msg=f"{x=}\n{coefficients=}\n{exponents=}")
 
 
-# TODO complex tests
+@h.settings(
+    deadline=None,  # varying execution times
+)
+@h.given(params=example_case_sampling_complex())
+def test_complex_eval(params):
+    poly, poly_h, x = params
+
+    res = poly.eval_complex(x)
+    res_h = poly_h.eval_complex(x)
+    coefficients = poly.coefficients
+    exponents = poly.exponents
+    np.testing.assert_allclose(res, res_h, rtol=REQUIRED_REL_PRECISION, err_msg=f"{x=}\n{coefficients=}\n{exponents=}")

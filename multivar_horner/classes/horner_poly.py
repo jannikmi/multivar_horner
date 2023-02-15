@@ -379,12 +379,12 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         makes use of fast ``Numba`` just in time compiled functions
         """
         try:
-            value_array_length = self.value_array_length
+            recipe = self.recipe
         except AttributeError:  # the recipe has not been compiled yet
             self._compile_recipes()
-            value_array_length = self.value_array_length
+            recipe = self.recipe
 
-        value_array = np.empty(value_array_length, dtype=dtype)
+        value_array = np.empty(self.value_array_length, dtype=dtype)
         # the coefficients are being stored at the beginning of the value array
         # TODO remove flatten, always store coefficients as a 1D array (also for horner fact.)?!
         #   also in MultivarPolynomial.eval()
@@ -392,7 +392,7 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         return eval_recipe(
             x,
             value_array,
-            *self.recipe,
+            *recipe,
             self.root_value_idx,
         )
 

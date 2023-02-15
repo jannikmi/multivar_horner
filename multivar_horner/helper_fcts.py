@@ -29,13 +29,13 @@ def rectify_construction_parameters(coefficients, exponents):
     return rectified_coefficients, rectified_exponents
 
 
-def rectify_query_point(x):
+def rectify_query_point(x, dtype=FLOAT_DTYPE):
     """
     convert the input into numpy ndarray valid as input to AbstractPolynomial.eval()
     :param x: possibly a python list to be converted
     :return: the input converted into appropriate numpy data type
     """
-    rectified_x = np.atleast_1d(np.asarray(x, dtype=FLOAT_DTYPE))
+    rectified_x = np.atleast_1d(np.asarray(x, dtype=dtype))
     return rectified_x
 
 
