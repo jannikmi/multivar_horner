@@ -54,6 +54,16 @@ idea:
 - the evaluation of subtrees is independent and could theoretically be done in parallel
     probably not worth the effort. more reasonable to just evaluate multiple polynomials in parallel
 
+3.1.0 (2023-02-15)
+__________________
+
+* supporting evaluation at complex query points as requested in issue #37
+
+internal:
+* hypothesis tests: evaluation equality of Horner and regular polynomials (up to numerical errors)
+* added mypy typing pre-commit hook
+
+
 3.0.5 (2022-12-10)
 __________________
 

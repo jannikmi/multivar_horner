@@ -34,6 +34,8 @@ class FactorisationNode:
         "num_ops",
     ]
 
+    value_idx: int
+
     def __init__(self, factor, node1_fact, node2, factorized_rows, non_factorized_rows):
         self.factor: AbstractFactor = factor
         self.node1_fact: BasePolynomialNode = node1_fact
@@ -142,7 +144,7 @@ class OptimalFactorisationNode(FactorisationNode):
     node2: "OptimalPolynomialNode"
 
     def __init__(self, factor, node1_fact, node2, factorized_rows, non_factorized_rows):
-        super(OptimalFactorisationNode, self).__init__(factor, node1_fact, node2, factorized_rows, non_factorized_rows)
+        super().__init__(factor, node1_fact, node2, factorized_rows, non_factorized_rows)
         self.cost_estimate: int = 0
         # IDEA: when different factorisations have the same cost estimate,
         # favour the one which is factorised the most already
@@ -264,7 +266,6 @@ class BasePolynomialNode:
         return max_usage_option
 
     def get_string_representation(self, coefficients=None, coeff_fmt_str="{:.2}", factor_fmt_str="x_{dim}^{exp}"):
-
         if self.has_children:
             return self.get_child().get_string_representation(
                 coefficients=coefficients,
@@ -463,14 +464,13 @@ class OptimalPolynomialNode(BasePolynomialNode):
     ]
 
     def __init__(self, exponents, *args, **kwargs):
-
         self.options = None
         self.cost_estimate = 0
         self.factorisation_measure = 0
         self.fully_factorized = True
 
         # self.post_init() is being called at the end
-        super(OptimalPolynomialNode, self).__init__(exponents, *args, **kwargs)
+        super().__init__(exponents, *args, **kwargs)
 
     def post_init(self):
         self.children_class = OptimalPolynomialNode
@@ -649,7 +649,7 @@ class OptimalFactorisationRoot(OptimalPolynomialNode):
         :param rectify_input: whether to convert the input parameters into compatible numpy arrays
         :param validate_input: whether to check if the input parameters fulfill the requirements
         """
-        super(OptimalFactorisationRoot, self).__init__(exponents, *args, **kwargs)
+        super().__init__(exponents, *args, **kwargs)
 
         while not self.fully_factorized:
             # TODO report current search status, verbosity option, not every loop
@@ -682,7 +682,7 @@ class HeuristicFactorisationRoot(BasePolynomialNode):
     """
 
     def __init__(self, exponents, factor_container, *args, **kwargs):
-        super(HeuristicFactorisationRoot, self).__init__(exponents, *args, **kwargs)
+        super().__init__(exponents, *args, **kwargs)
         # polynomial is fully factorized now
         # collect all appearing factors in the factorisation tree and assign ids (=idx in the value array) to the nodes
         # need to store which coefficient is being used where in the factorisation tree (coeff_id -> value_idx)

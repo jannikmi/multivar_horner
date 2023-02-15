@@ -16,7 +16,7 @@ def njit(*args, **kwargs):
     return wrapper
 
 
-class SubscriptAndCallable(object):
+class SubscriptAndCallable:
     def __init__(self, *args, **kwargs):
         pass
 
@@ -41,6 +41,10 @@ class i8(SubscriptAndCallable):
 
 
 class u4(SubscriptAndCallable):
+    pass
+
+
+class c16(SubscriptAndCallable):
     pass
 
 

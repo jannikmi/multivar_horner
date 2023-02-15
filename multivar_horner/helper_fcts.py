@@ -1,4 +1,4 @@
-# -*- coding:utf-8 -*-
+from typing import Type
 
 import numpy as np
 
@@ -29,13 +29,13 @@ def rectify_construction_parameters(coefficients, exponents):
     return rectified_coefficients, rectified_exponents
 
 
-def rectify_query_point(x):
+def rectify_query_point(x, dtype=FLOAT_DTYPE):
     """
     convert the input into numpy ndarray valid as input to AbstractPolynomial.eval()
     :param x: possibly a python list to be converted
     :return: the input converted into appropriate numpy data type
     """
-    rectified_x = np.atleast_1d(np.asarray(x, dtype=FLOAT_DTYPE))
+    rectified_x = np.atleast_1d(np.asarray(x, dtype=dtype))
     return rectified_x
 
 
@@ -71,11 +71,11 @@ def validate_construction_parameters(coefficients: np.ndarray, exponents: np.nda
         raise ValueError("there must be as many exponent vectors as coefficients")
 
 
-def validate_query_point(x: np.ndarray, dim: int) -> None:
+def validate_query_point(x: np.ndarray, dim: int, dtype: Type = FLOAT_DTYPE) -> None:
     if not isinstance(x, np.ndarray):
         raise TypeError("the query point x  must be given as numpy.ndarray")
-    if x.dtype.type is not FLOAT_DTYPE:
-        raise TypeError(f"the query point x must have dtype {FLOAT_DTYPE}")
+    if x.dtype.type is not dtype:
+        raise TypeError(f"the query point x must have dtype {dtype}")
     if len(x.shape) != 1:
         raise ValueError("the query point x must be given as a ndarray of shape [N]")
     if x.shape[0] != dim:

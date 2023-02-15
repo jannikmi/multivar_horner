@@ -1,5 +1,3 @@
-# -*- coding:utf-8 -*-
-
 import abc
 import pickle
 from abc import ABC, abstractmethod
@@ -8,7 +6,14 @@ from typing import List
 
 import numpy as np
 
-from multivar_horner.global_settings import BOOL_DTYPE, DEBUG, DEFAULT_PICKLE_FILE_NAME, TYPE_1D_FLOAT, TYPE_2D_INT
+from multivar_horner.global_settings import (
+    BOOL_DTYPE,
+    COMPLEX_DTYPE,
+    DEBUG,
+    DEFAULT_PICKLE_FILE_NAME,
+    TYPE_1D_FLOAT,
+    TYPE_2D_INT,
+)
 from multivar_horner.helper_fcts import (
     rectify_coefficients,
     rectify_construction_parameters,
@@ -181,7 +186,6 @@ class AbstractPolynomial(ABC):
         *args,
         **kwargs,
     ) -> "AbstractPolynomial":
-
         if rectify_input:
             coefficients = rectify_coefficients(coefficients)
 
@@ -206,6 +210,22 @@ class AbstractPolynomial(ABC):
         x: TYPE_1D_FLOAT,
         rectify_input: bool = False,
     ) -> float:
+        pass
+
+    @abstractmethod
+    def eval_complex(self, x: np.ndarray) -> COMPLEX_DTYPE:
+        """computes the value of the polynomial at a complex query point x
+
+        Args:
+            x: the query point given as numpy complex type
+
+        Returns:
+             the complex value of the polynomial at point x
+
+        Raises:
+            TypeError: if x is not given as ndarray of dtype complex
+            ValueError: if x does not have the shape ``[self.dim]``
+        """
         pass
 
 

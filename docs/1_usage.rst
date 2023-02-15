@@ -346,6 +346,15 @@ As during construction of a polynomial instance, pass ``rectify_input=True`` to 
     the dtypes are fixed due to the just in time compiled ``Numba`` functions
 
 
+evaluating a polynomial at complex query points
+-----------------------------------------------
+
+.. code-block:: python
+
+    x = [np.complex(-2.0, 1.0), np.complex(3.0, -1.0), np.complex(1.0, 0.5)]
+    p_x = polynomial.eval_complex(x, rectify_input=True)
+
+
 computing the partial derivative of a polynomial
 ------------------------------------------------
 

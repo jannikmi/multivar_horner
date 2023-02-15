@@ -1,5 +1,3 @@
-# -*- coding:utf-8 -*-
-
 # NOTE: if this raises SIGSEGV, update your Numba dependency
 
 # TODO compare difference in computed values of other methods (=numerical error)
@@ -12,7 +10,7 @@ import numpy as np
 import pytest
 
 from multivar_horner import HornerMultivarPolynomial, HornerMultivarPolynomialOpt, MultivarPolynomial
-from multivar_horner.global_settings import FLOAT_DTYPE, UINT_DTYPE
+from multivar_horner.global_settings import COMPLEX_DTYPE, FLOAT_DTYPE, UINT_DTYPE
 from tests.helpers import naive_eval_reference, proto_test_case, vectorize
 from tests.settings import (
     COEFF_CHANGE_DATA,
@@ -224,6 +222,21 @@ class PerClassTestRegular(unittest.TestCase):
         proto_test_case(COEFF_CHANGE_DATA, change_coeffs_fct)
         print("OK.\n")
 
+    def test_complex_eval(self):
+        print("\nTESTING COMPLEX EVALUATION CASES (HORNER)...")
+        cls = self.class2test
+
+        def cmp_value_fct(inp):
+            coeff, exp, x = inp
+            x = np.array(x, dtype=COMPLEX_DTYPE).T
+            poly = cls(coeff, exp, **DEFAULT_CONSTR_KWARGS)
+            print(cls, poly)
+            res = poly.eval_complex(x)
+            return res
+
+        proto_test_case(VALID_TEST_DATA, cmp_value_fct)
+        print("OK.\n")
+
 
 class PerClassTestHorner(PerClassTestRegular):
     class2test = HornerMultivarPolynomial
@@ -253,7 +266,7 @@ class PerClassTestHorner(PerClassTestRegular):
             x = np.array(x).T
             poly = cls(coeff, exp, **DEFAULT_CONSTR_KWARGS)
             print(cls, poly)
-            res = poly._eval_recipe(x)
+            res = poly._eval_recipe(x, dtype=FLOAT_DTYPE)
             return res
 
         proto_test_case(VALID_TEST_DATA, cmp_value_fct)
@@ -262,9 +275,3 @@ class PerClassTestHorner(PerClassTestRegular):
 
 class PerClassTestOptimal(PerClassTestRegular):
     class2test = HornerMultivarPolynomialOpt
-
-
-if __name__ == "__main__":
-    suite = unittest.TestLoader().loadTestsFromTestCase(PerClassTestRegular)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-    unittest.main()

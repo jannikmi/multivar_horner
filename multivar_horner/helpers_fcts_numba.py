@@ -10,27 +10,35 @@ import numpy as np
 
 using_numba = True
 try:
-    from numba import b1, f8, i8, njit, u4, void
+    from numba import b1, c16, f8, i8, njit, u4, void
 except ImportError:
     using_numba = False
     # replace numba functionality with "transparent" implementations
-    from multivar_horner._numba_replacements import b1, f8, i8, njit, u4, void
+    from multivar_horner._numba_replacements import b1, c16, f8, i8, njit, u4, void
 
 # DTYPES:
-F = f8
-F_1D = F[:]
-UINT = u4
-UINT_1D = UINT[:]
-UINT_2D = UINT[:, :]
 INT = i8
+UINT = u4
+F = f8
+C = c16
+F_1D = F[:]
+UINT_1D = UINT[:]
 BOOL_1D = b1[:]
+C_1D = C[:]
+UINT_2D = UINT[:, :]
 
 
 # time critical helper functions. just in time compiled
 # ATTENTION: due to `chace=True`
 
 
-@njit(F(F_1D, F_1D, UINT_2D), cache=True)
+@njit(
+    [
+        F(F_1D, F_1D, UINT_2D),
+        C(C_1D, F_1D, UINT_2D),
+    ],
+    cache=True,
+)
 def naive_eval(x, coefficients, exponents):
     nr_coeffs = len(coefficients)
     # nr_monomials,nr_dims = exponents.shape
@@ -48,9 +56,11 @@ def naive_eval(x, coefficients, exponents):
 
 # @cc.export('eval_compiled', 'f8(f8[:], f8[:], UINT_2, UINT_2, UINT_2, UINT_2, b1[:], u4)')
 @njit(
-    F(F_1D, F_1D, UINT_2D, UINT_2D, UINT_2D, UINT_2D, BOOL_1D, UINT),
+    [
+        F(F_1D, F_1D, UINT_2D, UINT_2D, UINT_2D, UINT_2D, BOOL_1D, UINT),
+        C(C_1D, C_1D, UINT_2D, UINT_2D, UINT_2D, UINT_2D, BOOL_1D, UINT),
+    ],
     cache=True,
-    debug=True,
 )
 def eval_recipe(
     x,
@@ -67,51 +77,35 @@ def eval_recipe(
 
     # in order to evaluate scalar factors with exponent 1, no exponentiation operation is required
     # simply copy the values of x to the value array
-    # copy recipe instruction encoding: target, source
-    # [target, source] = copy_recipe[i, :]
-    for i in range(copy_recipe.shape[0]):
-        # value_array[target] = x[source1]
-        value_array[copy_recipe[i, 0]] = x[copy_recipe[i, 1]]
+    # copy recipe instruction encoding:
+    for target, source in copy_recipe:
+        value_array[target] = x[source]
 
     # print('computing scalar factors: ...')
-    # scalar recipe instruction encoding: target, source, exponent
-    # [target, source1, exponent] = scalar_recipe[i, :]
-    for i in range(scalar_recipe.shape[0]):
-        # print('value[{}] = {} ^ {}'.format(target, x[source1], exponent))
-        # value_array[target] = x[source1] ** exponent
-        value_array[scalar_recipe[i, 0]] = x[scalar_recipe[i, 1]] ** scalar_recipe[i, 2]
+    for target, source, exponent in scalar_recipe:
+        # print(f'value[{target}] = {source} ^ {exponent}')
+        value_array[target] = x[source] ** exponent
 
     # # DEBUG:
     # accessed_idxs = set()
-
     # print('computing monomial factors: ...')
-    # monomial recipe instruction encoding: target, source1, source2
-    # [target, source1, source2] = monomial_recipe[i, :]
-    for i in range(monomial_recipe.shape[0]):
-        # print('value[{}] = {} * {} (idx: {}, {})'.format(target, value_array[source1], value_array[source2], source1,
-        #                                                 source2))
-        # value_array[target] = value_array[source1] * value_array[source2]
-        value_array[monomial_recipe[i, 0]] = value_array[monomial_recipe[i, 1]] * value_array[monomial_recipe[i, 2]]
+    for target, source1, source2 in monomial_recipe:
+        # print(f'value[{target}] = {value_array[source1]} * {value_array[source2]} (idx: {source1}, {source2})')
+        value_array[target] = value_array[source1] * value_array[source2]
 
         # # DEBUG:
         # accessed_idxs.add(monomial_recipe[i, 1])
         # accessed_idxs.add(monomial_recipe[i, 2])
 
     # print('evaluating factorisation tree: ...')
-    # tree recipe instruction encoding: target, source
-    # [target, source] = tree_recipe[i, :]
-    # separate operation array: *op_id*
-    # value_array[target] = value_array[target] *op* value_array[source]
-    for i in range(tree_recipe.shape[0]):
-        target = tree_recipe[i, 0]
-        source = tree_recipe[i, 1]
-        if tree_ops[i]:  # ADDITION: 1
-            # print('value[{}] = {} + {}'.format(target, value_array[target], value_array[source1]))
-            # value_array[target] = value_array[target] + value_array[source1]
+    for i, (target, source) in enumerate(tree_recipe):
+        # operation encoding: 1 -> Addition, 0 = Multiplication
+        operation_is_addition = tree_ops[i]
+        if operation_is_addition:
+            # print(f'value[{target}] = {value_array[target]} + {value_array[source]}')
             value_array[target] += value_array[source]
-        else:  # MULTIPLICATION: 0
-            # print('value[{}] = {} * {}'.format(target, value_array[target], value_array[source1]))
-            # value_array[target] = value_array[target] * value_array[source1]
+        else:
+            # print(f'value[{target}] = {value_array[target]} * {value_array[source]}')
             value_array[target] *= value_array[source]
 
         # # DEBUG:

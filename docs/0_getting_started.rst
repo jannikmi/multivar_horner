@@ -8,7 +8,7 @@ Installation
 
 Installation with pip:
 
-::
+.. code-block:: console
 
     pip install multivar_horner
 
@@ -17,8 +17,7 @@ Installation with pip:
 For efficiency this package is compiling the instructions required for polynomial evaluation to C by default.
 If you don't have a C compiler (``gcc`` or ``cc``) installed you also need to install numba for using an alternative method:
 
-::
-
+.. code-block:: console
 
     pip install multivar_horner[numba]
 

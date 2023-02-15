@@ -56,7 +56,6 @@ def evaluate_numerical_error(dim, max_degree):
         poly_high_prec = MultivarPolynomial(coefficients, exponents, validate_input=False)
 
         for coeff_ctr in range(NR_COEFF_CHANGES):
-
             # evaluation @ uniformly random point
             x = (np.random.rand(dim) - 0.5) * (2 * MAX_COEFF_MAGNITUDE)
             x = x.astype(FLOAT_DTYPE)
@@ -118,7 +117,8 @@ class NumericalTest(unittest.TestCase):
         if FLOAT_DTYPE is not DTYPE_HIGH_PREC:
             warnings.warn(
                 f'the numerical tests can only be performed when "DTYPE_HIGH_PREC" is set to {DTYPE_HIGH_PREC} '
-                f"and jit compilation ot the eval functions disabled"
+                "and jit compilation ot the eval functions disabled",
+                stacklevel=2,
             )
             return
         print("\nevaluating the numerical error:")

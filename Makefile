@@ -1,9 +1,12 @@
+lock:
+	poetry lock
 
-pin:
+update:
 	@echo "pinning the dependencies specified in 'pyproject.toml':"
 	poetry update
-	# includes installing the current project
-	poetry install
+
+install:
+	poetry install --all-extras
 
 VENV_NAME=multivar_horner
 venv:
