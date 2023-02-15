@@ -71,7 +71,7 @@ def get_rnd_poly_properties(all_exponents, degree, max_abs_coeff=1.0, integer_co
     return coefficients, exponents
 
 
-def all_possible_exponents(dim, deg):
+def all_possible_exponents(dim: int, deg: int) -> np.ndarray:
     """
     generate a fully occupied exponent matrix for a polynomial of lp_degree = infinity
     -> the given degree is the total degree of the polynomials
@@ -101,13 +101,12 @@ def all_possible_exponents(dim, deg):
 
     # there must not be duplicate exponent vectors
     assert all_possible.shape == np.unique(all_possible, axis=0).shape
-
     return all_possible
 
 
 def rnd_settings_list(length, dim, degree, *args, **kwargs):
     all_exponent_vect = all_possible_exponents(dim, degree)
-    settings_list = [get_rnd_poly_properties(all_exponent_vect, degree, *args, **kwargs) for i in range(length)]
+    settings_list = [get_rnd_poly_properties(all_exponent_vect, degree, *args, **kwargs) for _ in range(length)]
 
     # # random settings should have approx. half the amount of maximal entries on average
     # num_monomial_entries = 0
