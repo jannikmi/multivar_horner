@@ -6,7 +6,7 @@ update:
 	poetry update
 
 install:
-	poetry install --all-extras
+	poetry install --with docs,dev --all-extras --sync
 
 VENV_NAME=multivar_horner
 venv:
@@ -19,6 +19,13 @@ hook:
 
 hookup:
 	pre-commit autoupdate
+
+test:
+	poetry run pytest
+
+tox:
+	tox
+
 
 clean:
 	rm -rf .pytest_cache .coverage coverage.xml tests/__pycache__ src/__pycache__ mlruns/ .mypyp_cache/
