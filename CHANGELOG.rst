@@ -54,6 +54,18 @@ idea:
 - the evaluation of subtrees is independent and could theoretically be done in parallel
     probably not worth the effort. more reasonable to just evaluate multiple polynomials in parallel
 
+3.x.x (TBA)
+__________________
+
+
+internal:
+
+- updated GitHub Actions workflow: skip publishing existing versions
+- included ruff pre commit hook
+- updated dependency lock
+- included tests for python 3.12
+
+
 3.1.0 (2023-02-15)
 __________________
 

@@ -1,6 +1,10 @@
 import numpy as np
 
-from multivar_horner.classes.helpers import AbstractFactor, FactorContainer, PriorityQueue2D
+from multivar_horner.classes.helpers import (
+    AbstractFactor,
+    FactorContainer,
+    PriorityQueue2D,
+)
 from multivar_horner.global_settings import BOOL_DTYPE, ID_ADD, ID_MULT, UINT_DTYPE
 from multivar_horner.helpers_fcts_numba import (
     compile_valid_options,
@@ -39,7 +43,9 @@ class FactorisationNode:
     def __init__(self, factor, node1_fact, node2, factorized_rows, non_factorized_rows):
         self.factor: AbstractFactor = factor
         self.node1_fact: BasePolynomialNode = node1_fact
-        self.node2: BasePolynomialNode = node2  # can be None if all monomials shared the factor
+        self.node2: BasePolynomialNode = (
+            node2  # can be None if all monomials shared the factor
+        )
         self.factorized_rows = factorized_rows
         self.non_factorized_rows = non_factorized_rows
         self.value_idx: int
@@ -144,7 +150,9 @@ class OptimalFactorisationNode(FactorisationNode):
     node2: "OptimalPolynomialNode"
 
     def __init__(self, factor, node1_fact, node2, factorized_rows, non_factorized_rows):
-        super().__init__(factor, node1_fact, node2, factorized_rows, non_factorized_rows)
+        super().__init__(
+            factor, node1_fact, node2, factorized_rows, non_factorized_rows
+        )
         self.cost_estimate: int = 0
         # IDEA: when different factorisations have the same cost estimate,
         # favour the one which is factorised the most already
@@ -153,13 +161,17 @@ class OptimalFactorisationNode(FactorisationNode):
         self.update_properties()
 
     def update_properties(self):
-        self.cost_estimate = factor_num_ops(*self.factor) + self.node1_fact.cost_estimate
+        self.cost_estimate = (
+            factor_num_ops(*self.factor) + self.node1_fact.cost_estimate
+        )
         self.factorisation_measure = self.node1_fact.factorisation_measure
 
         if self.node2 is not None:
             self.cost_estimate += self.node2.cost_estimate
             self.factorisation_measure += self.node2.factorisation_measure
-            self.fully_factorized = self.node1_fact.fully_factorized and self.node2.fully_factorized
+            self.fully_factorized = (
+                self.node1_fact.fully_factorized and self.node2.fully_factorized
+            )
         else:
             self.fully_factorized = self.node1_fact.fully_factorized
 
@@ -265,7 +277,9 @@ class BasePolynomialNode:
 
         return max_usage_option
 
-    def get_string_representation(self, coefficients=None, coeff_fmt_str="{:.2}", factor_fmt_str="x_{dim}^{exp}"):
+    def get_string_representation(
+        self, coefficients=None, coeff_fmt_str="{:.2}", factor_fmt_str="x_{dim}^{exp}"
+    ):
         if self.has_children:
             return self.get_child().get_string_representation(
                 coefficients=coefficients,
@@ -278,13 +292,17 @@ class BasePolynomialNode:
                 if coefficients is None:
                     coeff_repr = "c"
                 else:
-                    coeff_idx = self.value_idxs[i]  # look up the correct index of the coefficient
+                    coeff_idx = self.value_idxs[
+                        i
+                    ]  # look up the correct index of the coefficient
                     coeff_repr = coeff_fmt_str.format(coefficients[coeff_idx, 0])
 
                 monomial_repr = [coeff_repr]
                 for dim, exp in enumerate(exp_vect):
                     if exp > 0:
-                        monomial_repr.append(factor_fmt_str.format(**{"dim": dim + 1, "exp": exp}))
+                        monomial_repr.append(
+                            factor_fmt_str.format(**{"dim": dim + 1, "exp": exp})
+                        )
 
                 monomial_representations.append(" ".join(monomial_repr))
             return " + ".join(monomial_representations)
@@ -324,7 +342,9 @@ class BasePolynomialNode:
             #     assert exponents1_fact.shape[0] + exponents2.shape[0] == self.num_monomials
 
         factor = (dim, exp)
-        child = self.factorisation_class(factor, node1_fact, node2, factorized_rows, non_factorized_rows)
+        child = self.factorisation_class(
+            factor, node1_fact, node2, factorized_rows, non_factorized_rows
+        )
         self.store_child(child)
 
     def store_child(self, child: "BasePolynomialNode"):
@@ -354,7 +374,9 @@ class BasePolynomialNode:
             # for evaluation the sum of all evaluated monomials multiplied with their coefficients has to be computed
             # p = c1 * mon1 + c2 * mon2 ...
             # create factors representing the remaining monomials
-            self.factors = factor_container.get_factors(self.exponents)  # retains the ordering!
+            self.factors = factor_container.get_factors(
+                self.exponents
+            )  # retains the ordering!
             # remember where in the coefficient array the coefficients of this polynomial are being stored
             self.value_idxs = coefficient_idxs
 

@@ -133,14 +133,18 @@ class ScalarFactor(AbstractFactor):
     def __init__(self, factor_dimension, factor_exponent):
         self.dimension = factor_dimension
         self.exponent = factor_exponent
-        self.value_idx = None  # initialize the idx with None to catch faulty evaluation tries
+        self.value_idx = (
+            None  # initialize the idx with None to catch faulty evaluation tries
+        )
 
     def __str__(self, factor_fmt_str="x_{dim}^{exp}", *args, **kwargs):
         # NOTE: variable numbering starts with 1: x_1, x_2, ...
         # if self.exponent == 1:
         #     return 'x_{}'.format(self.dimension + 1)
 
-        return factor_fmt_str.format(**{"dim": self.dimension + 1, "exp": self.exponent})
+        return factor_fmt_str.format(
+            **{"dim": self.dimension + 1, "exp": self.exponent}
+        )
 
     def __repr__(self, *args, **kwargs):
         return self.__str__(*args, **kwargs)
@@ -348,9 +352,13 @@ class FactorContainer:
             if len(scalar_factors) == 0:
                 factor = None  # monomial consists of no factors
             elif len(scalar_factors) == 1:
-                factor = scalar_factors[0]  # monomial consists of a single scalar factor
+                factor = scalar_factors[
+                    0
+                ]  # monomial consists of a single scalar factor
             else:
-                factor = self.get_factor(property_list)  # monomial consists of a multiple scalar factors
+                factor = self.get_factor(
+                    property_list
+                )  # monomial consists of a multiple scalar factors
 
             all_factors.append(factor)
 

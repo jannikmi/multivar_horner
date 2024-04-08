@@ -9,7 +9,11 @@ import unittest
 import numpy as np
 import pytest
 
-from multivar_horner import HornerMultivarPolynomial, HornerMultivarPolynomialOpt, MultivarPolynomial
+from multivar_horner import (
+    HornerMultivarPolynomial,
+    HornerMultivarPolynomialOpt,
+    MultivarPolynomial,
+)
 from multivar_horner.global_settings import COMPLEX_DTYPE, FLOAT_DTYPE, UINT_DTYPE
 from tests.helpers import naive_eval_reference, proto_test_case, vectorize
 from tests.settings import (
@@ -59,7 +63,9 @@ class PerClassTestRegular(unittest.TestCase):
         assert len(str(p1)) < len(str(p2))
         assert str(p1) == p1.representation
 
-        return_str_repr = p1.compute_string_representation(coeff_fmt_str="{:1.1e}", factor_fmt_str="(x{dim} ** {exp})")
+        return_str_repr = p1.compute_string_representation(
+            coeff_fmt_str="{:1.1e}", factor_fmt_str="(x{dim} ** {exp})"
+        )
         # the representation should get updated
         assert return_str_repr == p1.representation
 
@@ -93,11 +99,15 @@ class PerClassTestRegular(unittest.TestCase):
         vals = [True, False]
         max_dim = 3
         degree_range = range(1, 4)
-        exponents = np.array(list(itertools.product(degree_range, repeat=max_dim)), dtype=UINT_DTYPE)
+        exponents = np.array(
+            list(itertools.product(degree_range, repeat=max_dim)), dtype=UINT_DTYPE
+        )
         coeffs = np.random.rand(exponents.shape[0])
         X = np.random.rand(NR_TEST_POLYNOMIALS, max_dim)
         p_ref = naive_eval_reference(X, exponents, coeffs)
-        for kwargs in [dict(zip(keys, tf)) for tf in itertools.product(*[vals] * len(keys))]:
+        for kwargs in [
+            dict(zip(keys, tf)) for tf in itertools.product(*[vals] * len(keys))
+        ]:
             p_mv = vectorize(self.class2test(coeffs[:, None], exponents, **kwargs))
             assert np.allclose(p_ref, p_mv(X))
 
@@ -123,7 +133,9 @@ class PerClassTestRegular(unittest.TestCase):
         degree_range = range(1, 4)
         dim_range = range(1, 4)
         for dim, deg in itertools.product(dim_range, degree_range):
-            exponents = np.array(list(itertools.product(range(deg), repeat=dim)), dtype=UINT_DTYPE)
+            exponents = np.array(
+                list(itertools.product(range(deg), repeat=dim)), dtype=UINT_DTYPE
+            )
             coeffs = np.random.rand(exponents.shape[0])
             X = np.random.rand(NR_TEST_POLYNOMIALS, dim)
             p_ref = naive_eval_reference(X, exponents, coeffs)

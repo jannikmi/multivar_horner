@@ -6,7 +6,12 @@ from typing import Callable, Tuple, Type, TypeVar
 import numpy as np
 
 from multivar_horner import c_evaluation
-from multivar_horner.c_evaluation import COMPILED_C_ENDING, compile_c_file, get_compiler, write_c_file
+from multivar_horner.c_evaluation import (
+    COMPILED_C_ENDING,
+    compile_c_file,
+    get_compiler,
+    write_c_file,
+)
 from multivar_horner.classes.abstract_poly import AbstractPolynomial
 from multivar_horner.classes.factorisation import (
     BasePolynomialNode,
@@ -139,7 +144,9 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         *args,
         **kwargs,
     ):
-        super().__init__(coefficients, exponents, rectify_input, compute_representation, verbose)
+        super().__init__(
+            coefficients, exponents, rectify_input, compute_representation, verbose
+        )
         self.root_class: Type = HeuristicFactorisationRoot
         self.keep_tree: bool = keep_tree
         self.value_array_length: int
@@ -196,10 +203,15 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         # NOTE: do NOT automatically create all scalar factors with exponent 1
         # (they might be unused, since the polynomial must not actually depend on all variables)
         factor_container = FactorContainer()
-        factorisation_tree: BasePolynomialNode = self.root_class(self.exponents, factor_container)
+        factorisation_tree: BasePolynomialNode = self.root_class(
+            self.exponents, factor_container
+        )
         self.root_value_idx = factorisation_tree.value_idx
         self.value_array_length = self.num_monomials + len(factor_container)
-        self.factorisation: Tuple[BasePolynomialNode, FactorContainer] = (factorisation_tree, factor_container)
+        self.factorisation: Tuple[BasePolynomialNode, FactorContainer] = (
+            factorisation_tree,
+            factor_container,
+        )
 
     @property
     def factorisation_tree(self) -> BasePolynomialNode:
@@ -223,11 +235,15 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         repre = f"[#ops={self.num_ops}] p(x)"
         try:
             tree = self.factorisation_tree
-            repre += " = " + tree.get_string_representation(self.coefficients, coeff_fmt_str, factor_fmt_str)
+            repre += " = " + tree.get_string_representation(
+                self.coefficients, coeff_fmt_str, factor_fmt_str
+            )
             # exponentiation with 1 won't cause an operation in this representation
             # but are present in the string representation due to string formatting restrictions
             # -> they should not be displayed (misleading)
-            repre = repre.replace("^1", "")  # <- workaround for the default string format
+            repre = repre.replace(
+                "^1", ""
+            )  # <- workaround for the default string format
         except AttributeError:
             pass  # self.factorisation_tree does not exist
         self.representation = repre
@@ -291,7 +307,9 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         for monomial_factor in self.factor_container.monomial_factors:
             monomial_factor.value_idx = value_idx
             value_idx += 1
-            monomial_factor.factorisation_idxs = [f.value_idx for f in monomial_factor.scalar_factors]
+            monomial_factor.factorisation_idxs = [
+                f.value_idx for f in monomial_factor.scalar_factors
+            ]
             monomial_instr = monomial_factor.get_recipe()
             monomial_recipe += monomial_instr
             self.num_ops += 1  # every monomial instruction encodes one multiplication
@@ -301,20 +319,33 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         # convert the recipes into the data types expected by the jit compiled functions
         # and store them
         tree_ops = np.array(tree_ops, dtype=BOOL_DTYPE)
-        self.num_ops += len(tree_ops) - np.count_nonzero(tree_ops)  # every 0/False encodes a multiplication
+        self.num_ops += len(tree_ops) - np.count_nonzero(
+            tree_ops
+        )  # every 0/False encodes a multiplication
 
         copy_recipe = np.array(copy_recipe, dtype=UINT_DTYPE).reshape((-1, 2))
         scalar_recipe = np.array(scalar_recipe, dtype=UINT_DTYPE).reshape((-1, 3))
         monomial_recipe = np.array(monomial_recipe, dtype=UINT_DTYPE).reshape((-1, 3))
         tree_recipe = np.array(tree_recipe, dtype=UINT_DTYPE).reshape((-1, 2))
         # IMPORTANT: strict ordering required!
-        self.recipe = (copy_recipe, scalar_recipe, monomial_recipe, tree_recipe, tree_ops)
+        self.recipe = (
+            copy_recipe,
+            scalar_recipe,
+            monomial_recipe,
+            tree_recipe,
+            tree_ops,
+        )
         self._pickle_recipe()
 
     def _pickle_recipe(self):
         path = self.recipe_file
         self.print(f'storing recipe in file "{path}"')
-        pickle_obj = (self.recipe, self.num_ops, self.value_array_length, self.root_value_idx)
+        pickle_obj = (
+            self.recipe,
+            self.num_ops,
+            self.value_array_length,
+            self.root_value_idx,
+        )
         with open(path, "wb") as f:
             pickle.dump(pickle_obj, f)
 
@@ -325,7 +356,9 @@ class HornerMultivarPolynomial(AbstractPolynomial):
         self.print(f'loading recipe from file "{path}"')
         with open(path, "rb") as f:
             pickle_obj = pickle.load(f)
-        self.recipe, self.num_ops, self.value_array_length, self.root_value_idx = pickle_obj
+        self.recipe, self.num_ops, self.value_array_length, self.root_value_idx = (
+            pickle_obj
+        )
 
     def eval(self, x: TYPE_1D_FLOAT, rectify_input: bool = False) -> float:
         """computes the value of the polynomial at query point x
@@ -451,7 +484,9 @@ class HornerMultivarPolynomial(AbstractPolynomial):
                 "need a stored factorisation tree, but the reference to it has already been deleted. "
                 "initialise class with 'keep_tree=True`"
             )
-        self.num_ops = write_c_file(self.num_monomials, self.dim, path_out, factorisation, self.verbose)
+        self.num_ops = write_c_file(
+            self.num_monomials, self.dim, path_out, factorisation, self.verbose
+        )
 
     def get_c_instructions(self) -> str:
         path = self.c_file

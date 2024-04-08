@@ -25,15 +25,15 @@ project_root = os.path.dirname(cwd)
 sys.path.insert(0, os.path.join(project_root))
 
 # needed for auto document, ATTENTION: must then be installed during online build!
-import multivar_horner
+import multivar_horner  # noqa: E402 Module level import not at top of file
 
 print(multivar_horner)
 
 # -- Project information -----------------------------------------------------
 
 project = "multivar_horner"
-copyright = "2018, Jannik Michelfeit"
-author = "Jannik Michelfeit"
+copyright = "2018, Jannik Kissinger"
+author = "Jannik Kissinger"
 
 # The full version, including alpha/beta/rc tags.
 release = subprocess.getoutput("poetry version -s")

@@ -209,7 +209,9 @@ def compile_usage(dim, usage_vector, unique_exponents, exponent_matrix):
 
 
 @njit(void(INT, BOOL_1D, UINT_1D, UINT_1D, UINT_2D), cache=True)
-def compile_valid_options(dim, valid_option_vector, usage_vector, unique_exponents, exponent_matrix):
+def compile_valid_options(
+    dim, valid_option_vector, usage_vector, unique_exponents, exponent_matrix
+):
     """compute the vector of valid options
 
     :param dim:

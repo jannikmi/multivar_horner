@@ -11,7 +11,9 @@ ID_ADD = True  # ATTENTION: is being used in helpers_fcts_numba.py/eval_recipe()
 UINT_DTYPE = numpy.uint32  # u4 =  4byte unsigned integer
 FLOAT_DTYPE = numpy.float64  # f8 =  8byte float, default
 # FLOAT_DTYPE = numpy.float128 # high precision for numerical tests, also disable jit compilation
-COMPLEX_DTYPE = numpy.cdouble  # Complex number, represented by two double-precision floats
+COMPLEX_DTYPE = (
+    numpy.cdouble
+)  # Complex number, represented by two double-precision floats
 BOOL_DTYPE = bool
 
 # python typing

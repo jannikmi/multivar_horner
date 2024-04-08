@@ -58,16 +58,22 @@ class AbstractPolynomial(ABC):
         self.compute_representation: bool = compute_representation
 
         if rectify_input:
-            coefficients, exponents = rectify_construction_parameters(coefficients, exponents)
+            coefficients, exponents = rectify_construction_parameters(
+                coefficients, exponents
+            )
         validate_construction_parameters(coefficients, exponents)
         self.coefficients: np.ndarray = coefficients
         self.exponents: np.ndarray = exponents
 
         self.num_monomials: int = self.exponents.shape[0]
         self.dim: int = self.exponents.shape[1]
-        self.unused_variables = np.where(~np.any(self.exponents.astype(BOOL_DTYPE), axis=1))[0]
+        self.unused_variables = np.where(
+            ~np.any(self.exponents.astype(BOOL_DTYPE), axis=1)
+        )[0]
         self.total_degree: int = np.max(np.sum(self.exponents, axis=0))
-        self.euclidean_degree: float = np.max(np.linalg.norm(self.exponents, ord=2, axis=0))
+        self.euclidean_degree: float = np.max(
+            np.linalg.norm(self.exponents, ord=2, axis=0)
+        )
         self.maximal_degree: int = np.max(self.exponents)
         self.num_ops: int = 0
         self.representation: str
@@ -158,7 +164,9 @@ class AbstractPolynomial(ABC):
         # multiply the coefficients with the exponent of the i-th coordinate
         # f(x) = a x^b
         # f'(x) = ab x^(b-1)
-        new_coefficients = np.multiply(new_coefficients.flatten(), new_exponents[:, coord_index])
+        new_coefficients = np.multiply(
+            new_coefficients.flatten(), new_exponents[:, coord_index]
+        )
         new_coefficients = new_coefficients.reshape(-1, 1)
 
         # reduce the the exponent of the i-th coordinate by 1
@@ -175,7 +183,10 @@ class AbstractPolynomial(ABC):
         Returns:
              the list of all partial derivatives
         """
-        return [self.get_partial_derivative(i, *args, **kwargs) for i in range(1, self.dim + 1)]
+        return [
+            self.get_partial_derivative(i, *args, **kwargs)
+            for i in range(1, self.dim + 1)
+        ]
 
     def change_coefficients(
         self,
