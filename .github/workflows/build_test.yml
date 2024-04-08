@@ -68,11 +68,6 @@ jobs:
 
       - name: Fetch version
         id: fetch_version
-        run: echo "::set-output name=version_nr::$(poetry version -s)"
-
-
-      - name: Fetch version
-        id: fetch_version
         run: echo "version_nr=$(poetry version -s)" >> $GITHUB_OUTPUT
 
       - name: Build a binary wheel and a source tarball
