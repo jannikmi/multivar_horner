@@ -112,14 +112,3 @@ legacy_tox_ini = """
         numba:  poetry install -v --extras numba
         poetry run pytest {posargs}
 """
-#
-#[isort]
-#;https://github.com/timothycrosley/isort/wiki/isort-Settings
-#known_first_party = multivar_horner
-#known_third_party = numpy, numba
-#line_length = 120
-#
-#[tool.flake8]
-#max_line_length = 120
-#;trailing comma
-#ignore = C819
