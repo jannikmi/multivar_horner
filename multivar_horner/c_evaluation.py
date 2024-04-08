@@ -36,7 +36,9 @@ def write_c_file(
     instr = "#include <math.h>\n"
     # NOTE: the coefficient array will be used to store intermediary results
     # -> copy to use independent instance of array (NO pointer to external array!)
-    func_def = f"{DOUBLE} {EVAL_FCT}({DOUBLE} x[{nr_dims}], {DOUBLE} {COEFFS}[{nr_coeffs}])"
+    func_def = (
+        f"{DOUBLE} {EVAL_FCT}({DOUBLE} x[{nr_dims}], {DOUBLE} {COEFFS}[{nr_coeffs}])"
+    )
     # declare function ("header")
     instr += f"{func_def};\n"
     # function definition

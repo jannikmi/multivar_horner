@@ -30,7 +30,9 @@ from tests.settings import (
 def get_plot_name(file_name="plot"):
     file_name = file_name.replace(" ", "_")
     Path(PLOTTING_DIR).mkdir(parents=True, exist_ok=True)
-    return os.path.abspath(os.path.join(PLOTTING_DIR, file_name + "_" + str(time.time())[:-7] + ".png"))
+    return os.path.abspath(
+        os.path.join(PLOTTING_DIR, file_name + "_" + str(time.time())[:-7] + ".png")
+    )
 
 
 def export_plot(fig, plot_title):
@@ -126,7 +128,9 @@ def speed_test_run(dim, degree, nr_samples, template):
     poly_settings_list = rnd_settings_list(nr_samples, dim, degree)
     input_list = rnd_input_list(nr_samples, dim, max_abs_val=1.0)
 
-    setup_time_naive = timeit.timeit("test_setup_time_naive()", globals=globals(), number=1)
+    setup_time_naive = timeit.timeit(
+        "test_setup_time_naive()", globals=globals(), number=1
+    )
     setup_time_naive = setup_time_naive / NR_SAMPLES_SPEED_TEST  # = avg. per sample
 
     # poly_class_instances is not populated with the naive polynomial class instances
@@ -136,7 +140,9 @@ def speed_test_run(dim, degree, nr_samples, template):
     eval_time_naive = timeit.timeit("eval_time_fct()", globals=globals(), number=1)
     eval_time_naive = eval_time_naive / NR_SAMPLES_SPEED_TEST  # = avg. per sample
 
-    setup_time_horner = timeit.timeit("test_setup_time_horner()", globals=globals(), number=1)
+    setup_time_horner = timeit.timeit(
+        "test_setup_time_horner()", globals=globals(), number=1
+    )
     setup_time_horner = setup_time_horner / NR_SAMPLES_SPEED_TEST  # = avg. per sample
 
     # poly_class_instances is not populated with the horner polynomial class instances
@@ -149,7 +155,9 @@ def speed_test_run(dim, degree, nr_samples, template):
     setup_delta = difference(setup_time_naive, setup_time_horner)
     eval_delta = difference(eval_time_naive, eval_time_horner)
     ops_delta = difference(num_ops_naive, num_ops_horner)
-    lucrative_after = compute_lucrativity(setup_time_horner, setup_time_naive, eval_time_horner, eval_time_naive)
+    lucrative_after = compute_lucrativity(
+        setup_time_horner, setup_time_naive, eval_time_horner, eval_time_naive
+    )
     if lucrative_after < 0:
         lucrative_after = "-"  # never lucrative
 
@@ -184,14 +192,18 @@ def speed_test_run(dim, degree, nr_samples, template):
 # TODO
 def run_speed_benchmark():
     if os.path.isfile(SPEED_RUN_PICKLE):
-        print(f"result file {SPEED_RUN_PICKLE} is already present. skipping data generation.")
+        print(
+            f"result file {SPEED_RUN_PICKLE} is already present. skipping data generation."
+        )
         return
 
     # this also fulfills the purpose of testing the robustness of the code
     # (many random polygons are being created and evaluated)
 
     print("\nSpeed test:")
-    print("testing {} evenly distributed random polynomials".format(NR_SAMPLES_SPEED_TEST))
+    print(
+        "testing {} evenly distributed random polynomials".format(NR_SAMPLES_SPEED_TEST)
+    )
     print("average timings per polynomial:\n")
 
     print(
@@ -231,7 +243,9 @@ def run_speed_benchmark():
     for dim in DIM_RANGE:
         dim_run_results = []
         for maximal_degree in DEGREE_RANGE:
-            result_single_run = speed_test_run(dim, maximal_degree, NR_SAMPLES_SPEED_TEST, template)
+            result_single_run = speed_test_run(
+                dim, maximal_degree, NR_SAMPLES_SPEED_TEST, template
+            )
             dim_run_results.append(result_single_run)
 
         print()  # empty line
@@ -306,7 +320,9 @@ def plot_speed_results():
         fig, ax = plt.subplots()
 
         obj_handles = []
-        extra = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+        extra = Rectangle(
+            (0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0
+        )
         obj_handles.append(extra)
 
         # data = extract_data(all_results, run_idx)
@@ -401,17 +417,23 @@ def extract_maximal_degree(result):
 
 
 def extract_num_ops_naive(result):
-    poly_dim, poly_degree, num_ops_naive, num_ops_horner = extract_poly_properties(result)
+    poly_dim, poly_degree, num_ops_naive, num_ops_horner = extract_poly_properties(
+        result
+    )
     return num_ops_naive
 
 
 def extract_num_ops_horner(result):
-    poly_dim, poly_degree, num_ops_naive, num_ops_horner = extract_poly_properties(result)
+    poly_dim, poly_degree, num_ops_naive, num_ops_horner = extract_poly_properties(
+        result
+    )
     return num_ops_horner
 
 
 def extract_num_ops_benefit(result):
-    poly_dim, poly_degree, num_ops_naive, num_ops_horner = extract_poly_properties(result)
+    poly_dim, poly_degree, num_ops_naive, num_ops_horner = extract_poly_properties(
+        result
+    )
     return num_ops_horner - num_ops_naive
 
 
@@ -499,7 +521,9 @@ def plot_num_err_heatmap(results):
     # average for dim and degree
     for dim in DIM_RANGE:
         for maximal_deg in DEGREE_RANGE:
-            selection_idxs = (df[attr_name_dim] == dim) & (df[attr_name_deg] == maximal_deg)
+            selection_idxs = (df[attr_name_dim] == dim) & (
+                df[attr_name_deg] == maximal_deg
+            )
             if not selection_idxs.any():
                 continue
             df_selected = df[selection_idxs]
@@ -529,7 +553,9 @@ def plot_num_err_heatmap(results):
     #             size=attr_name_numerical_err_rel,
     #             sizes=(100,300),
     #             )
-    heatmap_data = df_avg.pivot(attr_name_deg, attr_name_dim, attr_name_numerical_err_rel)
+    heatmap_data = df_avg.pivot(
+        attr_name_deg, attr_name_dim, attr_name_numerical_err_rel
+    )
     heatmap_data = heatmap_data.iloc[::-1]  # reverse
 
     sns.heatmap(
@@ -539,7 +565,9 @@ def plot_num_err_heatmap(results):
         linewidths=3,
         # cmap="YlGnBu",
     )
-    plot_title = "avg. numerical error with canonical form relative to Horner factorisation"
+    plot_title = (
+        "avg. numerical error with canonical form relative to Horner factorisation"
+    )
     plt.title(plot_title)
     # plt.xlabel()
     # locs, labels = plt.xticks()  # Get locations and labels
@@ -555,11 +583,19 @@ def plot_num_error_growth_comparison(results):
     num_coeffs = list(map(extract_nr_coeffs, results))
 
     # average first! before removing zeros
-    numerical_err_naive_avg, num_coeffs_unique_naive = average_discrete(numerical_err_naive, num_coeffs)
-    numerical_err_horner_avg, num_coeffs_unique_horner = average_discrete(numerical_err_horner, num_coeffs)
+    numerical_err_naive_avg, num_coeffs_unique_naive = average_discrete(
+        numerical_err_naive, num_coeffs
+    )
+    numerical_err_horner_avg, num_coeffs_unique_horner = average_discrete(
+        numerical_err_horner, num_coeffs
+    )
 
-    numerical_err_naive_avg, num_coeffs_unique_naive = rmv_zeros(numerical_err_naive_avg, num_coeffs_unique_naive)
-    numerical_err_horner_avg, num_coeffs_unique_horner = rmv_zeros(numerical_err_horner_avg, num_coeffs_unique_horner)
+    numerical_err_naive_avg, num_coeffs_unique_naive = rmv_zeros(
+        numerical_err_naive_avg, num_coeffs_unique_naive
+    )
+    numerical_err_horner_avg, num_coeffs_unique_horner = rmv_zeros(
+        numerical_err_horner_avg, num_coeffs_unique_horner
+    )
 
     attr_name_representation = "representation"
     attr_name_num_coeff = "number of coefficients"
@@ -611,7 +647,9 @@ def plot_num_error_growth_comparison(results):
 
 def filter_results(filter_fct, results):
     results_filtered = list(filter(filter_fct, results))
-    print(f"filtering data: out of {len(results)} entries {len(results_filtered)} remain")
+    print(
+        f"filtering data: out of {len(results)} entries {len(results_filtered)} remain"
+    )
     return results_filtered
 
 
@@ -706,7 +744,9 @@ def plot_num_coeffs2num_ops(results):
 
 
 def plot_numerical_error():
-    print(f"generating numerical benchmark plots. reading data from {TEST_RESULTS_PICKLE}...")
+    print(
+        f"generating numerical benchmark plots. reading data from {TEST_RESULTS_PICKLE}..."
+    )
     try:
         with open(TEST_RESULTS_PICKLE, "rb") as f:
             results = pickle.load(f)

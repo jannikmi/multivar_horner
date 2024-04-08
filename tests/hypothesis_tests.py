@@ -7,7 +7,10 @@ from hypothesis import strategies as s
 
 from multivar_horner import HornerMultivarPolynomial, MultivarPolynomial
 from multivar_horner.global_settings import COMPLEX_DTYPE, FLOAT_DTYPE
-from multivar_horner.helper_fcts import rectify_construction_parameters, rectify_query_point
+from multivar_horner.helper_fcts import (
+    rectify_construction_parameters,
+    rectify_query_point,
+)
 from tests.helpers import all_possible_exponents
 
 REQUIRED_REL_PRECISION = 1e-4
@@ -23,7 +26,10 @@ MAX_DEG = 3
 dimensions = s.integers(min_value=1, max_value=MAX_DIM)
 poly_degrees = s.integers(min_value=0, max_value=MAX_DEG)
 unsigned_float_sampling = s.floats(
-    min_value=FLOAT_MIN_VAL, max_value=FLOAT_MAX_VAL, allow_infinity=False, allow_nan=False
+    min_value=FLOAT_MIN_VAL,
+    max_value=FLOAT_MAX_VAL,
+    allow_infinity=False,
+    allow_nan=False,
 )
 
 
@@ -57,24 +63,40 @@ def poly_param_sampling(draw) -> Tuple[np.ndarray, np.ndarray]:
     nr_monomials = draw(s.integers(min_value=1, max_value=nr_monomials_max))
     exponent_matrix = possible_exponents[:nr_monomials]
 
-    coefficients = draw(s.lists(float_sampling(), min_size=nr_monomials, max_size=nr_monomials))
+    coefficients = draw(
+        s.lists(float_sampling(), min_size=nr_monomials, max_size=nr_monomials)
+    )
 
-    coefficients, exponent_matrix = rectify_construction_parameters(coefficients, exponent_matrix)
+    coefficients, exponent_matrix = rectify_construction_parameters(
+        coefficients, exponent_matrix
+    )
     return coefficients, exponent_matrix
 
 
 @s.composite
 def poly_sampling(draw) -> Tuple[MultivarPolynomial, HornerMultivarPolynomial]:
     coefficients, exponents = draw(poly_param_sampling())
-    poly = MultivarPolynomial(coefficients, exponents, rectify_input=False, compute_representation=True, verbose=True)
+    poly = MultivarPolynomial(
+        coefficients,
+        exponents,
+        rectify_input=False,
+        compute_representation=True,
+        verbose=True,
+    )
     poly_h = HornerMultivarPolynomial(
-        coefficients, exponents, rectify_input=False, compute_representation=True, verbose=True
+        coefficients,
+        exponents,
+        rectify_input=False,
+        compute_representation=True,
+        verbose=True,
     )
     return poly, poly_h
 
 
 @s.composite
-def example_case_sampling(draw) -> Tuple[MultivarPolynomial, HornerMultivarPolynomial, np.ndarray]:
+def example_case_sampling(
+    draw,
+) -> Tuple[MultivarPolynomial, HornerMultivarPolynomial, np.ndarray]:
     poly, poly_h = draw(poly_sampling())
     nr_dims = poly.dim
     x = draw(s.lists(float_sampling(), min_size=nr_dims, max_size=nr_dims))
@@ -83,10 +105,14 @@ def example_case_sampling(draw) -> Tuple[MultivarPolynomial, HornerMultivarPolyn
 
 
 @s.composite
-def example_case_sampling_complex(draw) -> Tuple[MultivarPolynomial, HornerMultivarPolynomial, np.ndarray]:
+def example_case_sampling_complex(
+    draw,
+) -> Tuple[MultivarPolynomial, HornerMultivarPolynomial, np.ndarray]:
     poly, poly_h = draw(poly_sampling())
     nr_dims = poly.dim
-    x = draw(s.lists(query_point_sampling_complex(), min_size=nr_dims, max_size=nr_dims))
+    x = draw(
+        s.lists(query_point_sampling_complex(), min_size=nr_dims, max_size=nr_dims)
+    )
     x = rectify_query_point(x, dtype=COMPLEX_DTYPE)
     return poly, poly_h, x
 
@@ -136,6 +162,10 @@ def test_complex_eval(params):
 def all_close(res1, res2, coefficients, exponents, x):
     err_msg = f"{x=}\n{coefficients=}\n{exponents=}"
     if abs(res1) < 1e-5:
-        np.testing.assert_almost_equal(res1, res2, decimal=REQUIRED_ABS_PRECISION, err_msg=err_msg)
+        np.testing.assert_almost_equal(
+            res1, res2, decimal=REQUIRED_ABS_PRECISION, err_msg=err_msg
+        )
     else:
-        np.testing.assert_allclose(res1, res2, rtol=REQUIRED_REL_PRECISION, err_msg=err_msg)
+        np.testing.assert_allclose(
+            res1, res2, rtol=REQUIRED_REL_PRECISION, err_msg=err_msg
+        )

@@ -6,7 +6,9 @@ from .global_settings import FLOAT_DTYPE, UINT_DTYPE
 
 
 def rectify_coefficients(coefficients):
-    rectified_coefficients = np.atleast_2d(np.asarray(coefficients, dtype=FLOAT_DTYPE)).reshape(-1, 1)
+    rectified_coefficients = np.atleast_2d(
+        np.asarray(coefficients, dtype=FLOAT_DTYPE)
+    ).reshape(-1, 1)
     return rectified_coefficients
 
 
@@ -43,7 +45,9 @@ def validate_coefficients(coefficients) -> None:
     if not isinstance(coefficients, np.ndarray):
         raise TypeError("coefficients must be given as numpy.ndarray")
     if coefficients.dtype.type is not FLOAT_DTYPE:
-        raise TypeError(f"coefficients must have dtype {FLOAT_DTYPE} but have dtype {coefficients.dtype.type}")
+        raise TypeError(
+            f"coefficients must have dtype {FLOAT_DTYPE} but have dtype {coefficients.dtype.type}"
+        )
     if len(coefficients.shape) != 2 or coefficients.shape[1] != 1:
         raise ValueError("coefficients must be given as a [M, 1] ndarray")
     if coefficients.shape[0] == 0:
@@ -52,7 +56,9 @@ def validate_coefficients(coefficients) -> None:
     # NOTE: "0 coefficients" are allowed because coefficients should be changeable!
 
 
-def validate_construction_parameters(coefficients: np.ndarray, exponents: np.ndarray) -> None:
+def validate_construction_parameters(
+    coefficients: np.ndarray, exponents: np.ndarray
+) -> None:
     validate_coefficients(coefficients)
 
     if not isinstance(exponents, np.ndarray):
@@ -62,7 +68,9 @@ def validate_construction_parameters(coefficients: np.ndarray, exponents: np.nda
         # value check is being done in rectification fct
         raise TypeError(f"exponents must have dtype {UINT_DTYPE}")
     if len(exponents.shape) != 2:
-        raise ValueError("exponents must be given as a [M, N] ndarray (a list of exponent vectors)")
+        raise ValueError(
+            "exponents must be given as a [M, N] ndarray (a list of exponent vectors)"
+        )
     if np.any(exponents < 0):
         raise ValueError("exponents must not be negative")
     if exponents.shape != np.unique(exponents, axis=0).shape:
@@ -79,4 +87,6 @@ def validate_query_point(x: np.ndarray, dim: int, dtype: Type = FLOAT_DTYPE) -> 
     if len(x.shape) != 1:
         raise ValueError("the query point x must be given as a ndarray of shape [N]")
     if x.shape[0] != dim:
-        raise ValueError(f"the query point x does not have the required dimensionality {dim}")
+        raise ValueError(
+            f"the query point x does not have the required dimensionality {dim}"
+        )

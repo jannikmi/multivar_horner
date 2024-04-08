@@ -51,7 +51,9 @@ class MultivarPolynomial(AbstractPolynomial):
         *args,
         **kwargs,
     ):
-        super().__init__(coefficients, exponents, rectify_input, compute_representation, verbose)
+        super().__init__(
+            coefficients, exponents, rectify_input, compute_representation, verbose
+        )
 
         # NOTE: count the number of multiplications of the representation
         # not the actual amount of operations required by the naive evaluation with numpy arrays
@@ -73,7 +75,9 @@ class MultivarPolynomial(AbstractPolynomial):
                 monomial = [coeff_fmt_str.format(self.coefficients[i, 0])]
                 for dim, exp in enumerate(exp_vect):
                     # show all operations, even 1 * x_i^0
-                    monomial.append(factor_fmt_str.format(**{"dim": dim + 1, "exp": exp}))
+                    monomial.append(
+                        factor_fmt_str.format(**{"dim": dim + 1, "exp": exp})
+                    )
 
                 monomials.append(" ".join(monomial))
 

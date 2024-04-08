@@ -1,7 +1,6 @@
 from math import log10
 from os.path import abspath, join, pardir
 
-import numpy as np
 from numpy import array as a
 
 from multivar_horner.global_settings import FLOAT_DTYPE, UINT_DTYPE

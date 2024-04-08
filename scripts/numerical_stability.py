@@ -44,7 +44,9 @@ def evaluate_numerical_error(dim, max_degree):
         # debug: validate_input=True
         nr_monomials = exponents.shape[0]
         # find factorisation (expensive)
-        poly_horner = HornerMultivarPolynomial(coefficients, exponents, validate_input=True)
+        poly_horner = HornerMultivarPolynomial(
+            coefficients, exponents, validate_input=True
+        )
         poly = MultivarPolynomial(coefficients, exponents)
 
         # # for evaluating only the polynomial properties without the numerical errors:
@@ -53,7 +55,9 @@ def evaluate_numerical_error(dim, max_degree):
         # continue
 
         coefficients = coefficients.astype(DTYPE_HIGH_PREC)
-        poly_high_prec = MultivarPolynomial(coefficients, exponents, validate_input=False)
+        poly_high_prec = MultivarPolynomial(
+            coefficients, exponents, validate_input=False
+        )
 
         for coeff_ctr in range(NR_COEFF_CHANGES):
             # evaluation @ uniformly random point
@@ -61,11 +65,15 @@ def evaluate_numerical_error(dim, max_degree):
             x = x.astype(FLOAT_DTYPE)
 
             # simply change coefficients of the found factorisation (cheap)
-            coefficients = (np.random.rand(nr_monomials, 1) - 0.5) * (2 * MAX_COEFF_MAGNITUDE)
+            coefficients = (np.random.rand(nr_monomials, 1) - 0.5) * (
+                2 * MAX_COEFF_MAGNITUDE
+            )
             coefficients = coefficients.astype(FLOAT_DTYPE)
 
             # is testing for in_place=True at the same time
-            poly_horner.change_coefficients(coefficients, validate_input=True, in_place=True)
+            poly_horner.change_coefficients(
+                coefficients, validate_input=True, in_place=True
+            )
             p_x_horner = poly_horner.eval(x)
 
             poly.change_coefficients(coefficients, validate_input=True, in_place=True)
@@ -85,7 +93,9 @@ def evaluate_numerical_error(dim, max_degree):
             # NOTE: need to deactivate jit compilation of naive approach
             # use higher prevision
             # suppress input validation
-            poly_high_prec.change_coefficients(coefficients, validate_input=False, in_place=True)
+            poly_high_prec.change_coefficients(
+                coefficients, validate_input=False, in_place=True
+            )
             x = x.astype(DTYPE_HIGH_PREC)
             p_x_expected = poly_high_prec.eval(x)
 
@@ -104,7 +114,9 @@ def evaluate_numerical_error(dim, max_degree):
                 #     pickle.dump(coefficients, f)
                 # with open('exponents.pickle', 'wb') as f:
                 #     pickle.dump(exponents, f)
-                raise AssertionError(f"numerical error {max_error:.2e} exceeded limit of {MAX_NUMERICAL_ERROR :.2e} ")
+                raise AssertionError(
+                    f"numerical error {max_error:.2e} exceeded limit of {MAX_NUMERICAL_ERROR :.2e} "
+                )
             ctr_total += 1
 
         sys.stdout.write("\n")  # move the cursor to the next line
@@ -124,7 +136,9 @@ class NumericalTest(unittest.TestCase):
         print("\nevaluating the numerical error:")
         results = []
         for dim, max_degree in product(DIM_RANGE, DEGREE_RANGE):
-            results += evaluate_numerical_error(dim, max_degree)  # do not append list as entry
+            results += evaluate_numerical_error(
+                dim, max_degree
+            )  # do not append list as entry
 
         with open(TEST_RESULTS_PICKLE, "wb") as f:
             print(f"exporting numerical test results in {TEST_RESULTS_PICKLE}")
