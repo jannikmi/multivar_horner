@@ -17,7 +17,7 @@ hook:
 	pre-commit install
 	pre-commit run --all-files
 
-hook2:
+hookup:
 	pre-commit autoupdate
 
 clean:
