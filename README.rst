@@ -2,10 +2,9 @@
 multivar_horner
 ===============
 
-
-.. image:: https://travis-ci.org/jannikmi/multivar_horner.svg?branch=master
-    :alt: CI status
-    :target: https://travis-ci.org/jannikmi/multivar_horner
+.. image:: https://github.com/jannikmi/multivar_horner/actions/workflows/build.yml/badge.svg?branch=master
+    :target: https://github.com/jannikmi/multivar_horner/actions?query=branch%3Amaster
+    :alt: Build status
 
 .. image:: https://readthedocs.org/projects/multivar_horner/badge/?version=latest
     :alt: documentation status
@@ -75,10 +74,11 @@ Simple example:
     p_x = horner_polynomial(x)
 
 
-For more refer to the `documentation <https://multivar_horner.readthedocs.io/en/latest/>`__.
-
 
 Also see:
-`GitHub <https://github.com/jannikmi/multivar_horner>`__,
-`PyPI <https://pypi.python.org/pypi/multivar_horner/>`__,
-`arXiv paper <https://arxiv.org/abs/2007.13152>`__
+
+- `Documentation <https://multivar-horner.readthedocs.io/en/latest/>`__
+- `GitHub <https://github.com/jannikmi/multivar_horner>`__
+- `PyPI <https://pypi.python.org/pypi/multivar_horner/>`__
+- `paper (JOSS) <https://joss.theoj.org/papers/10.21105/joss.02392>`__
+- `paper (arXiv) <https://arxiv.org/abs/2007.13152>`__

@@ -1,6 +1,7 @@
 
-.. image:: https://travis-ci.org/jannikmi/multivar_horner.svg?branch=master
-    :target: https://travis-ci.org/jannikmi/multivar_horner
+.. image:: https://github.com/jannikmi/multivar_horner/actions/workflows/build.yml/badge.svg?branch=master
+    :target: https://github.com/jannikmi/multivar_horner/actions?query=branch%3Amaster
+    :alt: Build status
 
 .. image:: https://readthedocs.org/projects/multivar_horner/badge/?version=latest
     :alt: documentation status
