@@ -4,7 +4,7 @@ Changelog
 
 TODOs
 
-* build html docs and include with package: "docs/_build/html/*"
+* build html docs and include with package: ``docs/_build/html/*``
 * run speed and numerical tests with the new C evaluation method!
 * Improve tests
 * compare poly.num_ops of different factorisations. tests?
@@ -54,8 +54,15 @@ idea:
 - the evaluation of subtrees is independent and could theoretically be done in parallel
     probably not worth the effort. more reasonable to just evaluate multiple polynomials in parallel
 
-3.x.x (TBA)
+3.2.0 (unreleased)
 __________________
+
+* Require Python >=3.10,<4 without restricting future Python 3 minor releases; test Python 3.10–3.14.
+* Support NumPy 2.x (up to 2.4); retain compatible NumPy 1.x combinations.
+* Require Numba >=0.64 for the optional accelerator. Python 3.8/3.9 users should retain 3.1.x.
+* Collect the real/complex Hypothesis tests and propagate failures from shared evaluation assertions.
+* Validate built distributions in clean environments before publishing.
+
 
 
 internal:
