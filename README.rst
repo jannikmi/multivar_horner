@@ -44,11 +44,13 @@ for efficiently evaluating multivariate polynomials.
 Supported environments
 ----------------------
 
-The 3.2 series requires Python >=3.10,<4 without restricting future Python 3 minor releases,
+The 3.2 series requires Python >=3.12,<4 without restricting future Python 3 minor releases,
 and NumPy >=1.23,<2.5, subject to its own Python requirements.
-CI covers NumPy 1.x on Python 3.10–3.12
-and NumPy 2.x on Python 3.10–3.14, both with and without the optional Numba
-extra (Numba >=0.64,<1). Python 3.8 and 3.9 users should retain the 3.1 series.
+The Python minimum follows the three-year support window recommended by
+`SPEC 0 <https://scientific-python.org/specs/spec-0000/>`__.
+CI covers NumPy 1.x on Python 3.12
+and NumPy 2.x on Python 3.12–3.14, both with and without the optional Numba
+extra (Numba >=0.64,<1). Python 3.8–3.11 users should retain the 3.1 series.
 
 Real evaluation uses a C compiler (``gcc`` or ``cc``) by default. Install
 ``multivar_horner[numba]`` for accelerated recipe evaluation when a compiler

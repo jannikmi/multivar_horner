@@ -35,7 +35,9 @@ include = [
 
 
 [tool.poetry.dependencies]
-python = ">=3.10,<4"
+# Python baseline follows SPEC 0 (reviewed September 2026):
+# https://scientific-python.org/specs/spec-0000/
+python = ">=3.12,<4"
 numpy = ">=1.23,<2.5"
 numba = { version = ">=0.64,<1", optional = true }
 
@@ -69,7 +71,7 @@ build-backend = "poetry.core.masonry.api"
 
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py312"
 src = ["multivar_horner", "tests"]
 
 [tool.ruff.lint.isort]
@@ -83,7 +85,7 @@ python_files = ["test_*.py", "*_test.py", "hypothesis_tests.py"]
 legacy_tox_ini = """
     [tox]
     envlist =
-        py{310,311,312}-numpy{1,2}{,-numba},py{313,314}-numpy2{,-numba},docs
+        py312-numpy{1,2}{,-numba},py{313,314}-numpy2{,-numba},docs
 
     [testenv]
     package = wheel
