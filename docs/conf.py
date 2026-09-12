@@ -11,8 +11,8 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
 import os
-import subprocess
 import sys
+from importlib.metadata import version as package_version
 
 # package needs to be installed (with dependencies) for auto documentation
 # Get the project root dir, which is the parent dir of this
@@ -36,7 +36,7 @@ copyright = "2018, Jannik Kissinger"
 author = "Jannik Kissinger"
 
 # The full version, including alpha/beta/rc tags.
-release = subprocess.getoutput("poetry version -s")
+release = package_version("multivar_horner")
 print("release version:", release)
 
 # -- General configuration ---------------------------------------------------
@@ -74,7 +74,7 @@ napoleon_include_special_with_doc = False
 napoleon_use_admonition_for_examples = False
 napoleon_use_admonition_for_notes = False
 napoleon_use_admonition_for_references = False
-napoleon_use_ivar = False
+napoleon_use_ivar = True
 napoleon_use_param = True
 napoleon_use_rtype = True
 
