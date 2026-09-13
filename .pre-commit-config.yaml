@@ -1,3 +1,6 @@
+default_language_version:
+  python: python3.12
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
@@ -37,7 +40,7 @@ repos:
         exclude: (docs|tests)
         args:
           - --max-line-length=120
-          - --ignore=E501,W503
+          - --ignore=E203,E501,W503
         additional_dependencies:
           - flake8-bugbear
           - flake8-comprehensions

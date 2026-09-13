@@ -8,19 +8,14 @@ from multivar_horner.global_settings import FLOAT_DTYPE, UINT_DTYPE
 
 
 def proto_test_case(data, fct):
-    all_good = True
     for input, expected_output in data:
         print("\n")
         actual_output = fct(input)
         print(f"p({input[2]}) == {expected_output}")
-        try:
-            np.testing.assert_almost_equal(actual_output, expected_output, decimal=15)
-            print("OK.")
-        except AssertionError:
-            print(f"ERROR: p(x) == {actual_output}")
-            continue
-
-    assert all_good
+        # Complex integer powers can introduce roundoff even for real inputs.
+        np.testing.assert_allclose(
+            actual_output, expected_output, rtol=1e-13, atol=1e-13
+        )
 
 
 def get_rnd_poly_properties(
