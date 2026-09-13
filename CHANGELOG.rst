@@ -58,7 +58,7 @@ idea:
 __________________
 
 * Require Python >=3.12,<4 following the SPEC 0 Python support window, without restricting future Python 3 minor releases; test Python 3.12–3.14.
-* Support NumPy 2.x (up to 2.4); retain compatible NumPy 1.x combinations.
+* Require NumPy >=2.2,<2.5 following the SPEC 0 support window; remove NumPy 1.x testing.
 * Require Numba >=0.64 for the optional accelerator. Python 3.8–3.11 users should retain 3.1.x.
 * Collect the real/complex Hypothesis tests and propagate failures from shared evaluation assertions.
 * Validate built distributions in clean environments before publishing.
