@@ -55,7 +55,7 @@ sphinx-rtd-theme = "^1"
 sphinxcontrib-bibtex = "*"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7"
+pytest = ">=7,<10"
 pytest-cov = "*"
 tox = "*"
 hypothesis = "^6.68.1"
