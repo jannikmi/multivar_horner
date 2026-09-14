@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+* Separate compiled C evaluation caches by operating system and process
+  architecture, avoiding incompatible Intel/ARM library reuse.
+* Target the running Python architecture when compiling on macOS and publish
+  cached libraries only after successful compilation.
+* Test both evaluation backends on macOS ARM64 in CI.
+
 
 TODOs
 
