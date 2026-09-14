@@ -55,7 +55,8 @@ extra (Numba >=0.64,<1). Python 3.8–3.11 users should retain the 3.1 series.
 Real evaluation uses a C compiler (``gcc`` or ``cc``) by default. Install
 ``multivar_horner[numba]`` for accelerated recipe evaluation when a compiler
 is unavailable. Complex evaluation always uses the recipe backend.
-ARM-specific compilation/cache compatibility is tracked in GitHub issue #50.
+Compiled evaluator caches are platform-specific, so the same installation can
+be used safely on ARM64 and x86_64 systems without reusing incompatible binaries.
 
 
 Quick Guide:
