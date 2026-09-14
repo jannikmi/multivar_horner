@@ -37,14 +37,14 @@ def test_compiled_cache_is_platform_specific(monkeypatch, tmp_path):
     monkeypatch.setattr(horner_poly, "PATH2CACHE", tmp_path)
     poly = HornerMultivarPolynomial([1.0], [[0]], rectify_input=True)
 
-    native_path = poly.c_file_compiled
-    assert native_path.name.endswith(
-        f"-{c_evaluation.COMPILED_C_CACHE_TAG}{c_evaluation.COMPILED_C_ENDING}"
-    )
+    # A universal2 Python build can have the same sysconfig platform in a native
+    # ARM64 process and an x86_64 process running under Rosetta. The compiler emits
+    # a binary for the active runtime architecture, so both must have distinct keys.
+    monkeypatch.setattr(c_evaluation.platform, "machine", lambda: "arm64")
+    arm_path = poly.c_file_compiled
+    monkeypatch.setattr(c_evaluation.platform, "machine", lambda: "x86_64")
+    x86_path = poly.c_file_compiled
 
-    monkeypatch.setattr(horner_poly, "COMPILED_C_CACHE_TAG", "other-os-other-arch")
-    foreign_path = poly.c_file_compiled
-    assert foreign_path != native_path
-    assert foreign_path.name.endswith(
-        f"-other-os-other-arch{c_evaluation.COMPILED_C_ENDING}"
-    )
+    assert arm_path != x86_path
+    assert arm_path.name.endswith(f"-arm64{c_evaluation.COMPILED_C_ENDING}")
+    assert x86_path.name.endswith(f"-x86_64{c_evaluation.COMPILED_C_ENDING}")

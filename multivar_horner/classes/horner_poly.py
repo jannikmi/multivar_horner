@@ -7,9 +7,9 @@ import numpy as np
 
 from multivar_horner import c_evaluation
 from multivar_horner.c_evaluation import (
-    COMPILED_C_CACHE_TAG,
     COMPILED_C_ENDING,
     compile_c_file,
+    get_compiled_c_cache_tag,
     get_compiler,
     write_c_file,
 )
@@ -465,7 +465,7 @@ class HornerMultivarPolynomial(AbstractPolynomial):
 
     @property
     def c_file_compiled(self):
-        ending = f"-{COMPILED_C_CACHE_TAG}{COMPILED_C_ENDING}"
+        ending = f"-{get_compiled_c_cache_tag()}{COMPILED_C_ENDING}"
         return PATH2CACHE / self.get_c_file_name(ending=ending)
 
     @property

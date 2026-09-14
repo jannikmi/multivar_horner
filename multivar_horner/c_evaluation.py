@@ -1,5 +1,6 @@
 import ctypes
 import os
+import platform
 import shutil
 import subprocess
 import sysconfig
@@ -14,17 +15,18 @@ if os.name == "nt":
 else:
     COMPILED_C_ENDING = ".so"
 
-# Compiled evaluators are native binaries and cannot be shared across platforms.
-# ``get_platform`` includes the operating system and CPU architecture (for example,
-# ``macosx-15.0-arm64`` or ``macosx-15.0-x86_64``).
-COMPILED_C_CACHE_TAG = sysconfig.get_platform()
-
 DOUBLE = "double"
 # array for evaluation results of both scalar and monomial factors
 FACTORS = "f"
 COEFFS = "c"
 EVAL_FCT = "eval"
 C_TYPE_DOUBLE = ctypes.c_double
+
+
+def get_compiled_c_cache_tag() -> str:
+    """Identify the platform and active architecture of compiled evaluators."""
+    runtime_arch = platform.machine() or "unknown"
+    return f"{sysconfig.get_platform()}-{runtime_arch.lower()}"
 
 
 def write_c_file(
