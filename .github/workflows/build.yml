@@ -143,6 +143,38 @@ jobs:
         id: fetch_version
         run: |
           python -c 'import tomllib; print("version_nr=" + tomllib.load(open("pyproject.toml", "rb"))["tool"]["poetry"]["version"])' >> "$GITHUB_OUTPUT"
+      - name: PyPI Publishing
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_DEPLOYMENT_API_KEY }}
+          skip-existing: true
+      - name: Verify installation from PyPI
+        env:
+          VERSION: ${{ steps.fetch_version.outputs.version_nr }}
+        run: |
+          python -m venv "$RUNNER_TEMP/pypi-consumer"
+          PYTHON="$RUNNER_TEMP/pypi-consumer/bin/python"
+          for attempt in 1 2 3 4 5; do
+            if "$PYTHON" -m pip install --no-cache-dir "multivar_horner==$VERSION"; then
+              break
+            fi
+            if [ "$attempt" = 5 ]; then
+              exit 1
+            fi
+            sleep $((attempt * 10))
+          done
+          "$PYTHON" -m pip check
+          mkdir "$RUNNER_TEMP/pypi-distributions"
+          "$PYTHON" -m pip download --no-cache-dir --no-deps --only-binary=:all: \
+            --dest "$RUNNER_TEMP/pypi-distributions" "multivar_horner==$VERSION"
+          "$PYTHON" -m pip download --no-cache-dir --no-deps --no-binary=:all: \
+            --dest "$RUNNER_TEMP/pypi-distributions" "multivar_horner==$VERSION"
+          diff \
+            <(cd "$GITHUB_WORKSPACE/dist" && sha256sum * | sort) \
+            <(cd "$RUNNER_TEMP/pypi-distributions" && sha256sum * | sort)
+          cp scripts/smoke_installed.py "$RUNNER_TEMP/smoke_installed.py"
+          cd "$RUNNER_TEMP"
+          "$PYTHON" -I smoke_installed.py c
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
@@ -151,8 +183,3 @@ jobs:
           draft: false
           prerelease: false
           skipIfReleaseExists: true
-      - name: PyPI Publishing
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_DEPLOYMENT_API_KEY }}
-          skip-existing: true
