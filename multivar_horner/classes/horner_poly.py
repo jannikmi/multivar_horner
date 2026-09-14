@@ -464,7 +464,8 @@ class HornerMultivarPolynomial(AbstractPolynomial):
 
     @property
     def c_file_compiled(self):
-        return PATH2CACHE / self.get_c_file_name(ending=COMPILED_C_ENDING)
+        ending = f"_{c_evaluation.compiled_cache_tag()}{COMPILED_C_ENDING}"
+        return PATH2CACHE / self.get_c_file_name(ending=ending)
 
     @property
     def recipe_file(self) -> Path:

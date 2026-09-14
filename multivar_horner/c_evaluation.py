@@ -1,7 +1,9 @@
 import ctypes
 import os
+import platform
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Tuple
 
@@ -19,6 +21,13 @@ FACTORS = "f"
 COEFFS = "c"
 EVAL_FCT = "eval"
 C_TYPE_DOUBLE = ctypes.c_double
+
+
+def compiled_cache_tag() -> str:
+    """Identify the platform and process architecture of native evaluators."""
+    return (
+        f"{platform.system()}-{platform.machine()}-{ctypes.sizeof(ctypes.c_void_p) * 8}"
+    )
 
 
 def write_c_file(
@@ -88,7 +97,18 @@ def get_compiler() -> str:
 
 
 def compile_c_file(compiler: str, path_in: Path, path_out: Path):
-    cmd = [compiler, "-shared", "-o", str(path_out), "-fPIC", str(path_in)]
-    subprocess.call(cmd)
-    if not path_out.exists():
-        raise ValueError(f"expected compiled file missing: {path_out}")
+    # Publish only complete, successfully compiled libraries to the cache.
+    with tempfile.TemporaryDirectory(dir=path_out.parent) as temporary_dir:
+        temporary_output = Path(temporary_dir) / path_out.name
+        cmd = [compiler, "-shared", "-o", str(temporary_output), "-fPIC", str(path_in)]
+        if platform.system() == "Darwin":
+            # A compiler installed under Rosetta can default to x86_64 even
+            # when Python runs natively on Apple Silicon (and vice versa).
+            cmd.extend(["-arch", platform.machine()])
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as exc:
+            raise ValueError(f"C compilation failed: {exc.stderr}") from exc
+        if not temporary_output.exists():
+            raise ValueError(f"expected compiled file missing: {temporary_output}")
+        temporary_output.replace(path_out)
