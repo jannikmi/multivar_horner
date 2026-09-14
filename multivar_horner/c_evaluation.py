@@ -2,6 +2,7 @@ import ctypes
 import os
 import shutil
 import subprocess
+import sysconfig
 from pathlib import Path
 from typing import Tuple
 
@@ -12,6 +13,11 @@ if os.name == "nt":
     COMPILED_C_ENDING = ".dll"
 else:
     COMPILED_C_ENDING = ".so"
+
+# Compiled evaluators are native binaries and cannot be shared across platforms.
+# ``get_platform`` includes the operating system and CPU architecture (for example,
+# ``macosx-15.0-arm64`` or ``macosx-15.0-x86_64``).
+COMPILED_C_CACHE_TAG = sysconfig.get_platform()
 
 DOUBLE = "double"
 # array for evaluation results of both scalar and monomial factors

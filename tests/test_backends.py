@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from multivar_horner import HornerMultivarPolynomial, helpers_fcts_numba
+from multivar_horner import HornerMultivarPolynomial, c_evaluation, helpers_fcts_numba
 from tests.helpers import proto_test_case
 
 
@@ -29,3 +29,22 @@ def test_backend_selection_and_values(backend, monkeypatch, tmp_path):
 def test_reference_helper_propagates_failures():
     with pytest.raises(AssertionError):
         proto_test_case([(([], [], [0.0]), 1.0)], lambda _: 2.0)
+
+
+def test_compiled_cache_is_platform_specific(monkeypatch, tmp_path):
+    from multivar_horner.classes import horner_poly
+
+    monkeypatch.setattr(horner_poly, "PATH2CACHE", tmp_path)
+    poly = HornerMultivarPolynomial([1.0], [[0]], rectify_input=True)
+
+    native_path = poly.c_file_compiled
+    assert native_path.name.endswith(
+        f"-{c_evaluation.COMPILED_C_CACHE_TAG}{c_evaluation.COMPILED_C_ENDING}"
+    )
+
+    monkeypatch.setattr(horner_poly, "COMPILED_C_CACHE_TAG", "other-os-other-arch")
+    foreign_path = poly.c_file_compiled
+    assert foreign_path != native_path
+    assert foreign_path.name.endswith(
+        f"-other-os-other-arch{c_evaluation.COMPILED_C_ENDING}"
+    )

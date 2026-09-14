@@ -54,6 +54,11 @@ idea:
 - the evaluation of subtrees is independent and could theoretically be done in parallel
     probably not worth the effort. more reasonable to just evaluate multiple polynomials in parallel
 
+Next release
+____________
+
+* Prevent compiled evaluator cache collisions between ARM64 and x86_64 platforms.
+
 3.2.0 (unreleased)
 __________________
 
