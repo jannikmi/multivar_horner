@@ -1,14 +1,18 @@
 Changelog
 =========
 
-Unreleased
-----------
+3.2.1 (2026-09-14)
+__________________
 
 * Separate compiled C evaluation caches by operating system and process
   architecture, avoiding incompatible Intel/ARM library reuse.
 * Target the running Python architecture when compiling on macOS and publish
   cached libraries only after successful compilation.
 * Test both evaluation backends on macOS ARM64 in CI.
+* Refresh locked development and documentation dependencies, including pytest,
+  Requests, Pygments, cryptography, idna, and urllib3.
+* Verify the published wheel and source distribution byte-for-byte and test a
+  clean installation from PyPI before creating the GitHub release.
 
 
 TODOs
@@ -63,7 +67,7 @@ idea:
 - the evaluation of subtrees is independent and could theoretically be done in parallel
     probably not worth the effort. more reasonable to just evaluate multiple polynomials in parallel
 
-3.2.0 (unreleased)
+3.2.0 (2026-09-13)
 __________________
 
 * Require Python >=3.12,<4 following the SPEC 0 Python support window, without restricting future Python 3 minor releases; test Python 3.12–3.14.
