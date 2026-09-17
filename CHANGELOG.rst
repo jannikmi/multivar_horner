@@ -1,7 +1,7 @@
 Changelog
 =========
 
-3.2.1 (2026-09-14)
+3.2.1 (2026-09-17)
 __________________
 
 * Separate compiled C evaluation caches by operating system and process
@@ -13,6 +13,8 @@ __________________
   Requests, Pygments, cryptography, idna, and urllib3.
 * Verify the published wheel and source distribution byte-for-byte and test a
   clean installation from PyPI before creating the GitHub release.
+* Fix the complex-evaluation documentation example for NumPy 2.x and the
+  current ``eval_complex()`` API.
 
 
 TODOs

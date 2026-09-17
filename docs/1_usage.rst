@@ -351,8 +351,8 @@ evaluating a polynomial at complex query points
 
 .. code-block:: python
 
-    x = [np.complex(-2.0, 1.0), np.complex(3.0, -1.0), np.complex(1.0, 0.5)]
-    p_x = polynomial.eval_complex(x, rectify_input=True)
+    x = np.array([-2.0 + 1.0j, 3.0 - 1.0j, 1.0 + 0.5j], dtype=np.complex128)
+    p_x = polynomial.eval_complex(x)
 
 
 computing the partial derivative of a polynomial
