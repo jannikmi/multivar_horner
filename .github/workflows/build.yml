@@ -143,12 +143,25 @@ jobs:
         id: fetch_version
         run: |
           python -c 'import tomllib; print("version_nr=" + tomllib.load(open("pyproject.toml", "rb"))["tool"]["poetry"]["version"])' >> "$GITHUB_OUTPUT"
+      - name: Check whether version is already on PyPI
+        id: pypi_check
+        env:
+          VERSION: ${{ steps.fetch_version.outputs.version_nr }}
+        run: |
+          STATUS=$(curl -sS -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/multivar_horner/$VERSION/json")
+          case "$STATUS" in
+            200) echo "published=true" >> "$GITHUB_OUTPUT"; echo "Version $VERSION already on PyPI, skipping publish." ;;
+            404) echo "published=false" >> "$GITHUB_OUTPUT" ;;
+            *) echo "Unexpected PyPI status $STATUS"; exit 1 ;;
+          esac
       - name: PyPI Publishing
+        if: steps.pypi_check.outputs.published == 'false'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_DEPLOYMENT_API_KEY }}
           skip-existing: true
       - name: Verify installation from PyPI
+        if: steps.pypi_check.outputs.published == 'false'
         env:
           VERSION: ${{ steps.fetch_version.outputs.version_nr }}
         run: |
