@@ -202,6 +202,59 @@ Other representations of polynomials are being presented, among others, in :cite
 
 
 
+Future work
+-----------
+
+Ideas for possible improvements and open tasks. Contributions are welcome,
+please refer to the :ref:`contribution guidelines <contributing>`.
+
+
+Known limitations
+^^^^^^^^^^^^^^^^^
+
+* ``num_ops`` of a ``HornerMultivarPolynomial`` is ``0`` when cached C evaluation instructions are reused,
+  because no factorisation is being computed in this case
+  (`#89 <https://github.com/jannikmi/multivar_horner/issues/89>`__).
+
+
+Tests and benchmarks
+^^^^^^^^^^^^^^^^^^^^
+
+* run the speed and numerical stability benchmarks with the C evaluation backend
+  (`#90 <https://github.com/jannikmi/multivar_horner/issues/90>`__)
+* compare ``num_ops`` of different factorisations (heuristic vs. optimal)
+  (`#91 <https://github.com/jannikmi/multivar_horner/issues/91>`__)
+* improve test coverage in general
+
+
+``MultivarPolynomial`` (unfactorised)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* evaluate with instructions ("recipes") as well, skipping unnecessary operations.
+  This would allow a fairer comparison of the operations required for evaluation.
+  An option to skip this optimisation should be added.
+
+
+``HornerMultivarPolynomial``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* optimise the space requirement: use the structure of the factorisation tree to reuse storage space
+  (cf. register allocation by graph colouring in compiler construction).
+* reduce the dimensionality when the polynomial does not depend on all variables:
+  a wrapper could maintain the same interface while internally working with smaller arrays (speed and storage benefit).
+* the evaluation of subtrees is independent and could theoretically be done in parallel.
+  This is probably not worth the effort; evaluating multiple polynomials in parallel is more reasonable.
+* avoid copy operations for accessing the values of ``x`` in the ``numpy+numba`` fallback evaluation ("copy recipe").
+  Inserting ``x`` into the value array causes operations as well and complicates the address assignment.
+
+.. note::
+
+    Reusing the results of evaluated monomial factors for evaluating other factors containing them
+    ("factor factorisation" using prime number based "Goedel IDs") has been implemented in earlier versions.
+    It caused errors in rare cases and has been removed in version 2.0.0.
+
+
+
 Contact
 --------
 
