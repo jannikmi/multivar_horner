@@ -548,14 +548,14 @@ ssh = ["bcrypt (>=3.1.5)"]
 
 [[package]]
 name = "distlib"
-version = "0.3.8"
+version = "0.4.4"
 description = "Distribution utilities"
 optional = false
 python-versions = "*"
 groups = ["dev"]
 files = [
-    {file = "distlib-0.3.8-py2.py3-none-any.whl", hash = "sha256:034db59a0b96f8ca18035f36290806a9a6e6bd9d1ff91e45a7f172eb17e51784"},
-    {file = "distlib-0.3.8.tar.gz", hash = "sha256:1530ea13e350031b6312d8580ddb6b27a104275a31106523b8f123787f494f64"},
+    {file = "distlib-0.4.4-py2.py3-none-any.whl", hash = "sha256:cf09d55b1e85a89576b036aeb71550bfd68320f3f21761ca329eadadad918638"},
+    {file = "distlib-0.4.4.tar.gz", hash = "sha256:ca4175b4ac7f71223cc30ed7248c45d2b38c2439d8ee6e498ab67ed63cf3508d"},
 ]
 
 [[package]]
@@ -1134,14 +1134,14 @@ files = [
 
 [[package]]
 name = "packaging"
-version = "24.0"
+version = "26.3"
 description = "Core utilities for Python packages"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.9"
 groups = ["dev", "docs"]
 files = [
-    {file = "packaging-24.0-py3-none-any.whl", hash = "sha256:2ddfb553fdf02fb784c234c7ba6ccc288296ceabec964ad2eae3777778130bc5"},
-    {file = "packaging-24.0.tar.gz", hash = "sha256:eb82c5e3e56209074766e6885bb04b8c38a0c015d0a30036ebe7ece34c9989e9"},
+    {file = "packaging-26.3-py3-none-any.whl", hash = "sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"},
+    {file = "packaging-26.3.tar.gz", hash = "sha256:94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79"},
 ]
 
 [[package]]
@@ -1161,19 +1161,15 @@ testing = ["pytest", "pytest-cov", "wheel"]
 
 [[package]]
 name = "platformdirs"
-version = "4.2.0"
-description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
+version = "4.13.5"
+description = "A small Python package for determining appropriate platform-specific dirs, e.g. a `user data dir`."
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.11"
 groups = ["dev"]
 files = [
-    {file = "platformdirs-4.2.0-py3-none-any.whl", hash = "sha256:0614df2a2f37e1a662acbd8e2b25b92ccf8632929bc6d43467e17fe89c75e068"},
-    {file = "platformdirs-4.2.0.tar.gz", hash = "sha256:ef0cc731df711022c174543cb70a9b5bd22e5a9337c8624ef2c2ceb8ddad8768"},
+    {file = "platformdirs-4.13.5-py3-none-any.whl", hash = "sha256:53d3ec4280b815c1e0b02edad7f9ee8fda1ba9c0865dd9c2e6e63849ce82fc1e"},
+    {file = "platformdirs-4.13.5.tar.gz", hash = "sha256:05831adf87d392760f4b5c3a0a95579ab5a10b18b9b9bd43680dcb47544788a0"},
 ]
-
-[package.extras]
-docs = ["furo (>=2023.9.10)", "proselint (>=0.13)", "sphinx (>=7.2.6)", "sphinx-autodoc-typehints (>=1.25.2)"]
-test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.4.3)", "pytest-cov (>=4.1)", "pytest-mock (>=3.12)"]
 
 [[package]]
 name = "pluggy"
@@ -1444,18 +1440,18 @@ testing = ["fields", "hunter", "process-tests", "pytest-xdist", "virtualenv"]
 
 [[package]]
 name = "python-discovery"
-version = "1.6.0"
+version = "1.6.4"
 description = "Python interpreter discovery"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "python_discovery-1.6.0-py3-none-any.whl", hash = "sha256:d4e244cf17b8b29819ed78003d55fbacf86eda23425b075454fff9271b79377a"},
-    {file = "python_discovery-1.6.0.tar.gz", hash = "sha256:6393b4eae1be8b2182670635e7baff89ac21cb9f8e86fd1ff40c7b1144febb4c"},
+    {file = "python_discovery-1.6.4-py3-none-any.whl", hash = "sha256:530179cc51a1816d512b15635b3dc931295ae12efb183783ad31190a5d425d2b"},
+    {file = "python_discovery-1.6.4.tar.gz", hash = "sha256:bc70d31f0ec5de11eda13d4d64c16e24b3506a65984684f2b6c98cb83b2ea9df"},
 ]
 
 [package.dependencies]
-filelock = ">=3.15.4"
+filelock = ">=3.16.1"
 
 [[package]]
 name = "pywin32-ctypes"
@@ -2035,21 +2031,22 @@ zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
 
 [[package]]
 name = "virtualenv"
-version = "21.7.13"
+version = "21.14.13"
 description = "Virtual Python Environment builder"
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "virtualenv-21.7.13-py3-none-any.whl", hash = "sha256:1bea5af7463f59c4719db48fe739579a2a4f569c96f26c086edda85c96da9f59"},
-    {file = "virtualenv-21.7.13.tar.gz", hash = "sha256:0355558b6f33619aab31347e43643b0ebc97f61ea3acf617b2b69e1f8a843d11"},
+    {file = "virtualenv-21.14.13-py3-none-any.whl", hash = "sha256:5fbb04138a4861580b78ba9110d529a26bc48fcc93c8ec36bc0202eeed96a788"},
+    {file = "virtualenv-21.14.13.tar.gz", hash = "sha256:de5307ba4b9a0001d9c8ea02832d38f63ca432880f416c1bface61c4323fd905"},
 ]
 
 [package.dependencies]
-distlib = ">=0.3.7,<1"
-filelock = {version = ">=3.24.2,<4", markers = "python_version >= \"3.10\""}
-platformdirs = ">=3.9.1,<5"
-python-discovery = ">=1.6"
+distlib = ">=0.4.3,<1"
+filelock = {version = ">=3.24.2,<5", markers = "python_version >= \"3.10\""}
+packaging = ">=26.3"
+platformdirs = ">=4.4,<5"
+python-discovery = ">=1.6.1"
 
 [[package]]
 name = "zipp"
