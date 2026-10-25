@@ -217,21 +217,11 @@ Tests
 * improve test coverage in general
 
 
-``MultivarPolynomial`` (unfactorised)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-* evaluate with instructions ("recipes") as well, skipping unnecessary operations.
-  This would allow a fairer comparison of the operations required for evaluation.
-  An option to skip this optimisation should be added.
-
-
 ``HornerMultivarPolynomial``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * optimise the space requirement: use the structure of the factorisation tree to reuse storage space
   (cf. register allocation by graph colouring in compiler construction).
-* reduce the dimensionality when the polynomial does not depend on all variables:
-  a wrapper could maintain the same interface while internally working with smaller arrays (speed and storage benefit).
 * the evaluation of subtrees is independent and could theoretically be done in parallel.
   This is probably not worth the effort; evaluating multiple polynomials in parallel is more reasonable.
 * avoid copy operations for accessing the values of ``x`` in the ``numpy+numba`` fallback evaluation ("copy recipe").
