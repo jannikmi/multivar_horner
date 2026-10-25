@@ -205,17 +205,15 @@ Other representations of polynomials are being presented, among others, in :cite
 Future work
 -----------
 
-Ideas for possible improvements and open tasks. Contributions are welcome,
-please refer to the :ref:`contribution guidelines <contributing>`.
+Ideas for possible improvements which are not (yet) tracked as
+`GitHub issues <https://github.com/jannikmi/multivar_horner/issues>`__.
+Concrete open tasks and known bugs are listed there.
+Contributions are welcome, please refer to the :ref:`contribution guidelines <contributing>`.
 
 
-Tests and benchmarks
-^^^^^^^^^^^^^^^^^^^^
+Tests
+^^^^^
 
-* run the speed and numerical stability benchmarks with the C evaluation backend
-  (`#90 <https://github.com/jannikmi/multivar_horner/issues/90>`__)
-* compare ``num_ops`` of different factorisations (heuristic vs. optimal)
-  (`#91 <https://github.com/jannikmi/multivar_horner/issues/91>`__)
 * improve test coverage in general
 
 
