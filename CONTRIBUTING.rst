@@ -59,6 +59,15 @@ If you are proposing a feature:
 * Remember that this is a volunteer-driven project, and that contributions  are welcome :)
 
 
+Changelog, Issues and Future Work
+---------------------------------
+
+* ``CHANGELOG.rst`` only contains entries of released versions. Do not add TODOs or ideas to it.
+* Concrete tasks and bugs are tracked as `Github Issues`_.
+* The "Future work" section in the documentation (``docs/2_about.rst``) only lists ideas without a GitHub issue.
+  Once an issue is created for an item, remove the item from the documentation.
+
+
 Get Started!
 ------------
 
