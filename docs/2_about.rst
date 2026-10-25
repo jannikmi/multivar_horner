@@ -236,12 +236,11 @@ Tests
   This is probably not worth the effort; evaluating multiple polynomials in parallel is more reasonable.
 * avoid copy operations for accessing the values of ``x`` in the ``numpy+numba`` fallback evaluation ("copy recipe").
   Inserting ``x`` into the value array causes operations as well and complicates the address assignment.
-
-.. note::
-
-    Reusing the results of evaluated monomial factors for evaluating other factors containing them
-    ("factor factorisation" using prime number based "Goedel IDs") has been implemented in earlier versions.
-    It caused errors in rare cases and has been removed in version 2.0.0.
+* reuse the values of evaluated monomial factors for evaluating other factors containing them ("factor factorisation").
+  With prime number based "Goedel IDs" as factor IDs, the ID of a monomial is the product of the IDs of its scalar factors,
+  and the largest contained factor corresponds to the largest divisor among all factor IDs.
+  An option to skip this optimisation would save build time.
+  Note: this has been implemented in earlier versions, but caused errors in rare cases and was removed in version 2.0.0.
 
 
 
