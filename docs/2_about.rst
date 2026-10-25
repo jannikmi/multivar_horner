@@ -209,14 +209,6 @@ Ideas for possible improvements and open tasks. Contributions are welcome,
 please refer to the :ref:`contribution guidelines <contributing>`.
 
 
-Known limitations
-^^^^^^^^^^^^^^^^^
-
-* ``num_ops`` of a ``HornerMultivarPolynomial`` is ``0`` when cached C evaluation instructions are reused,
-  because no factorisation is being computed in this case
-  (`#89 <https://github.com/jannikmi/multivar_horner/issues/89>`__).
-
-
 Tests and benchmarks
 ^^^^^^^^^^^^^^^^^^^^
 
