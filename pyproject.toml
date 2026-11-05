@@ -24,6 +24,7 @@ include = [
     ".editorconfig",
     ".pre-commit-config.yaml",
     "CHANGELOG.rst",
+    "CITATION.cff",
     "CONTRIBUTING.rst",
     "LICENSE",
     "Makefile",

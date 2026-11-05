@@ -68,6 +68,18 @@ Changelog, Issues and Future Work
   Once an issue is created for an item, remove the item from the documentation.
 
 
+Releases
+--------
+
+The version of the package is stored in ``pyproject.toml`` and ``CITATION.cff``. To prepare a release:
+
+* Add an entry ``<version> (<YYYY-MM-DD>)`` at the top of ``CHANGELOG.rst``.
+* Run ``python scripts/release.py <version> --date <YYYY-MM-DD>`` to set the version
+  in ``pyproject.toml`` and the ``version`` and ``date-released`` in ``CITATION.cff``.
+* Run ``python scripts/validate_release.py`` to check that all release metadata is consistent.
+  This check also runs in CI and must pass before a release is published.
+
+
 Get Started!
 ------------
 

@@ -100,3 +100,32 @@ Also see:
 - `PyPI <https://pypi.python.org/pypi/multivar_horner/>`__
 - `paper (JOSS) <https://joss.theoj.org/papers/10.21105/joss.02392>`__
 - `paper (arXiv) <https://arxiv.org/abs/2007.13152>`__
+
+
+Citing
+------
+
+If you use ``multivar_horner`` in your research, please cite the accompanying paper in the Journal of Open Source Software:
+
+    Michelfeit, J., (2020). multivar_horner: A Python package for computing Horner factorisations of multivariate polynomials.
+    Journal of Open Source Software, 5(54), 2392, https://doi.org/10.21105/joss.02392
+
+.. code-block:: bibtex
+
+    @article{Michelfeit2020,
+        doi = {10.21105/joss.02392},
+        url = {https://doi.org/10.21105/joss.02392},
+        year = {2020},
+        publisher = {The Open Journal},
+        volume = {5},
+        number = {54},
+        pages = {2392},
+        author = {Jannik Michelfeit},
+        title = {multivar_horner: A Python package for computing Horner factorisations of multivariate polynomials},
+        journal = {Journal of Open Source Software}
+    }
+
+The citation metadata is also available in the machine readable
+`CITATION.cff <https://github.com/jannikmi/multivar_horner/blob/master/CITATION.cff>`__ file
+(on GitHub: "Cite this repository" in the sidebar).
+Please mention the version of ``multivar_horner`` you used.
