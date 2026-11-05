@@ -7,9 +7,12 @@ title: "multivar_horner"
 abstract: >-
   A python package implementing a multivariate Horner scheme
   for efficiently evaluating multivariate polynomials.
+# The author's family name changed from Michelfeit to Kissinger.
+# The software lists the current name; "preferred-citation" keeps the name
+# as published in the paper. The ORCID identifies the same person in both.
 authors:
   - given-names: Jannik
-    family-names: Michelfeit
+    family-names: Kissinger
     orcid: "https://orcid.org/0000-0002-1819-6975"
 # "version" and "date-released" are maintained by scripts/release.py
 # and checked by scripts/validate_release.py
