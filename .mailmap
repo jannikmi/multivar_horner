@@ -1,0 +1,8 @@
+# Maps the different names and email addresses used in the history to one
+# canonical identity, used by e.g. `git log --use-mailmap` and `git shortlog`.
+# See https://git-scm.com/docs/gitmailmap
+#
+# Jannik Kissinger (formerly Michelfeit; GitHub: jannikmi, formerly MrMinimal64)
+Jannik Kissinger <github@michelfe.it>
+Jannik Kissinger <github@michelfe.it> <python@michelfe.it>
+Jannik Kissinger <github@michelfe.it> <MrMinimal64@users.noreply.github.com>

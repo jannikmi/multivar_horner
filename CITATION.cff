@@ -1,0 +1,44 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite the accompanying paper
+  in the Journal of Open Source Software (see "preferred-citation").
+type: software
+title: "multivar_horner"
+abstract: >-
+  A python package implementing a multivariate Horner scheme
+  for efficiently evaluating multivariate polynomials.
+# The author's family name changed from Michelfeit to Kissinger.
+# The software lists the current name; "preferred-citation" keeps the name
+# as published in the paper. The ORCID identifies the same person in both.
+authors:
+  - given-names: Jannik
+    family-names: Kissinger
+    orcid: "https://orcid.org/0000-0002-1819-6975"
+# "version" and "date-released" are maintained by scripts/release.py
+# and checked by scripts/validate_release.py
+version: "3.2.1"
+date-released: "2026-09-17"
+license: MIT
+repository-code: "https://github.com/jannikmi/multivar_horner"
+url: "https://multivar-horner.readthedocs.io/en/latest/"
+keywords:
+  - mathematics
+  - polynomials
+  - evaluation
+  - multivariate
+  - horner-scheme
+preferred-citation:
+  type: article
+  title: "multivar_horner: A Python package for computing Horner factorisations of multivariate polynomials"
+  authors:
+    - given-names: Jannik
+      family-names: Michelfeit
+      orcid: "https://orcid.org/0000-0002-1819-6975"
+  journal: "Journal of Open Source Software"
+  volume: 5
+  issue: 54
+  start: 2392
+  year: 2020
+  month: 10
+  doi: "10.21105/joss.02392"
+  url: "https://joss.theoj.org/papers/10.21105/joss.02392"
