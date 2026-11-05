@@ -1,10 +1,16 @@
 version: 2
 updates:
+  # Poetry projects use the "pip" ecosystem; Dependabot reads pyproject.toml
+  # and poetry.lock from the given directory (a directory, not a file).
   - package-ecosystem: "pip"
-    directory: "pyproject.toml"
+    directory: "/"
     schedule:
       interval: "weekly"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
