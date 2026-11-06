@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-14]
+        os: [ubuntu-latest, macos-15]
         python-version: ["3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v7
@@ -136,6 +136,25 @@ jobs:
           cp scripts/smoke_installed.py "$RUNNER_TEMP/smoke_installed.py"
           cd "$RUNNER_TEMP"
           "$PYTHON" -I smoke_installed.py "$BACKEND"
+
+  # Single stable status check for branch protection: require only this job,
+  # so changes to the job list or matrices never need a settings update.
+  # Keep `needs` in sync with every job that must pass before merging.
+  all-checks-passed:
+    if: always()
+    needs: [test, lint, release-metadata, docs, locked-dependencies, build, smoke]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless every required job succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            if [ "$result" != success ]; then
+              exit 1
+            fi
+          done
 
   deploy:
     runs-on: ubuntu-latest
