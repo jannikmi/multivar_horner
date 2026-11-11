@@ -64,7 +64,7 @@ twine = "*"
 pre-commit = "*"
 rstcheck = "*"
 #build = "^0.8.0"
-ruff = "^0.3.2"
+ruff = ">=0.3.2,<0.18.0"
 
 [build-system]
 requires = ["poetry-core>=2.2,<3"]
