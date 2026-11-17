@@ -1868,21 +1868,21 @@ test = ["pytest"]
 
 [[package]]
 name = "sphinxcontrib-bibtex"
-version = "2.6.5"
+version = "2.7.0"
 description = "Sphinx extension for BibTeX style citations."
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["docs"]
 files = [
-    {file = "sphinxcontrib_bibtex-2.6.5-py3-none-any.whl", hash = "sha256:455ea4509642ea0b28ede3721550273626f85af65af01f161bfd8e19dc1edd7d"},
-    {file = "sphinxcontrib_bibtex-2.6.5.tar.gz", hash = "sha256:9b3224dd6fece9268ebd8c905dc0a83ff2f6c54148a9235fe70e9d1e9ff149c0"},
+    {file = "sphinxcontrib_bibtex-2.7.0-py3-none-any.whl", hash = "sha256:28cf0ec7a957d1c7548d5749317ed472ce877e1b629f430f88e3789aa51f87b1"},
+    {file = "sphinxcontrib_bibtex-2.7.0.tar.gz", hash = "sha256:fee700f7aae29bb8f654c62913f00d34ac44fc0b8ca0fa67ac922ff4453addee"},
 ]
 
 [package.dependencies]
-docutils = ">=0.8,<0.18 || >=0.20.dev0"
+docutils = ">=0.20"
 pybtex = ">=0.25"
-pybtex-docutils = ">=1.0.0"
-Sphinx = ">=3.5"
+pybtex-docutils = ">=1.0.2"
+Sphinx = ">=7.4"
 
 [package.extras]
 test = ["pytest", "pytest-cov", "sphinx-autoapi"]
