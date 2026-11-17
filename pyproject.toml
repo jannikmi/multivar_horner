@@ -52,7 +52,7 @@ optional = true
 
 [tool.poetry.group.docs.dependencies]
 Sphinx = ">=5,<8"
-sphinx-rtd-theme = "^2"
+sphinx-rtd-theme = ">=2,<4"
 sphinxcontrib-bibtex = "*"
 
 [tool.poetry.group.dev.dependencies]
