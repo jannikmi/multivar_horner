@@ -1667,38 +1667,38 @@ jupyter = ["ipywidgets (>=7.5.1,<9)"]
 
 [[package]]
 name = "rstcheck"
-version = "6.2.1"
+version = "6.3.1"
 description = "Checks syntax of reStructuredText and code blocks nested within it"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "rstcheck-6.2.1-py3-none-any.whl", hash = "sha256:b450943707d8ca053f5c6b9f103ee595f4926a064203e5e579172aefb3fe2c12"},
-    {file = "rstcheck-6.2.1.tar.gz", hash = "sha256:e4d173950b023eb12c2b9d2348a8c62bef46612bbc7b29e1e57d37320ed0a891"},
+    {file = "rstcheck-6.3.1-py3-none-any.whl", hash = "sha256:1d6db7c9461932ffa9b3fb87130f1abbbd372f2cb961091e39d3ce26b5e17e14"},
+    {file = "rstcheck-6.3.1.tar.gz", hash = "sha256:89715eb0b46f22f46b877a37b404efae79aab989a26747fa892cb098760b43ac"},
 ]
 
 [package.dependencies]
-rstcheck-core = ">=1.1"
-typer = {version = ">=0.4.1", extras = ["all"]}
+rstcheck-core = ">=1.3.1"
+typer = ">=0.12.0"
 
 [package.extras]
 dev = ["rstcheck[docs,sphinx,testing,toml,type-check]", "tox (>=3.15)"]
-docs = ["m2r2 (>=0.3.2)", "sphinx (>=5.0)", "sphinx-autobuild (>=2021.3.14)", "sphinx-click (>=4.0.3)", "sphinx-rtd-theme (>=1.2)", "sphinxcontrib-spelling (>=7.3)"]
-sphinx = ["sphinx (>=5.0)"]
+docs = ["myst-parser (>=3)", "sphinx (>=6.0)", "sphinx-autobuild (>=2021.3.14)", "sphinx-rtd-theme (>=1.2)", "sphinxcontrib-spelling (>=7.3)", "sphinxcontrib-typer (>=0.9.1)"]
+sphinx = ["sphinx (>=6.0)"]
 testing = ["coverage-conditional-plugin (>=0.5)", "coverage[toml] (>=6.0)", "pytest (>=7.2)", "pytest-cov (>=3.0)", "pytest-randomly (>=3.0)", "pytest-sugar (>=0.9.5)"]
 toml = ["tomli (>=2.0) ; python_version <= \"3.10\""]
 type-check = ["mypy (>=1.0)"]
 
 [[package]]
 name = "rstcheck-core"
-version = "1.2.1"
+version = "1.3.2"
 description = "Checks syntax of reStructuredText and code blocks nested within it"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "rstcheck-core-1.2.1.tar.gz", hash = "sha256:9b330020d912e2864f23f332c1a0569463ca3b06b8fee7b7bdd201b055f7f831"},
-    {file = "rstcheck_core-1.2.1-py3-none-any.whl", hash = "sha256:1c100de418b6c9e14d9cf6558644d0ab103fdc447f891313882d02df3a3c52ba"},
+    {file = "rstcheck_core-1.3.2-py3-none-any.whl", hash = "sha256:28e770f6f487fc30639d8f50507a34c51b3af22b7240c85b2f53666b38e0e356"},
+    {file = "rstcheck_core-1.3.2.tar.gz", hash = "sha256:511ea4a39f88c5c01291689c7e2abd6c75c0d18492e1af722c7f2ac1fde34b97"},
 ]
 
 [package.dependencies]
@@ -1707,8 +1707,8 @@ pydantic = ">=2"
 
 [package.extras]
 dev = ["rstcheck-core[docs,sphinx,testing,toml,type-check,yaml]", "tox (>=3.15)"]
-docs = ["m2r2 (>=0.3.2)", "sphinx (>=5.0,!=7.2.5)", "sphinx-autobuild (>=2021.3.14)", "sphinx-autodoc-typehints (>=1.15)", "sphinx-rtd-theme (>=1.2)", "sphinxcontrib-apidoc (>=0.3)", "sphinxcontrib-spelling (>=7.3)"]
-sphinx = ["sphinx (>=5.0)"]
+docs = ["myst-parser (>=3)", "sphinx (>=6.0,!=7.2.5)", "sphinx-autobuild (>=2021.3.14)", "sphinx-autodoc-typehints (>=1.15)", "sphinx-rtd-theme (>=1.2)", "sphinxcontrib-apidoc (>=0.3)", "sphinxcontrib-spelling (>=7.3)"]
+sphinx = ["sphinx (>=6.0)"]
 testing = ["coverage-conditional-plugin (>=0.5)", "coverage[toml] (>=6.0)", "pytest (>=7.2)", "pytest-cov (>=3.0)", "pytest-mock (>=3.7)", "pytest-randomly (>=3.0)", "pytest-sugar (>=0.9.5)"]
 toml = ["tomli (>=2.0) ; python_version <= \"3.10\""]
 type-check = ["mypy (>=1.0)", "types-PyYAML (>=6.0.0)", "types-docutils (>=0.18)"]
