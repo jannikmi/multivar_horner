@@ -51,7 +51,7 @@ numba = ["numba"]
 optional = true
 
 [tool.poetry.group.docs.dependencies]
-Sphinx = ">=5,<8"
+Sphinx = ">=5,<10"
 sphinx-rtd-theme = ">=2,<4"
 sphinxcontrib-bibtex = "*"
 
